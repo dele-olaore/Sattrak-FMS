@@ -1,0 +1,60 @@
+<!--
+paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!-- Consider adding a manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 8]><!-->
+<html class="no-js" lang="en"
+	xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:p="http://primefaces.org/ui">
+	<!--<![endif]-->
+	<f:view>
+	<ui:insert name="metadata"/>
+	<h:head>
+		<meta charset="utf-8"/>
+		<!-- Use the .htaccess and remove these lines to avoid edge case issues.
+		More info: h5bp.com/b/378 -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>Login :: Fleet Management System</title>
+		<meta name="description" content="" />
+		<meta name="author" content="deXter" />
+		<!-- Mobile viewport optimized: j.mp/bplateviewport -->
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<!-- Place favicon.ico and apple-touch-icon.png in the root directory:
+		mathiasbynens.be/notes/touch-icons -->
+		
+		<!-- CSS -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/960gs/fluid.css"/> <!-- 960.gs Grid System -->
+		<!-- The HTML5-Boilerplate CSS styling -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/h5bp/normalize.css"/> <!-- RECOMMENDED: H5BP reset styles -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/h5bp/non-semantic.helper.classes.css"/> <!-- RECOMMENDED: H5BP helpers (e.g. .clear or .hidden) -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/h5bp/print.styles.css"/> <!-- OPTIONAL: H5BP print styles -->
+		<!-- The special page's styling -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/special-page.css"/> <!-- REQUIRED: Special page styling -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/sprites.css"/> <!-- REQUIRED: Basic sprites (e.g. buttons, jGrowl) -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/typographics.css"/> <!-- REQUIRED: Typographics -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/content.css"/> <!-- REQUIRED: Content (we need the boxes) -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/sprite.forms.css"/> <!-- SPRITE: Forms -->
+		<link rel="stylesheet" href="#{request.contextPath}/resources/css/ie.fixes.css"/> <!-- OPTOINAL: Fixes for IE -->
+		
+		<ui:insert name="head"/>
+	</h:head>
+	<h:body class="special_page">
+		<div class="top">
+			<div class="gradient"></div>
+			<div class="white"></div>
+			<div class="shadow"></div>
+		</div>
+		
+		<p:growl id="messages3" sticky="true" showDetail="true" />
+		
+		<!-- Insert content here. Each page must identify their own content and design accordingly -->
+		<ui:insert name="content"/>
+		
+	</h:body>
+	</f:view>
+</html>

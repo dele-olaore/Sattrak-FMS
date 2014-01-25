@@ -1,0 +1,146 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Vehicle</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Vehicles" action="#{dashboardBean.gotoPage('manage_vehicles', false)}" ajax="false" />
+    			<p:menuitem value="New Vehicle" action="#{dashboardBean.gotoPage('new_vehicle', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid id="rlpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header"></f:facet>
+				
+				<p:panelGrid id="rlpanel1" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header">Basic details</f:facet>
+				
+				<h:outputLabel for="rlptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="rlptn" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1,vpurvendor" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: *" />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="rlvtypes" value="Vehicle Type: "/>
+				<p:selectOneMenu id="rlvtypes" value="#{fleetBean.vehicleType_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.vehicleTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flmodel1" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="rlvmakes" value="Vehicle Make: "/>
+				<p:selectOneMenu id="rlvmakes" value="#{fleetBean.vehicleMake_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.vehicleMakes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flmodel1" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="flmodel1" value="Model: *" />
+				<p:selectOneMenu id="flmodel1" value="#{fleetBean.vehicleModel_id}">
+					<f:selectItems value="#{fleetBean.vmodels}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="zonid" value="Zon Control ID: *" />
+		  		<p:inputText id="zonid" value="#{fleetBean.vehicle.zonControlId}" />
+		  		
+		  		<h:outputLabel for="vregno" value="Registration No.: *" />
+				<p:inputText id="vregno" value="#{fleetBean.vehicle.registrationNo}" />
+				
+				<h:outputLabel for="vengno" value="Engine No.: *" />
+				<p:inputText id="vengno" value="#{fleetBean.vehicle.engineNo}" />
+				
+				<h:outputLabel for="vchasno" value="Chassis No.: *" />
+				<p:inputText id="vchasno" value="#{fleetBean.vehicle.chasisNo}" />
+				
+				<h:outputLabel for="vpurdate" value="Purchased Date: " />
+				<p:calendar id="vpurdate" value="#{fleetBean.vehicle.purchaseDate}" showOn="button" />
+				
+				<h:outputLabel for="vpuramt" value="Purchased Amount: " />
+				<p:inputText id="vpuramt" value="#{fleetBean.vehicle.purchaseAmt}" />
+				
+				<h:outputLabel for="vpurvendor" value="Purhcased From: " />
+				<p:selectOneMenu id="vpurvendor" value="#{fleetBean.vendor_id}">
+					<f:selectItems value="#{fleetBean.vsalesVendors}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		</p:panelGrid>
+		  		
+		  		<p:panelGrid id="rlpanel2" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header">Other parameters</f:facet>
+		  		
+		  		<h:outputLabel for="vparamphoto" value="Photo: " />
+		  		<p:fileUpload id="vparamphoto" value="#{fleetBean.vehiclePhoto}" mode="simple" />
+		  		
+		  		<h:outputLabel for="vparamdept" value="Department: " />
+				<p:selectOneMenu id="vparamdept" value="#{fleetBean.department_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					<f:selectItems value="#{fleetBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="vparamregion" value="Region: " />
+				<p:selectOneMenu id="vparamregion" value="#{fleetBean.region_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					<f:selectItems value="#{fleetBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="vparamftype" value="Fuel type: " />
+				<p:selectOneMenu id="vparamftype" value="#{fleetBean.fuelType_id}">
+					<f:selectItems value="#{fleetBean.fuelTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="vparamts" value="Tyre size: " />
+				<p:inputText id="vparamts" value="#{fleetBean.vehicleParam.tyresize}" />
+		  		
+		  		<h:outputLabel for="vparamtankc" value="Tank Capacity: " />
+				<p:inputText id="vparamtankc" value="#{fleetBean.vehicleParam.tankcapacity}" />
+				
+				<h:outputLabel for="vparamclor" value="Color: " />
+				<p:inputText id="vparamclor" value="#{fleetBean.vehicleParam.color}" />
+				
+				<h:outputLabel for="vparamsimno" value="SIM No: " />
+				<p:inputText id="vparamsimno" value="#{fleetBean.vehicleParam.simno}" />
+				
+				<h:outputLabel for="vparamunitm" value="Unit of measurement: " />
+				<p:inputText id="vparamunitm" value="#{fleetBean.vehicleParam.unitofmeasure}" />
+				
+				<h:outputLabel for="vparamcardno" value="Card No: " />
+				<p:inputText id="vparamcardno" value="#{fleetBean.vehicleParam.cardno}" />
+				
+				</p:panelGrid>
+				
+				<f:facet name="footer">
+		  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveVehicle}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+		  		</f:facet>
+				
+				</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

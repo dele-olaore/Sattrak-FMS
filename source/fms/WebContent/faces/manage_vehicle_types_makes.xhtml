@@ -1,0 +1,194 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Vehicle Types and Makers</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Vehicle Types and Makes" action="#{dashboardBean.gotoPage('manage_vehicle_types_makes', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Vehicle Type" onclick="typedlg.show();" />
+			<h:outputText value=" | " />
+			<p:commandLink value="Batch Load Vehicle Models" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:dataTable id="typesTable" var="obj" value="#{fleetBean.vehicleTypes}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available Vehicle Types
+				</f:facet>
+				
+				<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.name}" />
+				</p:column>
+				<p:column headerText="Vehicles" style="width: 7%">
+					<h:outputText value="#{obj.vehicles.size()} vehicle(s)" />
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{obj.crt_dt}" /><br/>
+					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				<p:column headerText="" style="width: 3%">
+					<p:commandLink value="Update" />
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		<tr>
+		<td align="left">
+		</td>
+		<td align="right">
+			<p:commandLink value="New Vehicle Maker" onclick="makerdlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel2" style="width:100%;">
+			<p:dataTable id="makesTable" var="obj" value="#{fleetBean.vehicleMakes}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available Vehicle Makers
+				</f:facet>
+				
+				<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.name}" />
+				</p:column>
+				<p:column headerText="Vehicles" style="width: 7%">
+					<h:outputText value="#{obj.vehicles.size()} vehicle(s)" />
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{obj.crt_dt}" /><br/>
+					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				<p:column headerText="" style="width: 3%">
+					<p:commandLink value="Update" />
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		<tr>
+		<td align="left">
+		</td>
+		<td align="right">
+			<p:commandLink value="New Vehicle Model" onclick="modeldlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel3" style="width:100%;">
+			<p:dataTable id="modelsTable" var="obj" value="#{fleetBean.vmodels}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available Vehicle Models
+				</f:facet>
+				
+				<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.year}" headerText="Year" filterBy="#{obj.year}" filterMatchMode="contains">
+					<h:outputText value="#{obj.year}" />
+				</p:column>
+				<p:column sortBy="#{obj.type.name}" headerText="Type" filterBy="#{obj.type.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.type.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.maker.name}" headerText="Makers" filterBy="#{obj.maker.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.maker.name}" />
+				</p:column>
+				<p:column headerText="Vehicles" style="width: 7%">
+					<h:outputText value="#{obj.vehicles.size()} vehicle(s)" />
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{obj.crt_dt}" /><br/>
+					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				<p:column headerText="" style="width: 3%">
+					<p:commandLink value="Update" />
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newTypeDialog" header="New Vehicle Type" widgetVar="typedlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+  		<h:outputLabel for="vtname" value="Name: *" />
+  		<p:inputText id="vtname" value="#{fleetBean.vehicleType.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.save(1)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+  	
+  	<p:dialog id="newMakerDialog" header="New Vehicle Maker" widgetVar="makerdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+  		<h:outputLabel for="vmname" value="Name: *" />
+  		<p:inputText id="vmname" value="#{fleetBean.vehicleMake.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.save(2)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+  	
+  	<p:dialog id="newModelDialog" header="New Vehicle Model" widgetVar="modeldlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+  		<h:outputLabel for="vmoname" value="Name: *" />
+  		<p:inputText id="vmoname" value="#{fleetBean.vmodel.name}" />
+  		
+  		<h:outputLabel for="vmoyear" value="Year: " />
+  		<p:inputText id="vmoyear" value="#{fleetBean.vmodel.year}" />
+  		
+  		<h:outputLabel for="rlvtypes" value="Vehicle Type: *"/>
+		<p:selectOneMenu id="rlvtypes" value="#{fleetBean.vehicleType_id}">
+			<f:selectItems value="#{fleetBean.vehicleTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="rlvmakes" value="Vehicle Make: *"/>
+		<p:selectOneMenu id="rlvmakes" value="#{fleetBean.vehicleMake_id}">
+			<f:selectItems value="#{fleetBean.vehicleMakes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.save(3)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

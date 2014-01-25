@@ -1,0 +1,72 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Role</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Roles" action="#{dashboardBean.gotoPage('manage_roles', false)}" ajax="false" />
+    			<p:menuitem value="New Role" action="#{dashboardBean.gotoPage('new_role', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+			<p:panelGrid id="rlpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header"></f:facet>
+			
+			<h:outputLabel for="rlptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="rlptn" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+	  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="rlfuncs" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="rlname" value="Name: *" />
+			<p:inputText id="rlname" value="#{userBean.mrole.name}" />
+			
+			<h:outputLabel for="rldesc" value="Description: " />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="rldesc" value="#{userBean.mrole.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter" />
+	  		</p:panelGrid>
+			
+			<h:outputLabel for="rlfuncs" value="Role function(s): " />
+			<p:dataGrid id="rlfuncs" var="obj" value="#{userBean.partnerFunctions}"
+				columns="1">
+				<f:facet name="header">
+					Available function(s) for partner
+				</f:facet>
+			
+				<p:selectBooleanCheckbox value="#{obj.selected}" />
+				<h:outputText value="#{obj.name} (#{obj.module.name}) | #{obj.description})" />
+			
+			</p:dataGrid>
+			
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(5)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+			
+			</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

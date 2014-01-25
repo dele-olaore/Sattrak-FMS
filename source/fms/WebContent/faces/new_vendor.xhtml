@@ -1,0 +1,77 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Vendor</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Vendors" action="#{dashboardBean.gotoPage('manage_vendors', false)}" ajax="false" />
+    			<p:menuitem value="New Vendor" action="#{dashboardBean.gotoPage('new_vendor', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+			<p:panelGrid id="rlpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header"></f:facet>
+			
+			<h:outputLabel for="rlptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="rlptn" value="#{vendorBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+	  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="vname" value="Name: *" />
+			<p:inputText id="vname" value="#{vendorBean.vendor.name}" />
+			
+			<h:outputLabel for="vaddr1" value="Address 1: " />
+			<p:inputText id="vaddr1" value="#{vendorBean.vendor.addr1}" />
+			
+			<h:outputLabel for="vaddr2" value="Address 2: " />
+			<p:inputText id="vaddr2" value="#{vendorBean.vendor.addr2}" />
+			
+			<h:outputLabel for="vphone" value="Phone: " />
+			<p:inputText id="vphone" value="#{vendorBean.vendor.phone}" />
+			
+			<h:outputLabel for="vemail" value="Email: " />
+			<p:inputText id="vemail" value="#{vendorBean.vendor.email}" />
+			
+			<h:outputLabel for="vservices" value="Vendor service(s): " />
+			<p:dataGrid id="vservices" var="obj" value="#{vendorBean.serviceTypes}"
+				columns="1">
+				<f:facet name="header">
+					Available service(s) for vendor
+				</f:facet>
+			
+				<p:selectBooleanCheckbox value="#{obj.selected}" />
+				<h:outputText value="#{obj.name} (#{obj.description})" />
+			
+			</p:dataGrid>
+			
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{vendorBean.saveVendor}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+			
+			</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

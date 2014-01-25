@@ -1,0 +1,138 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Partners Subscriptions</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Partners Subscriptions" action="#{dashboardBean.gotoPage('manage_partner_subs', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Subscription" onclick="dlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:panel id="partnersPanel" style="width:100%;">
+		<p:dataTable id="partnersTable" var="obj" value="#{partnerBean.partners}"
+			paginator="true" rows="10"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available partners
+			</f:facet>
+			
+			<p:column style="width:2%">
+				<p:rowToggler rendered="#{not obj.sattrak}" />
+			</p:column>
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.code}" headerText="Code" filterBy="#{obj.code}" filterMatchMode="contains">
+				<h:outputText value="#{obj.code}" />
+			</p:column>
+			<p:column headerText="Is Sattrak">
+				<h:outputText value="Yes" rendered="#{obj.sattrak}" />
+				<h:outputText value="No" rendered="#{not obj.sattrak}" />
+			</p:column>
+			<p:column headerText="Address">
+				<h:outputText value="#{obj.addr1}, #{obj.addr2}" />
+			</p:column>
+			<p:column headerText="Email">
+				<h:outputText value="#{obj.email}" />
+			</p:column>
+			<p:column headerText="Phone">
+				<h:outputText value="#{obj.phone}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+			</p:column>
+			<p:column headerText="Users" style="width: 10%">
+				<p:commandLink value="#{obj.users.size()} user(s)" rendered="#{obj.users != null}" />
+			</p:column>
+			
+			<p:rowExpansion>
+				<p:commandLink value="New Subscription" onclick="dlg.show();" /><br/>
+				<p:dataTable id="partnersubsTable" var="obj2" value="#{obj.subscriptions}"
+					rendered="#{obj.subscriptions != null and obj.subscriptions.size() > 0}">
+					<p:column sortBy="#{obj2.subPackage.name}" headerText="Name" filterBy="#{obj2.subPackage.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj2.subPackage.name}" />
+					</p:column>
+					<p:column headerText="Start date" sortBy="#{obj2.start_dt}">
+						<h:outputText value="#{obj2.start_dt}" />
+					</p:column>
+					<p:column headerText="End date" sortBy="#{obj2.end_dt}">
+						<h:outputText value="#{obj2.end_dt}" />
+					</p:column>
+					<p:column headerText="Status" sortBy="#{obj2.active}">
+						<h:outputText value="Active" rendered="#{obj2.active}" />
+						<h:outputText value="In-active" rendered="#{not obj2.active}" />
+					</p:column>
+					<p:column headerText="Expired" sortBy="#{obj2.expired}">
+						<h:outputText value="Yes" rendered="#{obj2.expired}" />
+						<h:outputText value="No" rendered="#{not obj2.expired}" />
+					</p:column>
+					<p:column headerText="Document" style="width: 10%">
+						
+					</p:column>
+					<p:column headerText="Modules" style="width: 10%">
+						
+					</p:column>
+					<p:column headerText="" style="width: 10%">
+						<p:commandLink value="Update" />
+					</p:column>
+				</p:dataTable>
+				<center>
+				<h:outputText value="No subscription history" rendered="#{obj.subscriptions == null or obj.subscriptions.size() == 0}" />
+				</center>
+			</p:rowExpansion>
+		</p:dataTable>
+		</p:panel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newSubDialog" header="New Subscription" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="subptn" value="Partner: *" />
+		<p:selectOneMenu id="subptn" value="#{partnerBean.partner_id}">
+  			<f:selectItems value="#{ddBean.partnersWithoutSattrak}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="subsub" value="Package: *" />
+		<p:selectOneMenu id="subsub" value="#{partnerBean.package_id}">
+  			<f:selectItems value="#{ddBean.allPackages}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="substdt" value="Start date: *" />
+  		<p:calendar id="substdt" value="#{partnerBean.subStdt}" showOn="button" />
+  		
+  		<h:outputLabel for="subdoc" value="Document: " />
+  		<p:fileUpload id="subdoc" value="#{partnerBean.subDocument}" mode="simple" />
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.saveSubscription}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

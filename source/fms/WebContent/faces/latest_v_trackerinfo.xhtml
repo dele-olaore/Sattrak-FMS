@@ -1,0 +1,114 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Tracker Info</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Tracker Info" action="#{dashboardBean.gotoPage('latest_v_trackerinfo', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid columns="5" cellpadding="5" style="margin-bottom:10px;">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1, vch1" />
+		  		</p:selectOneMenu>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: *" />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="vch1" />
+		  		</p:selectOneMenu>
+		  		<h:outputText value="" />
+		  		<h:outputText value="" />
+		  		<h:outputText value="" />
+		  		
+		  		<h:outputLabel for="vch1" value="Vehicle: " />
+				<p:selectOneMenu id="vch1" value="#{fleetBean.vehicle_id}">
+					<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+					<f:selectItems value="#{ddBean.getVehicles(fleetBean.partner_id, fleetBean.fleet_id, fleetBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+				</p:selectOneMenu>
+				<h:outputText value=" OR " />
+				<h:outputLabel for="vchregn1" value="Registration No.: " />
+				<h:inputText id="vchregn1" value="#{fleetBean.regNo}">
+					<p:ajax update="vch1" />
+				</h:inputText>
+				
+				<f:facet name="footer">
+		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.searchTrackerInfo2}" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.tvehicles2}"
+				paginator="true" rows="10"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available tracker data
+				</f:facet>
+				
+				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+					<h:outputText value="#{obj.registrationNo}" />
+				</p:column>
+				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.model.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.Fleet.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.fleet.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.partner.name}" />
+				</p:column>
+				
+				<p:column sortBy="#{obj.trackerData.get(0).captured_dt}" headerText="Captured date">
+					<h:outputText value="#{obj.trackerData.get(0).captured_dt}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" />
+				</p:column>
+				<p:column headerText="Odometer" sortBy="#{obj.trackerData.get(0).odometer}">
+					<h:outputText value="#{obj.trackerData.get(0).odometer}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" />
+				</p:column>
+				<p:column headerText="Fuel Level" sortBy="#{obj.trackerData.get(0).fuelLevel}">
+					<h:outputText value="#{obj.trackerData.get(0).fuelLevel}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" />
+				</p:column>
+				<p:column headerText="Lon" sortBy="#{obj.trackerData.get(0).lon}">
+					<h:outputText value="#{obj.trackerData.get(0).lon}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" />
+				</p:column>
+				<p:column headerText="Lat" sortBy="#{obj.trackerData.get(0).lat}">
+					<h:outputText value="#{obj.trackerData.get(0).lat}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" />
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

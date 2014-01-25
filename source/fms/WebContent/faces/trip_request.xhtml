@@ -1,0 +1,84 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Trip Request</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Trip Request" action="#{dashboardBean.gotoPage('trip_request', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+			<p:panelGrid id="newstpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header"></f:facet>
+	  		
+	  		<h:outputLabel for="dpdt" value="Departure date: *" />
+			<p:calendar id="dpdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{ctripBean.trip.departureDateTime}" navigator="true" />
+			
+			<h:outputLabel for="dplocation" value="Departure location: *" />
+			<p:inputText id="dplocation" value="#{ctripBean.trip.departureLocation}" />
+			
+			<h:outputLabel for="avlocation" value="Destination: *" />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="avlocation" value="#{ctripBean.trip.arrivalLocation}" rows="3" cols="50" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter2" />
+	  		</p:panelGrid>
+			
+			<h:outputLabel for="tpurpose" value="Trip purpose: *" />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="tpurpose" value="#{ctripBean.trip.purpose}" rows="3" cols="50" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter" />
+	  		</p:panelGrid>
+	  		
+	  		<h:outputLabel for="avdt" value="Estimated arrival date: *" />
+			<p:calendar id="avdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{ctripBean.trip.estimatedArrivalDateTime}" navigator="true" />
+	  		
+	  		<h:outputLabel for="tmanifest" value="Manifest: *" />
+	  		<p:pickList id="tmanifest" value="#{ctripBean.personelsList}" var="p" effect="bounce"
+	  			itemValue="#{p}" itemLabel="#{p.firstname} #{p.lastname}" converter="GeneralPickListConverter"
+	  			showSourceControls="true" showTargetControls="true" showCheckbox="true"
+	  			showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
+	  			
+	  			<p:ajax event="transfer" />
+	  			
+	  			<f:facet name="sourceCaption">Available</f:facet>
+	  			<f:facet name="targetCaption">Selected</f:facet>
+	  			
+	  			<p:column style="width:25%">
+	  				<img src="#{request.contextPath}/imageservlet/#{p.id}:personel:#{appBean.randomNumber}" width="30" height="40" alt="personel" />
+	  			</p:column>
+	  			
+	  			<p:column style="width:75%;">
+	  				#{p.firstname} #{p.lastname}
+	  			</p:column>
+	  		</p:pickList>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{ctripBean.saveTripRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+	  		
+	  		</p:panelGrid>
+	  		</p:outputPanel>
+	  	</td>
+	  	</tr>
+	  	</table>
+	  	<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

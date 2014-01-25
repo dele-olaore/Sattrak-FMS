@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+             version="2.0" xmlns="http://java.sun.com/xml/ns/persistence">
+    <persistence-unit name="fms" transaction-type="RESOURCE_LOCAL">
+        <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+		<!--<jta-data-source>java:comp/env/ds/nipostDS</jta-data-source>-->
+		<class>com.dexter.fms.model.ApplicationSetup</class>
+        <class>com.dexter.fms.model.ApplicationSubscriptionModule</class>
+        <class>com.dexter.fms.model.ApplicationType</class>
+        <class>com.dexter.fms.model.ApplicationTypeModule</class>
+        <class>com.dexter.fms.model.MFunction</class>
+        <class>com.dexter.fms.model.Module</class>
+        <class>com.dexter.fms.model.MRole</class>
+        <class>com.dexter.fms.model.MRoleFunction</class>
+        <class>com.dexter.fms.model.Partner</class>
+        <class>com.dexter.fms.model.PartnerSubscription</class>
+        <class>com.dexter.fms.model.PartnerUser</class>
+        <class>com.dexter.fms.model.PartnerUserRole</class>
+        <class>com.dexter.fms.model.SubscriptionPackage</class>
+        <class>com.dexter.fms.model.SubscriptionType</class>
+        <!--<class>com.dexter.fms.model.ref.Department</class>
+        <class>com.dexter.fms.model.ref.FuelType</class>
+        <class>com.dexter.fms.model.ref.ItemType</class>
+        <class>com.dexter.fms.model.ref.Region</class>
+        <class>com.dexter.fms.model.ref.VehicleMake</class>
+        <class>com.dexter.fms.model.ref.VehicleModel</class>
+        <class>com.dexter.fms.model.ref.VehicleType</class>
+        <class>com.dexter.fms.model.ref.VendorType</class>-->
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost/fms" />
+            <property name="javax.persistence.jdbc.user" value="root" />
+            <property name="javax.persistence.jdbc.password" value="dexter" />
+            <!--<property name="javax.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:sqlserver://localhost\SQLEXPRESS12;user=sa;password=dexter;databaseName=nipost;integratedSecurity=true;" />
+            <property name="javax.persistence.jdbc.user" value="sa" />
+            <property name="javax.persistence.jdbc.password" value="dexter" />-->
+            
+            <!-- EclipseLink should create the database schema automatically -->
+            <property name="eclipselink.logging.level" value="FINE"/>
+      		<property name="eclipselink.ddl-generation" value="create-tables"/>
+        </properties>
+    </persistence-unit>
+</persistence>

@@ -1,0 +1,71 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Expenses</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Expenses" action="#{dashboardBean.gotoPage('manage_expenses', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="stp" title="Capture Expense">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="expt" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="expt" value="Expense Type: *" />
+						<p:selectOneMenu id="expt" value="#{expenseBean.expType_id}">
+				  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="stdt" value="Date: *" />
+						<p:calendar id="stdt" value="#{expenseBean.exp.expense_dt}" showOn="button" />
+						
+						<h:outputLabel for="amt" value="Amount: *" />
+						<p:inputText id="amt" value="#{expenseBean.exp.amount}" />
+						
+						<h:outputLabel for="desc" value="Remarks: " />
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea id="desc" value="#{expenseBean.exp.remarks}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter" />
+				  		</p:panelGrid>
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.saveExp}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="vtp" title="Manage Expenses">
+					
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

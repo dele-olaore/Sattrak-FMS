@@ -1,0 +1,126 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Partners</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Partners" action="#{dashboardBean.gotoPage('manage_partners', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Partner" onclick="dlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:panel id="partnersPanel" style="width:100%;">
+		<p:dataTable id="partnersTable" var="obj" value="#{partnerBean.partners}"
+			paginator="true" rows="10"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available partners
+			</f:facet>
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.code}" headerText="Code" filterBy="#{obj.code}" filterMatchMode="contains">
+				<h:outputText value="#{obj.code}" />
+			</p:column>
+			<p:column headerText="Is Sattrak">
+				<h:outputText value="Yes" rendered="#{obj.sattrak}" />
+				<h:outputText value="No" rendered="#{not obj.sattrak}" />
+			</p:column>
+			<p:column headerText="Address">
+				<h:outputText value="#{obj.addr1}, #{obj.addr2}" />
+			</p:column>
+			<p:column headerText="Email">
+				<h:outputText value="#{obj.email}" />
+			</p:column>
+			<p:column headerText="Phone">
+				<h:outputText value="#{obj.phone}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+			</p:column>
+			<p:column headerText="Users" style="width: 10%">
+				<p:commandLink value="#{obj.users.size()} user(s)" rendered="#{obj.users != null}" />
+			</p:column>
+			<p:column headerText="" style="width: 10%">
+				<p:commandLink value="Update" />
+			</p:column>
+		</p:dataTable>
+		</p:panel>
+		</td>
+		</tr>
+		</table>
+	</div>
+	
+	<p:dialog id="newPartnerDialog" header="New Partner" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+  		<h:outputLabel for="ptname" value="Name: *" />
+  		<p:inputText id="ptname" value="#{partnerBean.partner.name}" />
+  		
+  		<h:outputLabel for="ptaddr1" value="Address line 1: " />
+  		<p:inputText id="ptaddr1" value="#{partnerBean.partner.addr1}" />
+  		
+  		<h:outputLabel for="ptaddr2" value="Address line 2: " />
+  		<p:inputText id="ptaddr2" value="#{partnerBean.partner.addr2}" />
+  		
+  		<h:outputLabel for="ptphone" value="Phone: " />
+  		<p:inputText id="ptphone" value="#{partnerBean.partner.phone}" />
+  		
+  		<h:outputLabel for="ptemail" value="Email: " />
+  		<p:inputText id="ptemail" value="#{partnerBean.partner.email}" />
+  		
+  		<h:outputLabel for="ptadmin" value="Admin details: " />
+  		<p:panelGrid id="ptadmin" columns="2" cellpadding="5">
+  			<h:outputLabel for="ptafname" value="First name: *" />
+  			<p:inputText id="ptafname" value="#{partnerBean.partnerPersonel.firstname}" />
+  			
+  			<h:outputLabel for="ptalname" value="Last name: *" />
+  			<p:inputText id="ptalname" value="#{partnerBean.partnerPersonel.lastname}" />
+  			
+  			<h:outputLabel for="ptaphoto" value="Photo: " />
+  			<p:fileUpload id="ptaphoto" value="#{partnerBean.partnerUserPhoto}" mode="simple" />
+  			
+  			<h:outputLabel for="ptaphone" value="Phone: " />
+  			<p:inputText id="ptaphone" value="#{partnerBean.partnerPersonel.phone}" />
+  			
+  			<h:outputLabel for="ptaemail" value="Email: " />
+  			<p:inputText id="ptaemail" value="#{partnerBean.partnerPersonel.email}" />
+  			
+  			<h:outputLabel for="ptauname" value="Username: *" />
+  			<p:inputText id="ptauname" value="#{partnerBean.partnerUser.username}" />
+  			
+  			<h:outputLabel for="ptapword" value="Password: *" />
+  			<p:password id="ptapword" value="#{partnerBean.partnerUser.password}" />
+  			
+  			<h:outputLabel for="ptacpword" value="Confirm Password: *" />
+  			<p:password id="ptacpword" value="#{partnerBean.cpassword}" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.savePartner}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

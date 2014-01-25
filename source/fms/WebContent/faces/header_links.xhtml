@@ -1,0 +1,42 @@
+<ui:composition
+	xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+
+	<!-- Start of the main header bar -->
+	<nav id="header_main">
+		<div class="container_12">
+			<!-- Start of the main navigation -->
+			<ul id="nav_main">
+				<li class="#{(dashboardBean.currentModuleHeader('dashboard')) ? 'current' : ''}">
+					<a href="#">
+					<img src="#{request.contextPath}/resources/img/icons/25x25/dark/computer-imac.png" width="25" height="25" alt=""/>
+					Dashboard</a>
+					<ul>
+						<li class="#{(dashboardBean.function_page.equals('dashboard')) ? 'current' : ''}">
+							<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('dashboard', false)}" value="Dashboard" rendered="#{dashboardBean.user != null}" />
+						</li>
+					</ul>
+				</li>
+				<ui:repeat value="${dashboardBean.userModulesFunctions.keySet().toArray()}" var="mdule">
+					<li class="#{(dashboardBean.currentModuleHeader(mdule)) ? 'current' : ''}">
+						<a href="#">
+							<img src="#{request.contextPath}/resources/img/icons/25x25/dark/${dashboardBean.getModuleIconName(mdule)}" width="25" height="25" alt=""/>
+							${dashboardBean.getModuleDisplayName(mdule)}
+						</a>
+						<ul>
+							<ui:repeat value="${dashboardBean.getModuleFunctions(mdule).toArray()}" var="mfunc">
+							<li class="#{(dashboardBean.function_page.equals(mfunc.page_url)) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage(mfunc.page_url, false)}" value="#{mfunc.name}" rendered="#{dashboardBean.user != null}" />
+							</li>
+							</ui:repeat>
+						</ul>
+					</li>
+				</ui:repeat>
+			</ul>
+			<!-- End of the main navigation -->
+		</div>
+	</nav>
+</ui:composition>

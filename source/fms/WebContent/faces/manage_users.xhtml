@@ -1,0 +1,86 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Users</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Users" action="#{dashboardBean.gotoPage('manage_users', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="usrptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="usrptn1" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" update="usrsTable" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				<p:dataTable id="usrsTable" var="obj" value="#{userBean.users}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Available user(s)
+					</f:facet>
+					
+					<p:column headerText="">
+						<img src="#{request.contextPath}/imageservlet/#{obj.personel.id}:personel:#{appBean.randomNumber}" width="50" height="50" alt="driver" />
+					</p:column>
+					<p:column sortBy="#{obj.personel.lastname}" headerText="Last name" filterBy="#{obj.personel.lastname}" filterMatchMode="contains">
+						<h:outputText value="#{obj.personel.lastname}" />
+					</p:column>
+					<p:column sortBy="#{obj.personel.firstname}" headerText="First name" filterBy="#{obj.personel.firstname}" filterMatchMode="contains">
+						<h:outputText value="#{obj.personel.firstname}" />
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.username}" headerText="Username" filterBy="#{obj.username}" filterMatchMode="contains">
+						<h:outputText value="#{obj.username}" />
+					</p:column>
+					<p:column headerText="Role" style="width: 5%">
+						<h:outputText value="#{obj.roles.size()} role(s)" />
+					</p:column>
+					<p:column sortBy="#{obj.personel.department.name}" headerText="Department" filterBy="#{obj.personel.department.name}" filterMatchMode="contains" style="width: 5%">
+						<h:outputText value="#{obj.personel.department.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.personel.region.name}" headerText="Region" filterBy="#{obj.personel.region.name}" filterMatchMode="contains" style="width: 5%">
+						<h:outputText value="#{obj.personel.region.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 3%">
+						<p:commandLink value="Update" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

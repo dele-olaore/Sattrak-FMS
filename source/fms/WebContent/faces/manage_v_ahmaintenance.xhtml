@@ -1,0 +1,168 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Ad-Hoc Maintenace</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Ad-Hoc Maintenace" action="#{dashboardBean.gotoPage('manage_v_ahmaintenance', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="srt" title="Start Ad-Hoc Maintenance">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetAdHocRequests}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="objsTable" var="obj" value="#{fleetBean.adHocRequests}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Pending Ad-Hoc request(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Registration No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						<p:column headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
+							<h:outputText value="#{obj.description}" />
+						</p:column>
+						<p:column sortBy="#{obj.maintenance_dt}" headerText="Maintenance date">
+							<h:outputText value="#{obj.maintenance_dt}" />
+						</p:column>
+						<p:column sortBy="#{obj.battery}" headerText="Battery change?">
+							<h:outputText value="Yes" rendered="#{obj.battery}" />
+							<h:outputText value="No" rendered="#{not obj.battery}" />
+						</p:column>
+						<p:column sortBy="#{obj.tyre}" headerText="Tyre change?">
+							<h:outputText value="Yes, " rendered="#{obj.tyre}" />
+							<h:outputText value="#{obj.tyre_count} tyre(s)" rendered="#{obj.tyre}" />
+							<h:outputText value="No" rendered="#{not obj.tyre}" />
+						</p:column>
+						
+						<p:column sortBy="#{obj.vehicle.partner.name}" headerText="Owner" filterBy="#{obj.vehicle.partner.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.partner.name}" />
+						</p:column>
+						<p:column style="width: 3%">
+							<p:commandButton update=":form:frmPanel" value="Start" oncomplete="startmdlg.show();">
+								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.adhocRequest}" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+				<p:tab id="clos" title="Complete Ad-Hoc Maintenance">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+						<h:outputLabel for="ptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn2" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" update="objsTable2" action="#{fleetBean.resetAdHocMains}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+				  	</p:panelGrid>
+				  	<p:dataTable id="objsTable2" var="obj" value="#{fleetBean.adhocMains}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Un-completed ad-hoc maintenance
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Registration No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						<p:column sortBy="#{obj.start_dt}" headerText="Start date" filterBy="#{obj.start_dt}" filterMatchMode="contains">
+							<h:outputText value="#{obj.start_dt}" />
+						</p:column>
+						<p:column headerText="Description">
+							<h:outputText value="#{obj.description}" />
+						</p:column>
+						<p:column sortBy="#{obj.initial_amount}" headerText="Start cost">
+							<h:outputText value="#{obj.initial_amount}" />
+						</p:column>
+						<p:column headerText="Created">
+							On: <h:outputText value="#{obj.crt_dt}" /><br/>
+							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+						</p:column>
+						<p:column style="width: 3%">
+							<p:commandButton update=":form:frmPanel2" value="Complete" oncomplete="finishdlg.show();">
+								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.adhocMain}" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="finishAHDialog" header="Complete Ad-Hoc Maintenance" widgetVar="finishdlg" modal="true" dynamic="true">
+		<p:panelGrid id="frmPanel2" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Complete ad-hoc maintenance details for: #{fleetBean.adhocMain.vehicle.registrationNo}</f:facet>
+		
+		<h:outputLabel for="adheddt" value="Completion date: *" />
+		<p:calendar id="adheddt" value="#{fleetBean.adhocMain.close_dt}" showOn="button" />
+		
+		<h:outputLabel for="adhcost2" value="Completion Cost: *" />
+		<p:inputText id="adhcost2" value="#{fleetBean.adhocMain.closed_cost}" />
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" action="#{fleetBean.finishAdHocMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="startAHDialog" header="Start Ad-Hoc Maintenance" widgetVar="startmdlg" modal="true" dynamic="true">
+		<p:panelGrid id="frmPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Start ad-hoc maintenance details for: #{fleetBean.adhocRequest.vehicle.registrationNo}</f:facet>
+		
+		<h:outputLabel for="adhdesc" value="Maintenance description: " />
+		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="adhdesc" value="#{fleetBean.adhocMain.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+		
+		<h:outputLabel for="adhstdt" value="Start date: *" />
+		<p:calendar id="adhstdt" value="#{fleetBean.adhocMain.start_dt}" showOn="button" />
+		
+		<h:outputLabel for="adhcost" value="Start Cost: *" />
+		<p:inputText id="adhcost" value="#{fleetBean.adhocMain.initial_cost}" />
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" action="#{fleetBean.startAdHocMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

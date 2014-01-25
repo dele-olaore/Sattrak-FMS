@@ -1,0 +1,69 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Fleet</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Fleets" action="#{dashboardBean.gotoPage('manage_fleets', false)}" ajax="false" />
+    			<p:menuitem value="New Fleet" action="#{dashboardBean.gotoPage('new_fleet', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid id="rlpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header"></f:facet>
+				
+				<h:outputLabel for="rlptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="rlptn" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="rlname" value="Name: *" />
+				<p:inputText id="rlname" value="#{fleetBean.fleet.name}" />
+				
+				<h:outputLabel for="rldesc" value="Description: " />
+				<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+		  		<p:inputTextarea id="rldesc" value="#{fleetBean.fleet.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+		  		<h:outputText id="counter" />
+		  		</p:panelGrid>
+		  		
+		  		<h:outputLabel for="rlvtypes" value="Vehicle Type: "/>
+				<p:selectOneMenu id="rlvtypes" value="#{fleetBean.vehicleType_id}">
+					<f:selectItem itemLabel="-- All --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.vehicleTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="rlvmakes" value="Vehicle Make: "/>
+				<p:selectOneMenu id="rlvmakes" value="#{fleetBean.vehicleMake_id}">
+					<f:selectItem itemLabel="-- All --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.vehicleMakes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveFleet}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+		  		</f:facet>
+		  		
+		  		</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

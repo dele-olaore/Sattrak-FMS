@@ -1,0 +1,240 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Personel</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Personels" action="#{dashboardBean.gotoPage('manage_staffs', false)}" ajax="false" />
+    			<p:menuitem value="New Personel" action="#{dashboardBean.gotoPage('new_staff', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="newstOPanel">
+			<p:panelGrid id="newstpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header"></f:facet>
+			
+			<h:outputLabel for="staffptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="staffptn" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+	  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffdept,staffrg" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="staffdept" value="Department: " />
+			<p:selectOneMenu id="staffdept" value="#{userBean.personel_dept_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputText value="Department does not exist?" />
+	  		<p:commandLink id="newdplink" value="New Department" onclick="deptdlg.show();" />
+	  		
+	  		<h:outputLabel for="staffrg" value="Region: " />
+			<p:selectOneMenu id="staffrg" value="#{userBean.personel_region_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{userBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputText value="Region does not exist?" />
+	  		<p:commandLink value="New Region" onclick="regiondlg.show();" />
+	  		
+	  		<h:outputLabel for="staffid" value="Staff ID: " />
+			<p:inputText id="staffid" value="#{userBean.personel.staff_id}" />
+	  		
+	  		<h:outputLabel for="stafffname" value="First name: *" />
+			<p:inputText id="stafffname" value="#{userBean.personel.firstname}" />
+			
+			<h:outputLabel for="stafflname" value="Last name: *" />
+			<p:inputText id="stafflname" value="#{userBean.personel.lastname}" />
+			
+			<h:outputLabel for="staffphoto" value="Photo: " />
+			<p:fileUpload id="staffphoto" value="#{userBean.partnerPersonelPhoto}" mode="simple" />
+			
+			<h:outputLabel for="staffage" value="Age: " />
+			<p:inputText id="staffage" value="#{userBean.personel.age}" />
+			
+			<h:outputLabel for="staffphone" value="Phone: " />
+			<p:inputText id="staffphone" value="#{userBean.personel.phone}" />
+			
+			<h:outputLabel for="staffemail" value="Email: " />
+			<p:inputText id="staffemail" value="#{userBean.personel.email}" />
+			
+			<h:outputLabel for="staffaddr" value="Address: " />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="staffaddr" value="#{userBean.personel.address}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter" />
+	  		</p:panelGrid>
+			
+			<h:outputLabel for="stafffileno" value="File No.: " />
+			<p:inputText id="stafffileno" value="#{userBean.personel.fileno}" />
+			
+			<h:outputLabel for="staffposition" value="Position: " />
+			<p:inputText id="staffposition" value="#{userBean.personel.position}" />
+			
+			<h:outputLabel for="staffhdate" value="Hired date: " />
+			<p:calendar id="staffhdate" value="#{userBean.personel.hiredDate}" showOn="button" />
+			
+			<h:outputLabel for="staffnok" value="Next of Kin: " />
+			<p:panelGrid id="staffnok" columns="2" cellpadding="5" >
+				<p:panelGrid columns="1">
+				<h:outputLabel for="nok_name" value="Name: " />
+				<p:inputText id="nok_name" value="#{userBean.personel.nok_name}" />
+				</p:panelGrid>
+				<p:panelGrid columns="1">
+				<h:outputLabel for="nok_address" value="Address: " />
+				<p:inputText id="nok_address" value="#{userBean.personel.nok_address}" />
+				</p:panelGrid>
+				<p:panelGrid columns="1">
+				<h:outputLabel for="nok_phone" value="Phone: " />
+				<p:inputText id="nok_phone" value="#{userBean.personel.nok_phone}" />
+				</p:panelGrid>
+				<p:panelGrid columns="1">
+				<h:outputLabel for="nok_email" value="Email: " />
+				<p:inputText id="nok_email" value="#{userBean.personel.nok_email}" />
+				</p:panelGrid>
+			</p:panelGrid>
+			
+			<h:outputLabel for="staffisdriver" value="Is Driver?: " />
+			<p:selectBooleanCheckbox id="staffisdriver" value="#{userBean.personel.hasDriver}">
+				<p:ajax update="stdrv" />
+			</p:selectBooleanCheckbox>
+			
+			<h:outputLabel for="stdrv" value="Driver details: " />
+	  		<p:panelGrid id="stdrv" columns="2" cellpadding="5" >
+	  			<h:outputLabel for="stdrvinfo" value="" rendered="#{not userBean.personel.hasDriver}" />
+	  			<h:outputText id="stdrvinfo" value="Select the box above if this personel is a driver." rendered="#{not userBean.personel.hasDriver}" />
+	  		
+	  			<h:outputLabel for="stdrvgrd" value="Grade: " rendered="#{userBean.personel.hasDriver}" />
+				<p:selectOneMenu id="stdrvgrd" value="#{userBean.driverGrade_id}" rendered="#{userBean.personel.hasDriver}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{userBean.driverGrades}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		<h:outputText value="Grade does not exist?" rendered="#{userBean.personel.hasDriver}" />
+	  			<p:commandLink id="newdglink" value="New Driver Grade" onclick="dgdlg.show();" rendered="#{userBean.personel.hasDriver}" />
+	  		
+	  			<h:outputLabel for="stdrvlicno" value="Driver's license No.: " rendered="#{userBean.personel.hasDriver}" />
+	  			<p:inputText id="stdrvlicno" value="#{userBean.drvLicenseNo}" rendered="#{userBean.personel.hasDriver}" />
+	  			
+	  			<h:outputLabel for="stdrvliceddt" value="Driver's license expiry date: " rendered="#{userBean.personel.hasDriver}" />
+	  			<p:calendar id="stdrvliceddt" value="#{userBean.drvLicenseExpiryDate}" rendered="#{userBean.personel.hasDriver}" showOn="button" />
+	  			
+	  			<h:outputLabel for="stdrvlicphoto" value="Driver's license photo: " rendered="#{userBean.personel.hasDriver}" />
+				<p:fileUpload id="stdrvlicphoto" value="#{userBean.driverslicPhoto}" mode="simple" rendered="#{userBean.personel.hasDriver}" />
+	  			
+	  			<h:outputLabel for="stdrvguarantor" value="Guarantor.: " rendered="#{userBean.personel.hasDriver}" />
+	  			<p:inputText id="stdrvguarantor" value="#{userBean.guarantor}" rendered="#{userBean.personel.hasDriver}" />
+	  			
+	  			<h:outputLabel for="stdrvcfile" value="Driver's certification file: " rendered="#{userBean.personel.hasDriver}" />
+				<p:fileUpload id="stdrvcfile" value="#{userBean.certFile}" mode="simple" rendered="#{userBean.personel.hasDriver}" />
+	  			
+	  		</p:panelGrid>
+			
+			
+			<h:outputLabel for="staffisuser" value="Is User?: " />
+			<p:selectBooleanCheckbox id="staffisuser" value="#{userBean.personel.hasUser}">
+				<p:ajax update="stuser" />
+			</p:selectBooleanCheckbox>
+			
+			<h:outputLabel for="stuser" value="User details: " />
+	  		<p:panelGrid id="stuser" columns="2" cellpadding="5" >
+	  			<h:outputLabel for="stuinfo" value="" rendered="#{not userBean.personel.hasUser}" />
+	  			<h:outputText id="stuinfo" value="Select the box above if this personel should have a user account." rendered="#{not userBean.personel.hasUser}" />
+	  		
+	  			<h:outputLabel for="stuname" value="Username: *" rendered="#{userBean.personel.hasUser}" />
+	  			<p:inputText id="stuname" value="#{userBean.user.username}" rendered="#{userBean.personel.hasUser}" />
+	  			
+	  			<h:outputLabel for="stupword" value="Password: *" rendered="#{userBean.personel.hasUser}" />
+	  			<p:password id="stupword" value="#{userBean.user.password}" rendered="#{userBean.personel.hasUser}" />
+	  			
+	  			<h:outputLabel for="stucpword" value="Confirm Password: *" rendered="#{userBean.personel.hasUser}"/>
+	  			<p:password id="stucpword" value="#{userBean.cpassword}" rendered="#{userBean.personel.hasUser}"/>
+	  			
+	  			<h:outputLabel for="sturoles" value="Role(s): " rendered="#{userBean.personel.hasUser}"/>
+	  			<p:dataGrid id="sturoles" var="obj" columns="1" value="#{userBean.mroles}"
+					rendered="#{userBean.personel.hasUser}">
+					<f:facet name="header">
+						Available role(s)
+					</f:facet>
+					
+					<p:selectBooleanCheckbox value="#{obj.selected}" />
+					<h:outputText value="#{obj.name}" />
+					
+				</p:dataGrid>
+	  			
+	  		</p:panelGrid>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(3)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+			
+			</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newGradeDialog" header="New Driver Grade" widgetVar="dgdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+	</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newRegionDialog" header="New Region" widgetVar="regiondlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="regptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+		<p:selectOneMenu id="regptn" value="#{userBean.partner_id3}" rendered="#{dashboardBean.user.partner.sattrak}">
+  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+		<h:outputLabel for="regname" value="Name: *" />
+		<p:inputText id="regname" value="#{userBean.region.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="true" update="newstOPanel" onclick="return confirm('Are you sure?');" action="#{userBean.save(2)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newDeptDialog" header="New Department" widgetVar="deptdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="deptptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+		<p:selectOneMenu id="deptptn" value="#{userBean.partner_id2}" rendered="#{dashboardBean.user.partner.sattrak}">
+  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+		<h:outputLabel for="deptname" value="Name: *" />
+		<p:inputText id="deptname" value="#{userBean.dept.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="true" update="newstOPanel" onclick="return confirm('Are you sure?');" action="#{userBean.save(1)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

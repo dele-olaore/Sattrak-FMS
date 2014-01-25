@@ -1,0 +1,91 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="head">
+	<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
+</ui:define>
+<ui:define name="title">Vehicles Location Info</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<p:poll id="vtrackpoll" interval="#{fleetBean.vtrackpollinterval}"   
+            listener="#{fleetBean.resetVehicleLocs(0)}" update=":form:vlocstrackmap" />
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Location Info" action="#{dashboardBean.gotoPage('manage_v_locationinfo', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: " />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicleLocs(1)}" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+			<p:panelGrid columns="2">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="3">
+						<h:outputLabel id="intlbl" for="vtrint" value="Update interval (seconds)" />
+						<h:inputText id="vtrint" value="#{fleetBean.vtrackpollinterval}" />
+						<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.setVTrackIntV}" value="Set" />
+					</p:panelGrid>
+					<p:dataTable var="vloc" value="#{fleetBean.vehiclesLocs}" id="objsTable"
+						rows="50" paginator="true"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50">
+						<f:facet name="header">
+							Tracking #{fleetBean.vehiclesLocs.size()} vehicle(s)
+						</f:facet>
+					
+						<p:column headerText="Registration No">
+						<h:outputText value="#{vloc.vehicle.registrationNo}" />
+						</p:column>
+						<p:column headerText="Date updated">
+						<h:outputText value="#{vloc.crt_dt}" />
+						</p:column>
+						<p:column headerText="" style="width: 3%">
+							<p:commandButton update=":form:vlocstrackmap" action="fleetBean.onLocSelect" icon="ui-icon-search" title="View">
+								<f:setPropertyActionListener value="#{vloc.vehicle}" target="#{fleetBean.selectedVehicle}" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
+				</p:panelGrid>
+				
+				<p:gmap id="vlocstrackmap" center="#{fleetBean.centerCoor}" zoom="5" type="HYBRID" style="width:700px;height:600px" model="#{fleetBean.vtrackingModel}">
+					
+				</p:gmap>
+			</p:panelGrid>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

@@ -1,0 +1,148 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Capture and view fueling information for your vehicles.</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Fueling" action="#{dashboardBean.gotoPage('manage_v_fuelinfo', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="Batch Load Fueling" onclick="return false;" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="srt" title="Capture Fueling">
+					<p:panelGrid columns="1">
+					<p:panelGrid columns="5">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1, vch1" />
+				  		</p:selectOneMenu>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: *" />
+						<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		<h:outputText value="" />
+				  		<h:outputText value="" />
+				  		<h:outputText value="" />
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: *" />
+						<p:selectOneMenu id="vch1" value="#{fleetBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getVehicles(fleetBean.partner_id, fleetBean.fleet_id, fleetBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+						<h:outputText value=" OR " />
+						<h:outputLabel for="vchregn1" value="Registration No.: " />
+						<h:inputText id="vchregn1" value="#{fleetBean.regNo}">
+							<p:ajax update="vch1" />
+						</h:inputText>
+					</p:panelGrid>
+					<p:panelGrid columns="2">
+						<h:outputLabel for="fueldt" value="Fuel date: *" />
+						<p:calendar id="fueldt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.fueling.captured_dt}" navigator="true" />
+						
+						<h:outputLabel for="fuelloc" value="Location: " />
+				  		<p:inputText id="fuelloc" value="#{fleetBean.fueling.location}" />
+				  		
+				  		<h:outputLabel for="fuelcost" value="Cost: *" />
+				  		<p:inputText id="fuelcost" value="#{fleetBean.fueling.amt}" />
+				  		
+				  		<h:outputLabel for="fuellitres" value="Litres: *" />
+				  		<p:inputText id="fuellitres" value="#{fleetBean.fueling.litres}" />
+				  		
+				  		<h:outputLabel for="fuelodo" value="Odometer reading: " />
+				  		<p:inputText id="fuelodo" value="#{fleetBean.fueling.odometer}" />
+				  		
+				  		<h:outputLabel for="fuelflvl" value="Fuel level: " />
+				  		<p:inputText id="fuelflvl" value="#{fleetBean.fueling.fuelLevel}" />
+					</p:panelGrid>
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveFueling}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="complt" title="Manage Fuelings">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn2" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+					
+						<h:outputLabel for="fuelstdt" value="Start date: *" />
+						<p:calendar id="fuelstdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.stdt}" navigator="true" />
+						
+						<h:outputLabel for="fueleddt" value="End date: *" />
+						<p:calendar id="fueleddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.eddt}" navigator="true" />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.resetFuelings}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="fuelingsTable" var="obj" value="#{fleetBean.fuelings}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Found fueling(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						
+						<p:column sortBy="#{obj.captured_dt}" headerText="Captured date">
+							<h:outputText value="#{obj.captured_dt}" />
+						</p:column>
+						<p:column headerText="Location" filterBy="#{obj.location}" filterMatchMode="contains">
+							<h:outputText value="#{obj.location}" />
+						</p:column>
+						<p:column sortBy="#{obj.amt}" headerText="Cost">
+							<h:outputText value="#{obj.amt}" />
+						</p:column>
+						<p:column sortBy="#{obj.litres}" headerText="Litres">
+							<h:outputText value="#{obj.litres}" />
+						</p:column>
+						<p:column sortBy="#{obj.odometer}" headerText="Odometer">
+							<h:outputText value="#{obj.odometer}" />
+						</p:column>
+						<p:column sortBy="#{obj.fuelLevel}" headerText="Odometer">
+							<h:outputText value="#{obj.fuelLevel}" />
+						</p:column>
+						<p:column headerText="">
+							<p:commandLink value="Update" onclick="return false;" />
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

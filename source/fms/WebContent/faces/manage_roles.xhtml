@@ -1,0 +1,75 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Roles</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Roles" action="#{dashboardBean.gotoPage('manage_roles', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Role" action="#{dashboardBean.gotoPage('new_role', true)}" ajax="false" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:panel id="rolesPanel" style="width:100%;">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+			<h:outputLabel for="roleptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="roleptn1" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="true" update="rolesTable" action="#{userBean.resetMRoles}" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+		<p:dataTable id="rolesTable" var="obj" value="#{userBean.mroles}"
+			paginator="true" rows="10"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available role(s)
+			</f:facet>
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
+				<h:outputText value="#{obj.description}" />
+			</p:column>
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.partner.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.functions.size()}" headerText="Functions" style="width: 10%">
+				<h:outputText value="#{obj.functions.size()} function(s)" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:commandLink value="Update" rendered="#{not obj.defaultRole}" />
+				<h:outputText value="Can't Update" rendered="#{obj.defaultRole}" />
+			</p:column>
+		</p:dataTable>
+		</p:panel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

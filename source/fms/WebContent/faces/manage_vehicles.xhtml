@@ -1,0 +1,292 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Vehicles</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Vehicles" action="#{dashboardBean.gotoPage('manage_vehicles', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Vehicle" action="#{dashboardBean.gotoPage('new_vehicle', true)}" ajax="false" />
+			<h:outputText value=" | " />
+			<p:commandLink value="Batch Load Vehicles" action="#{dashboardBean.gotoPage('batch_vehicles', true)}" ajax="false" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: " />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
+				paginator="true" rows="10"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available vehicle(s)
+				</f:facet>
+				
+				<p:column sortBy="#{obj.zonControlId}" headerText="Zon Control ID">
+					<h:outputText value="#{obj.zonControlId}" />
+				</p:column>
+				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+					<h:outputText value="#{obj.registrationNo}" />
+				</p:column>
+				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.model.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.fleet.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.fleet.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.partner.name}" />
+				</p:column>
+				<p:column headerText="Params" style="width: 3%">
+					<p:commandButton update=":form:vparamsPanel" oncomplete="vparamsdlg.show();" icon="ui-icon-search" title="View">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+				<p:column headerText="Details" style="width: 3%">
+					<p:commandButton update=":form:vdetPanel" oncomplete="vdetdlg.show();" icon="ui-icon-search" title="View">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+				<p:column headerText="Assigned To">
+					<h:outputText value="#{obj.currentDriver.driver.personel.firstname} #{obj.currentDriver.driver.personel.lastname}" rendered="#{obj.currentDriver != null}" />
+					<h:outputText value="N/A" rendered="#{obj.currentDriver == null}" />
+					<br/><br/>
+					<p:commandButton update=":form:assgndrvPanel" oncomplete="vassigndrvdlg.show();" icon="ui-icon-document" value="Assign Driver" title="Assign driver">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+					<br/><br/>
+					<p:commandButton update=":form:vdrvsPanel" oncomplete="vdrvsdlg.show();" icon="ui-icon-search" value="View drivers history" title="View drivers history">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+				<p:column headerText="Due Details" style="width: 5%">
+					<p:commandButton update=":form:vduedetPanel" oncomplete="vduedetdlg.show();" icon="ui-icon-search" title="View">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{obj.crt_dt}" /><br/>
+					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				<p:column headerText="" style="width: 3%">
+					<p:commandLink value="Update" /><br/><br/>
+					<p:commandButton update=":messages3,:form:objsTable" onclick="return confirm('Are you sure?');" value="Dash Track" action="#{fleetBean.addVehicleTrack}">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="viewVParamsDialog" header="Vehicle Parameters History" widgetVar="vparamsdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vparamsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Parameters history for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+			<p:dataTable id="vparamsTable" var="vpr" value="#{fleetBean.selectedVehicle.params}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Vehicle parameters history
+				</f:facet>
+				
+				<p:column headerText="">
+					<img src="#{request.contextPath}/imageservlet/#{vpr.id}:vparam:#{appBean.randomNumber}" width="50" height="50" alt="photo" />
+				</p:column>
+				<p:column sortBy="#{vpr.dept.name}" headerText="Department" filterBy="#{vpr.dept.name}" filterMatchMode="contains">
+					<h:outputText value="#{vpr.dept.name}" rendered="#{vpr.dept != null}" />
+					<h:outputText value="N/A" rendered="#{vpr.dept == null}" />
+				</p:column>
+				<p:column sortBy="#{vpr.region.name}" headerText="Region" filterBy="#{vpr.region.name}" filterMatchMode="contains">
+					<h:outputText value="#{vpr.region.name}" rendered="#{vpr.region != null}" />
+					<h:outputText value="N/A" rendered="#{vpr.region == null}" />
+				</p:column>
+				<p:column sortBy="#{vpr.fuelType.name}" headerText="Fuel type" filterBy="#{vpr.fuelType.name}" filterMatchMode="contains">
+					<h:outputText value="#{vpr.fuelType.name}" rendered="#{vpr.fuelType != null}" />
+					<h:outputText value="N/A" rendered="#{vpr.fuelType == null}" />
+				</p:column>
+				<p:column sortBy="#{vpr.tyresize}" headerText="Tyre size">
+					<h:outputText value="#{vpr.tyresize}" />
+				</p:column>
+				<p:column sortBy="#{vpr.tankcapacity}" headerText="Tank capacity">
+					<h:outputText value="#{vpr.tankcapacity}" />
+				</p:column>
+				<p:column sortBy="#{vpr.color}" headerText="Color">
+					<h:outputText value="#{vpr.color}" />
+				</p:column>
+				<p:column sortBy="#{vpr.simno}" headerText="SIM No.">
+					<h:outputText value="#{vpr.simno}" />
+				</p:column>
+				<p:column sortBy="#{vpr.unitofmeasure}" headerText="Unit of Measure">
+					<h:outputText value="#{vpr.unitofmeasure}" />
+				</p:column>
+				<p:column sortBy="#{vpr.cardno}" headerText="Card No.">
+					<h:outputText value="#{vpr.cardno}" />
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{vpr.crt_dt}" /><br/>
+					By: <h:outputText value="#{vpr.createdBy.personel.firstname} #{vpr.createdBy.personel.lastname}" />
+				</p:column>
+				
+			</p:dataTable>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="assignDrvDialog" header="Assign Vehicle Driver" widgetVar="vassigndrvdlg" modal="true" dynamic="true">
+		<p:panelGrid id="assgndrvPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Assign driver for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+		<h:outputLabel for="vdrvid" value="Driver: *" />
+		<p:selectOneMenu id="vdrvid" value="#{fleetBean.driver_id}">
+			<f:selectItems value="#{fleetBean.partnerDrivers}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.assignVehicleDriver}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="viewVDrvsDialog" header="Vehicle Drivers History" widgetVar="vdrvsdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vdrvsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Drivers history for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+			<p:dataTable id="drvsTable" var="drv" value="#{fleetBean.selectedVehicle.drivers}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Vehicle driver(s)
+				</f:facet>
+				
+				<p:column sortBy="#{drv.driver.personel.firstname}" headerText="First name" filterBy="#{drv.driver.personel.firstname}" filterMatchMode="contains">
+					<h:outputText value="#{drv.driver.personel.firstname}" />
+				</p:column>
+				<p:column sortBy="#{drv.driver.personel.lastname}" headerText="Last name" filterBy="#{drv.driver.personel.lastname}" filterMatchMode="contains">
+					<h:outputText value="#{drv.driver.personel.lastname}" />
+				</p:column>
+				
+				<p:column sortBy="#{drv.start_dt}" headerText="Start date">
+					<h:outputText value="#{drv.start_dt}" />
+				</p:column>
+				
+				<p:column sortBy="#{drv.active}" headerText="Status">
+					<h:outputText value="Active" rendered="#{drv.active}" />
+					<h:outputText value="Not active" rendered="#{not drv.active}" />
+				</p:column>
+				
+				<p:column headerText="Created">
+					On: <h:outputText value="#{drv.crt_dt}" /><br/>
+					By: <h:outputText value="#{drv.createdBy.personel.firstname} #{drv.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				
+			</p:dataTable>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="viewVDueDetDialog" header="Vehicle Due Details" widgetVar="vduedetdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vduedetPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Due Details for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+		<h:outputText value="Registration due date: " />
+		<h:outputText value="" />
+		
+		<h:outputText value="Insurance due date: " />
+		<h:outputText value="" />
+		
+		<h:outputText value="Maintenance due date: " />
+		<h:outputText value="" />
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="viewVDetDialog" header="Vehicle Details" widgetVar="vdetdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vdetPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Details for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+		<h:outputText value="Engine No.: " />
+		<h:outputText value="#{fleetBean.selectedVehicle.engineNo}" />
+		
+		<h:outputText value="Chasis No.: " />
+		<h:outputText value="#{fleetBean.selectedVehicle.chasisNo}" />
+		
+		<h:outputText value="Purchased Date: " />
+		<h:outputText value="#{fleetBean.selectedVehicle.purchaseDate}" />
+		
+		<h:outputText value="Purchased Amount: " />
+		<h:outputText value="#{fleetBean.selectedVehicle.purchaseAmt}" />
+		
+		<h:outputText value="Purchased From: " />
+		<h:outputText value="#{fleetBean.selectedVehicle.vendor.name}" rendered="#{fleetBean.selectedVehicle.vendor != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.vendor == null}" />
+		
+		<h:outputText value="Last registration with:" />
+		<h:outputText value="" />
+		
+		<h:outputText value="Last registration on:" />
+		<h:outputText value="" />
+		
+		<h:outputText value="" />
+		<p:commandLink value="View registration history" />
+		
+		<h:outputText value="Last insurance with: " />
+		<h:outputText value="" />
+		
+		<h:outputText value="Last insurance on: " />
+		<h:outputText value="" />
+		
+		<h:outputText value="" />
+		<p:commandLink value="View insurance history" />
+		
+		<h:outputText value="Last maintenance with:" />
+		<h:outputText value="" />
+		
+		<h:outputText value="Last maintenance on:" />
+		<h:outputText value="" />
+		
+		<h:outputText value="" />
+		<p:commandLink value="View maintenance history" />
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

@@ -1,0 +1,195 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Start and Manage Routine Maintenance for your Vehicles</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Routine Maintenace" action="#{dashboardBean.gotoPage('manage_v_rmaintenance', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="srt" title="Start Maintenance">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Available vehicle(s)
+						</f:facet>
+						
+						<p:column style="width: 3%">
+							<f:facet name="header">
+								<p:selectBooleanCheckbox value="#{fleetBean.selectAll}">
+									<p:ajax update="objsTable" />
+								</p:selectBooleanCheckbox>
+							</f:facet>
+							<p:selectBooleanCheckbox value="#{obj.selected}" />
+						</p:column>
+						<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.registrationNo}" />
+						</p:column>
+						<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.model.name}" />
+						</p:column>
+						<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.Fleet.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.fleet.name}" />
+						</p:column>
+						<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.partner.name}" />
+						</p:column>
+					</p:dataTable>
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						
+						<h:outputLabel for="odom" value="Odometer: *" />
+						<p:inputText id="odom" value="#{fleetBean.routine.odometer}" />
+						
+						<h:outputLabel for="rotstdt" value="Start date: *" />
+						<p:calendar id="rotstdt" value="#{fleetBean.routine.start_dt}" showOn="button" />
+						
+						<h:outputLabel for="rotdesc" value="Description: *" />
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea id="rotdesc" value="#{fleetBean.routine.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter" />
+				  		</p:panelGrid>
+						
+						<h:outputLabel for="rotcost" value="Start Cost: *" />
+						<p:inputText id="rotcost" value="#{fleetBean.routine.initial_amount}" />
+						
+						<h:outputLabel for="rotvendor" value="Vendor: " />
+						<p:selectOneMenu id="rotvendor" value="#{fleetBean.vendor_id}">
+							<f:selectItems value="#{fleetBean.vserviceVendors}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+					
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.startRMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="clos" title="Complete Maintenance">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+						<h:outputLabel for="ptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn2" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" update="objsTable2" action="#{fleetBean.resetRoutines}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+				  	</p:panelGrid>
+				  	<p:dataTable id="objsTable2" var="obj" value="#{fleetBean.routines}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Un-completed routine(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Registration No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						<p:column sortBy="#{obj.odometer}" headerText="Odometer">
+							<h:outputText value="#{obj.odometer}" />
+						</p:column>
+						<p:column sortBy="#{obj.start_dt}" headerText="Start date" filterBy="#{obj.start_dt}" filterMatchMode="contains">
+							<h:outputText value="#{obj.start_dt}" />
+						</p:column>
+						<p:column headerText="Description">
+							<h:outputText value="#{obj.description}" />
+						</p:column>
+						<p:column sortBy="#{obj.initial_amount}" headerText="Start cost">
+							<h:outputText value="#{obj.initial_amount}" />
+						</p:column>
+						<p:column sortBy="#{obj.vendor.name}" headerText="Vendor" filterBy="#{obj.vendor.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vendor.name}" />
+						</p:column>
+						<p:column headerText="Created">
+							On: <h:outputText value="#{obj.crt_dt}" /><br/>
+							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+						</p:column>
+						<p:column style="width: 3%">
+							<p:commandButton update=":form:frmPanel" value="Complete" oncomplete="finishrmdlg.show();">
+								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.routine}" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="finishRMDialog" header="Finish Routine Maintenance" widgetVar="finishrmdlg" modal="true" dynamic="true">
+		<p:panelGrid id="frmPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Final routine maintenance details for: #{fleetBean.routine.vehicle.registrationNo}</f:facet>
+		
+		<h:outputLabel for="roteddt" value="Maintenance description: " />
+		<h:outputText value="#{fleetBean.routine.description}" />
+		
+		<h:outputLabel for="roteddt" value="Finished date: *" />
+		<p:calendar id="roteddt" value="#{fleetBean.routine.close_dt}" showOn="button" />
+		
+		<h:outputLabel for="rotfcost" value="Finished Cost: *" />
+		<p:inputText id="rotfcost" value="#{fleetBean.routine.closed_amount}" />
+		
+		<h:outputLabel for="rotnxtrm" value="Next Maintenance: " />
+		<p:selectBooleanCheckbox id="rotnxtrm" value="#{fleetBean.nextRMSetup}">
+			<p:ajax update="rotnxtrmPanel" />
+		</p:selectBooleanCheckbox>
+		
+		<h:outputLabel for="rotnxtrmPanel" value="" />
+		<p:panelGrid id="rotnxtrmPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<h:outputLabel for="odom2" value="Odometer: *" rendered="#{fleetBean.nextRMSetup}" />
+			<p:inputText id="odom2" value="#{fleetBean.routineSetup.odometer}" rendered="#{fleetBean.nextRMSetup}" />
+			
+			<h:outputLabel for="alodom2" value="Alert Odometer: *" rendered="#{fleetBean.nextRMSetup}" />
+			<p:inputText id="alodom2" value="#{fleetBean.routineSetup.alert_odometer}" rendered="#{fleetBean.nextRMSetup}" />
+		</p:panelGrid>
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" action="#{fleetBean.finishRMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

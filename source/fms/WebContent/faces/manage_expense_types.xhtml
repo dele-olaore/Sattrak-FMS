@@ -1,0 +1,98 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Expense Types</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Expense Types" action="#{dashboardBean.gotoPage('manage_expense_types', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Expense Type" onclick="newexptypedlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+			<h:outputLabel for="roleptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="roleptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="true" update="expTypesTable" action="#{expenseBean.resetExpTypes}" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+		<p:dataTable id="expTypesTable" var="obj" value="#{expenseBean.expTypes}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available expense type(s)
+			</f:facet>
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
+				<h:outputText value="#{obj.description}" />
+			</p:column>
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.partner.name}" rendered="#{obj.partner != null}" />
+				<h:outputText value="System" rendered="#{obj.partner == null}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:commandLink value="Update" rendered="#{not obj.systemObj}" />
+				<h:outputText value="Can't Update" rendered="#{obj.systemObj}" />
+			</p:column>
+		</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newExTypeDialog" header="New Expense Type" widgetVar="newexptypedlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="roleptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+		<p:selectOneMenu id="roleptn2" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+  		<h:outputLabel for="exptname" value="Name: *" />
+  		<p:inputText id="exptname" value="#{expenseBean.expType.name}" />
+  		
+  		<h:outputLabel for="exptdesc" value="Description: " />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="exptdesc" value="#{expenseBean.expType.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.saveExpType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

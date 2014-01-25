@@ -1,0 +1,165 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="head">
+	<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
+</ui:define>
+<ui:define name="title">Dashboard</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<p:poll id="vtrackpoll" interval="#{dashboardBean.vtrackpollinterval}"   
+            listener="#{dashboardBean.reloadVTrack}" update=":form:vlocstrackmap" />
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		</tr>
+		<tr>
+			<td align="left" valign="top" width="20%">
+				<img src="#{request.contextPath}/imageservlet/#{dashboardBean.user.id}:photo:#{appBean.randomNumber}" width="150" height="150" alt="photo" />
+				<br/>
+				<h:outputText value="#{dashboardBean.user.personel.firstname} #{dashboardBean.user.personel.lastname}" />
+				<br/>
+				<h:outputText value="#{dashboardBean.user.partner.name}" />
+			</td>
+			<td>
+				<p:dashboard id="board" model="#{dashboardBean.model}">
+					
+					<p:panel id="alerts" header="Alerts">
+						<!-- like drivers wihtout license info, vehicles not assigned to a driver, drivers without a vehicle -->
+						<!-- No of vehicles active, no of ... -->
+					</p:panel>
+					
+					<p:panel id="duelics" header="Recent and upcoming expirations">
+						<p:commandButton ajax="true" update="licsTable" action="#{dashboardBean.resetExpLicenses}" value="Reset" />
+						<br/><br/>
+						<p:dataTable var="lic" id="licsTable" value="#{dashboardBean.upcomingAndRecentExpirations}"
+							rows="10" paginator="true"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50">
+							<f:facet name="header">
+								#{dashboardBean.upcomingAndRecentExpirations.size()} record(s) found
+							</f:facet>
+						
+							<p:column headerText="Type">
+								<h:outputText value="#{lic[0]}" />
+							</p:column>
+							<p:column headerText="Owner">
+								<h:outputText value="#{lic[1]}" />
+							</p:column>
+							<p:column headerText="Description">
+								<h:outputText value="#{lic[2]}" />
+							</p:column>
+							<p:column headerText="Expiry Date">
+								<h:outputText value="#{lic[3]}" />
+							</p:column>
+							<p:column headerText="Status">
+								<h:outputText value="#{lic[4]}" />
+							</p:column>
+						</p:dataTable>
+						
+					</p:panel>
+					
+					<p:panel id="trackv" header="Vehicles location tracker">
+						<p:panelGrid columns="2">
+						
+						<p:panelGrid columns="1">
+						<p:panelGrid columns="3">
+							<h:outputLabel id="intlbl" for="vtrint" value="Update interval (seconds)" />
+							<h:inputText id="vtrint" value="#{dashboardBean.vtrackpollinterval}" />
+							<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{dashboardBean.setVTrackIntV}" value="Set" />
+						</p:panelGrid>
+						<p:dataTable var="vloc" value="#{dashboardBean.dashVehicles}"
+							rows="10" paginator="true"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50">
+						<f:facet name="header">
+							Tracking #{dashboardBean.dashVehicles.size()} vehicle(s)
+						</f:facet>
+						
+						<p:column headerText="Registration No">
+						<h:outputText value="#{vloc.vehicle.registrationNo}" />
+						</p:column>
+						<p:column headerText="Date updated">
+						<h:outputText value="#{vloc.crt_dt}" />
+						</p:column>
+						<p:column headerText="" style="width: 3%">
+							<p:commandButton update=":form:vlocstrackmap" action="dashboardBean.onDashLocSelect" icon="ui-icon-search" title="Locate">
+								<f:setPropertyActionListener value="#{vloc}" target="#{dashboardBean.selectedDashVehicle}" />
+							</p:commandButton>
+						</p:column>
+						<p:column headerText="" style="width: 3%">
+							<p:commandButton update=":form:vlocstrackmap" action="dashboardBean.onDashLocSelect" icon="ui-icon-circle-close" title="Remove">
+								<f:setPropertyActionListener value="#{vloc}" target="#{dashboardBean.selectedDashVehicle}" />
+							</p:commandButton>
+						</p:column>
+						
+						</p:dataTable>
+						</p:panelGrid>
+						
+						<p:gmap id="vlocstrackmap" center="#{dashboardBean.centerCoor}" zoom="13" type="HYBRID" style="width:500px;height:300px" model="#{dashboardBean.vtrackingModel}">
+							
+						</p:gmap>
+						</p:panelGrid>
+					</p:panel>
+					
+					<p:panel id="duemaints" header="Due and Upcoming maintenance">
+						<p:commandButton ajax="true" update="maintslicsTable" action="#{dashboardBean.resetExpMaints}" value="Reset" />
+						<br/><br/>
+						<p:dataTable var="lic" id="maintslicsTable" value="#{dashboardBean.upcomingMaintenances}"
+							rows="10" paginator="true"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50">
+							<f:facet name="header">
+								#{dashboardBean.upcomingMaintenances.size()} record(s) found
+							</f:facet>
+						
+							<p:column headerText="Type">
+								<h:outputText value="#{lic[0]}" />
+							</p:column>
+							<p:column headerText="Vehicle">
+								<h:outputText value="#{lic[1]}" />
+							</p:column>
+							<p:column headerText="Current Odometer">
+								<h:outputText value="#{lic[2]}" />
+							</p:column>
+							<p:column headerText="Alert">
+								<h:outputText value="#{lic[3]}" />
+							</p:column>
+							<p:column headerText="Actual">
+								<h:outputText value="#{lic[4]}" />
+							</p:column>
+						</p:dataTable>
+					</p:panel>
+					
+					<p:panel id="recentexpenses" header="Most recent expenses (#{dashboardBean.expsBack} back)">
+						<p:panelGrid columns="1" style="width:100%">
+						<p:panelGrid columns="3">
+							<h:outputLabel id="explbl" for="vexpback" value="How far back? " />
+							<p:selectOneMenu id="vexpback" value="#{dashboardBean.expsBack}">
+					  			<f:selectItems value="#{dashboardBean.expsBackTypes}" var="it" itemLabel="#{it}" itemValue="#{it}" />
+					  		</p:selectOneMenu>
+							<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{dashboardBean.SetHowBack}" value="Set" />
+						</p:panelGrid>
+						<p:lineChart id="recentexpenseslinear" value="#{dashboardBean.expsLinearModel}" legendPosition="e"
+							title="Most recent expenses" minY="#{dashboardBean.minY}" maxY="#{dashboardBean.maxY}" style="height:300px" zoom="true" animate="true"/>
+						</p:panelGrid>
+					</p:panel>
+					
+				</p:dashboard>
+			</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

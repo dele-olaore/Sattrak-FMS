@@ -1,0 +1,83 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Vendors</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Vendors" action="#{dashboardBean.gotoPage('manage_vendors', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Vendor" action="#{dashboardBean.gotoPage('new_vendor', true)}" ajax="false" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:panel id="rolesPanel" style="width:100%;">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+			<h:outputLabel for="roleptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="roleptn1" value="#{vendorBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="true" update="objsTable" action="#{vendorBean.resetVendors}" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+		<p:dataTable id="objsTable" var="obj" value="#{vendorBean.vendors}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available vendor(s)
+			</f:facet>
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.addr1}" headerText="Address 1" filterBy="#{obj.addr1}" filterMatchMode="contains">
+				<h:outputText value="#{obj.addr1}" />
+			</p:column>
+			<p:column sortBy="#{obj.addr2}" headerText="Address 2" filterBy="#{obj.addr2}" filterMatchMode="contains">
+				<h:outputText value="#{obj.addr2}" />
+			</p:column>
+			<p:column sortBy="#{obj.phone}" headerText="Phone" filterBy="#{obj.phone}" filterMatchMode="contains">
+				<h:outputText value="#{obj.phone}" />
+			</p:column>
+			<p:column sortBy="#{obj.email}" headerText="Email" filterBy="#{obj.email}" filterMatchMode="contains">
+				<h:outputText value="#{obj.email}" />
+			</p:column>
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.partner.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.services.size()}" headerText="Service" style="width: 10%">
+				<h:outputText value="#{obj.services.size()} service(s)" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:commandLink value="Update" />
+			</p:column>
+		</p:dataTable>
+		</p:panel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

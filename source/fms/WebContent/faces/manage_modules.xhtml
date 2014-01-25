@@ -1,0 +1,63 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Modules</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Modules" action="#{dashboardBean.gotoPage('manage_modules', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Module" onclick="dlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:panel id="modulesPanel" style="width:100%;">
+		<p:dataTable id="modulesTable" var="obj" value="#{appTypeBean.modules}"
+			paginator="true" rows="10"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Available modules
+			</f:facet>
+			
+			<p:column sortBy="#{obj.name}" headerText="Module name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.display_name}" headerText="Module display name" filterBy="#{obj.display_name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.display_name}" />
+			</p:column>
+			<p:column headerText="Module description">
+				<h:outputText value="#{obj.description}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+			</p:column>
+			<p:column headerText="Functions" style="width: 10%">
+				<p:commandLink value="#{obj.functions.size()} function(s)" />
+			</p:column>
+			<p:column headerText="" style="width: 10%">
+				<p:commandLink value="Update" />
+			</p:column>
+		</p:dataTable>
+		</p:panel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

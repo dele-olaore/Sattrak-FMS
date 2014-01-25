@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<faces-config xmlns="http://java.sun.com/xml/ns/javaee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-facesconfig_2_1.xsd"
+	version="2.1">
+
+	<navigation-rule>
+		<navigation-case>
+			<display-name>/mobileConsole/==1=_</display-name>
+			<from-outcome>home</from-outcome>
+			<to-view-id>/faces/home.xhtml</to-view-id>
+			<redirect></redirect>
+		</navigation-case>
+		
+		<navigation-case>
+			<display-name>/mobileConsole/pwreset</display-name>
+			<from-outcome>pwreset</from-outcome>
+			<to-view-id>/faces/administrator/resetPassword.xhtml</to-view-id>
+		</navigation-case>
+		
+		<navigation-case>
+			<display-name>/==0=_</display-name>
+			<from-outcome>new</from-outcome>
+			<to-view-id>/faces/changePassword.xhtml</to-view-id>
+		</navigation-case>
+
+		<navigation-case>
+			<display-name>/mobileConsole/login</display-name>
+			<from-outcome>login</from-outcome>
+			<to-view-id>/faces/index.xhtml</to-view-id>
+		</navigation-case>
+
+		<navigation-case>
+			<display-name>/logout</display-name>
+			<from-outcome>logout</from-outcome>
+			<to-view-id>/faces/index.xhtml</to-view-id>
+			<redirect></redirect>
+		</navigation-case>
+
+		<navigation-case>
+			<display-name>/mobileConsole/error</display-name>
+			<from-outcome>error</from-outcome>
+			<to-view-id>/faces/error.xhtml</to-view-id>
+		</navigation-case>
+		<navigation-case>
+			<display-name>/mobileConsole/error</display-name>
+			<from-outcome>pwreset</from-outcome>
+			<to-view-id>/faces/changePassword.xhtml</to-view-id>
+		</navigation-case>
+	</navigation-rule>
+	
+	<!-- Message.property file config -->
+	<application>
+	  <resource-bundle>
+	  <display-name></display-name>
+		<base-name>messages</base-name>
+		<var>message</var>
+	   </resource-bundle>
+     </application>
+</faces-config>
