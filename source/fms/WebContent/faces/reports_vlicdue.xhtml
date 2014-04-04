@@ -1,0 +1,122 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Licences Due Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  	</p:panelGrid>
+				  	
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchLicDue}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+			  	</p:panelGrid>
+			  	<h:panelGrid columns="3" rendered="#{reportsBean.dueVehicleLicenses != null and reportsBean.dueVehicleLicenses.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(12, 'vehicle_license_due_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicle_license_due_report" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(12, 'vehicle_license_due_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(12, 'vehicle_license_due_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicle_license_due_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicle_license_due_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicle_license_due_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicle_license_due_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicle_license_due_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.dueVehicleLicenses}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Found vehicle license(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.vehicle.registrationNo}" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.registrationNo}" />
+					</p:column>
+					<p:column sortBy="#{obj.vehicle.fleet.name}" filterBy="#{obj.vehicle.fleet.name}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Fleet" />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.fleet.name}" rendered="#{obj.vehicle.fleet != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle.fleet == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Make" />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.model.maker.name}" rendered="#{obj.vehicle.model.maker != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle.model.maker == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Model" />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.model.name}" rendered="#{obj.vehicle.model != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle.model == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="License Due Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.lic_end_dt}" />
+					</p:column>
+				</p:dataTable>
+			 </p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

@@ -50,10 +50,15 @@ public class VehicleAccident implements Serializable
 	
 	private boolean active;
 	
-	private boolean requiresRepairOrReplace;
-	private boolean repairApproved;
+	private String requiresRepairOrReplace;
 	private String action_description; // description of type of repiar required, e.g. repair, replace
 	private String repairerType; // workshop / vendor
+	
+	private boolean repairApproved;
+	private String repairApprovedDesc; // PENDING / APPROVED / DENIED / CANCELED / DONE
+	private String approvalComment;
+	@ManyToOne
+	private PartnerUser approvalUser;
 	
 	private byte[] accidentPhoto;
 	private byte[] document;
@@ -187,11 +192,11 @@ public class VehicleAccident implements Serializable
 		this.active = active;
 	}
 
-	public boolean isRequiresRepairOrReplace() {
+	public String getRequiresRepairOrReplace() {
 		return requiresRepairOrReplace;
 	}
 
-	public void setRequiresRepairOrReplace(boolean requiresRepairOrReplace) {
+	public void setRequiresRepairOrReplace(String requiresRepairOrReplace) {
 		this.requiresRepairOrReplace = requiresRepairOrReplace;
 	}
 
@@ -201,6 +206,30 @@ public class VehicleAccident implements Serializable
 
 	public void setRepairApproved(boolean repairApproved) {
 		this.repairApproved = repairApproved;
+	}
+
+	public String getRepairApprovedDesc() {
+		return repairApprovedDesc;
+	}
+
+	public void setRepairApprovedDesc(String repairApprovedDesc) {
+		this.repairApprovedDesc = repairApprovedDesc;
+	}
+
+	public String getApprovalComment() {
+		return approvalComment;
+	}
+
+	public void setApprovalComment(String approvalComment) {
+		this.approvalComment = approvalComment;
+	}
+
+	public PartnerUser getApprovalUser() {
+		return approvalUser;
+	}
+
+	public void setApprovalUser(PartnerUser approvalUser) {
+		this.approvalUser = approvalUser;
 	}
 
 	public String getAction_description() {

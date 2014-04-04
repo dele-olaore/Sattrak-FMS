@@ -4,7 +4,7 @@
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/layout/other_layout.xhtml">
-<ui:define name="title">Manage Expenses</ui:define>
+<ui:define name="title">Expenses</ui:define>
 <ui:define name="content">
 	<br/><br/>
 	<h:form id="form">
@@ -14,7 +14,7 @@
 		<td align="left" width="50%">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
-    			<p:menuitem value="Manage Expenses" action="#{dashboardBean.gotoPage('manage_expenses', false)}" ajax="false" />
+    			<p:menuitem value="Expenses" action="#{dashboardBean.gotoPage('manage_expenses', false)}" ajax="false" />
     		</p:breadCrumb>
 		</td>
 		<td align="right">
@@ -24,23 +24,26 @@
 		<tr>
 		<td colspan="2">
 			<p:outputPanel id="OPanel" style="width:100%;">
+			
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update=":form:tabs:expt" />
+		  		</p:selectOneMenu>
+		  		</p:panelGrid>
+			
 			<p:tabView id="tabs" dynamic="true" cache="false">
 				<p:tab id="stp" title="Capture Expense">
 					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
-						<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
-							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
-				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-				  			<p:ajax update="expt" />
-				  		</p:selectOneMenu>
-				  		
-				  		<h:outputLabel for="expt" value="Expense Type: *" />
+						<h:outputLabel for="expt" value="Expense Type: *" />
 						<p:selectOneMenu id="expt" value="#{expenseBean.expType_id}">
 				  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 				  		</p:selectOneMenu>
 				  		
 				  		<h:outputLabel for="stdt" value="Date: *" />
-						<p:calendar id="stdt" value="#{expenseBean.exp.expense_dt}" showOn="button" />
+						<p:calendar id="stdt" value="#{expenseBean.exp.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
 						
 						<h:outputLabel for="amt" value="Amount: *" />
 						<p:inputText id="amt" value="#{expenseBean.exp.amount}" />
@@ -57,7 +60,77 @@
 					</p:panelGrid>
 				</p:tab>
 				<p:tab id="vtp" title="Manage Expenses">
-					
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				  		<h:outputLabel for="startDate" value="Start Date :"/>
+				  		<p:calendar id="startDate" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{expenseBean.start_dt}" navigator="true" />
+				  		
+				  		<h:outputLabel for="endDate" value="End Date :"/>
+				  		<p:calendar id="endDate" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{expenseBean.end_dt}" navigator="true" />
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="true" update="expsTable" action="#{expenseBean.resetExps}" value="Search" icon="ui-icon-view" style="margin:0"/>
+				  		</f:facet>
+				  	</p:panelGrid>
+				  	
+				  	<p:dataTable id="expsTable" var="obj" value="#{expenseBean.exps}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+						<f:facet name="header">
+							Found expense(s) [#{expenseBean.exps.size()}]
+						</f:facet>
+						<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
+        				<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
+						
+						<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.type.name}" />
+						</p:column>
+						<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+							<h:outputText value="#{obj.type.description}" />
+						</p:column>
+						<p:column sortBy="#{obj.amount}" headerText="Amount">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.amount}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{obj.amount}" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.expense_dt}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:calendar value="#{obj.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column headerText="Remarks">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.remarks}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+							  		<p:inputTextarea value="#{expenseBean.exp.remarks}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+							  		<h:outputText id="counter2" />
+							  		</p:panelGrid>
+							  	</f:facet>
+							  </p:cellEditor>
+						</p:column>
+						<p:column headerText="Created">
+							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+							On: <h:outputText value="#{obj.crt_dt}" />
+						</p:column>
+						<p:column headerText="" style="width: 6%">
+							<p:rowEditor rendered="#{dashboardBean.user.id.longValue() == obj.createdBy.id.longValue()}" />
+							<h:outputText value="Can't update" rendered="#{not (dashboardBean.user.id.longValue() == obj.createdBy.id.longValue())}" />
+						</p:column>
+						
+					</p:dataTable>
 				</p:tab>
 			</p:tabView>
 			</p:outputPanel>

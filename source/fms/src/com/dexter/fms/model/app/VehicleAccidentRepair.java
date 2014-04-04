@@ -30,21 +30,26 @@ public class VehicleAccidentRepair implements Serializable
 	@Temporal(TemporalType.DATE)
 	private Date repairDate;
 	
-	private double estimatedCost;
-	private double insuranceAmt;
+	private String repairType; // REPAIR / REPLACE / GROUNDED
+	private boolean requiresAdHocRepair;
+	private String replacementRegNo; // if vehicle is to be replaced, this accepts the new vehicle reg number
+	
+	private double repairAmt;
+	private double partnerAmt; // amount contributed by the partner for the repair
+	private double insuranceAmt; // amount contributed by the insurance comp for the repair
 	
 	private boolean active;
 	
 	private String repairerType; // workshop / vendor
-	private String repairStatus;
+	private String repairStatus; // START / COMPLETED
 	
 	@ManyToOne
 	private Vendor insuranceComp;
 	private String insuranceComment;
 	@ManyToOne
 	private Vendor repairComp;
+	
 	private String repairDetails;
-	private double repairAmt;
 	
 	private byte[] afterRepairPhoto;
 	private byte[] attachment;
@@ -82,12 +87,44 @@ public class VehicleAccidentRepair implements Serializable
 		this.repairDate = repairDate;
 	}
 
-	public double getEstimatedCost() {
-		return estimatedCost;
+	public String getRepairType() {
+		return repairType;
 	}
 
-	public void setEstimatedCost(double estimatedCost) {
-		this.estimatedCost = estimatedCost;
+	public void setRepairType(String repairType) {
+		this.repairType = repairType;
+	}
+
+	public boolean isRequiresAdHocRepair() {
+		return requiresAdHocRepair;
+	}
+
+	public void setRequiresAdHocRepair(boolean requiresAdHocRepair) {
+		this.requiresAdHocRepair = requiresAdHocRepair;
+	}
+
+	public String getReplacementRegNo() {
+		return replacementRegNo;
+	}
+
+	public void setReplacementRegNo(String replacementRegNo) {
+		this.replacementRegNo = replacementRegNo;
+	}
+
+	public double getRepairAmt() {
+		return repairAmt;
+	}
+
+	public void setRepairAmt(double repairAmt) {
+		this.repairAmt = repairAmt;
+	}
+
+	public double getPartnerAmt() {
+		return partnerAmt;
+	}
+
+	public void setPartnerAmt(double partnerAmt) {
+		this.partnerAmt = partnerAmt;
 	}
 
 	public double getInsuranceAmt() {
@@ -152,14 +189,6 @@ public class VehicleAccidentRepair implements Serializable
 
 	public void setRepairDetails(String repairDetails) {
 		this.repairDetails = repairDetails;
-	}
-
-	public double getRepairAmt() {
-		return repairAmt;
-	}
-
-	public void setRepairAmt(double repairAmt) {
-		this.repairAmt = repairAmt;
 	}
 
 	public byte[] getAfterRepairPhoto() {

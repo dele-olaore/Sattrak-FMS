@@ -38,25 +38,62 @@
 		<p:dataTable id="objsTable" var="obj" value="#{vendorBean.vendors}"
 			paginator="true" rows="50"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available vendor(s)
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{vendorBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{vendorBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.addr1}" headerText="Address 1" filterBy="#{obj.addr1}" filterMatchMode="contains">
-				<h:outputText value="#{obj.addr1}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.addr1}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.addr1}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.addr2}" headerText="Address 2" filterBy="#{obj.addr2}" filterMatchMode="contains">
-				<h:outputText value="#{obj.addr2}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.addr2}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.addr2}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.phone}" headerText="Phone" filterBy="#{obj.phone}" filterMatchMode="contains">
-				<h:outputText value="#{obj.phone}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.phone}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.phone}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.email}" headerText="Email" filterBy="#{obj.email}" filterMatchMode="contains">
-				<h:outputText value="#{obj.email}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.email}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.email}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
 				<h:outputText value="#{obj.partner.name}" />
@@ -69,7 +106,7 @@
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
 			<p:column headerText="" style="width: 3%">
-				<p:commandLink value="Update" />
+				<p:rowEditor />
 			</p:column>
 		</p:dataTable>
 		</p:panel>

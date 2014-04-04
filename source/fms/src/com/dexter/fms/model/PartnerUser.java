@@ -38,6 +38,7 @@ public class PartnerUser implements Serializable
 	
 	private boolean active;
 	private boolean admin;
+	private boolean activated;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -108,6 +109,14 @@ public class PartnerUser implements Serializable
 
 	public void setAdmin(boolean admin) {
 		this.admin = admin;
+	}
+
+	public boolean isActivated() {
+		return activated;
+	}
+
+	public void setActivated(boolean activated) {
+		this.activated = activated;
 	}
 
 	public Date getCrt_dt() {

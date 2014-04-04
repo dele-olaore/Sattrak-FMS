@@ -1,0 +1,132 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Vehicle Brands Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  	</p:panelGrid>
+				  	
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchVBrands}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				  </p:panelGrid>
+				  <h:panelGrid columns="3" rendered="#{reportsBean.vehiclesByBrand != null and reportsBean.vehiclesByBrand.size() > 0}">
+				  	<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(4, 'vehicles_bybrand_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(4, 'vehicles_bybrand_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(4, 'vehicles_bybrand_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicles_bybrand_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.vehiclesByBrand}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.vehiclesByBrand != null and reportsBean.vehiclesByBrand.size() > 0}">
+					<f:facet name="header">
+						Found vehicle(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.model.maker.name}" filterBy="#{obj.model.maker.name}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Make" />  
+						</f:facet>
+						<h:outputText value="#{obj.model.maker.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.model.name}" filterBy="#{obj.model.name}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Model" />  
+						</f:facet>
+						<h:outputText value="#{obj.model.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.model.year}" filterBy="#{obj.model.year}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Year" />  
+						</f:facet>
+						<h:outputText value="#{obj.model.year}" />
+					</p:column>
+					<p:column sortBy="#{obj.registrationNo}" filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.registrationNo}" />
+					</p:column>
+					
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Department" />  
+						</f:facet>
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Region" />  
+						</f:facet>
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

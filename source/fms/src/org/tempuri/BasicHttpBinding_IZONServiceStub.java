@@ -233,6 +233,15 @@ public class BasicHttpBinding_IZONServiceStub extends org.apache.axis.client.Stu
             cachedSerFactories.add(new org.apache.axis.encoding.ser.ArraySerializerFactory(qName, qName2));
             cachedDeserFactories.add(new org.apache.axis.encoding.ser.ArrayDeserializerFactory());
 
+            qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "ArrayOfSAATRAKUnitEvent");
+            cachedSerQNames.add(qName);
+            cls = org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent[].class;
+            cachedSerClasses.add(cls);
+            qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent");
+            qName2 = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent");
+            cachedSerFactories.add(new org.apache.axis.encoding.ser.ArraySerializerFactory(qName, qName2));
+            cachedDeserFactories.add(new org.apache.axis.encoding.ser.ArrayDeserializerFactory());
+
             qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "ArrayOfUnit");
             cachedSerQNames.add(qName);
             cls = org.datacontract.schemas._2004._07.ZONIntegrationWCFService.Unit[].class;
@@ -300,6 +309,27 @@ public class BasicHttpBinding_IZONServiceStub extends org.apache.axis.client.Stu
             cachedSerClasses.add(cls);
             cachedSerFactories.add(beansf);
             cachedDeserFactories.add(beandf);
+
+            qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent");
+            cachedSerQNames.add(qName);
+            cls = org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(beansf);
+            cachedDeserFactories.add(beandf);
+
+            qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent.eEvent");
+            cachedSerQNames.add(qName);
+            cls = org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEventEEvent.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(enumsf);
+            cachedDeserFactories.add(enumdf);
+
+            qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent.eStatus");
+            cachedSerQNames.add(qName);
+            cls = org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEventEStatus.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(enumsf);
+            cachedDeserFactories.add(enumdf);
 
             qName = new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SATTRACKUnitEventResult");
             cachedSerQNames.add(qName);

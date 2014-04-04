@@ -6,7 +6,7 @@
     xmlns:p="http://primefaces.org/ui">
 
 	<!-- Start of the main header bar -->
-	<nav id="header_main">
+	<nav id="#{dashboardBean.headercolor}">
 		<div class="container_12">
 			<!-- Start of the main navigation -->
 			<ul id="nav_main">
@@ -20,7 +20,7 @@
 						</li>
 					</ul>
 				</li>
-				<ui:repeat value="${dashboardBean.userModulesFunctions.keySet().toArray()}" var="mdule">
+				<ui:repeat value="${dashboardBean.modulesKeys.toArray()}" var="mdule">
 					<li class="#{(dashboardBean.currentModuleHeader(mdule)) ? 'current' : ''}">
 						<a href="#">
 							<img src="#{request.contextPath}/resources/img/icons/25x25/dark/${dashboardBean.getModuleIconName(mdule)}" width="25" height="25" alt=""/>

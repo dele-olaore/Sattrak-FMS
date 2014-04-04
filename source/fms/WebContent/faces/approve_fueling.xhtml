@@ -1,0 +1,87 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Approve Fueling</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Approve Fueling" action="#{dashboardBean.gotoPage('approve_fueling', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="reqexp" title="Pending Fueling Request(s)[#{fleetBean.pendingFuelingRequests.size()}]">
+						<p:panel id="mypendreqsPanel">
+						<p:dataTable id="myPendExpsTable" var="obj" value="#{fleetBean.pendingFuelingRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+							binding="#{table}">
+							<f:facet name="header">
+								Pending fueling request(s) [#{fleetBean.pendingFuelingRequests.size()}]
+							</f:facet>
+							
+							<p:column id="col1" headerText="">
+								<p:selectBooleanCheckbox value="#{obj.selected}" />
+							</p:column>
+							<p:column id="col2" headerText="Request Date">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column id="col3" sortBy="#{obj.fueling_dt}" headerText="Fuel date" filterBy="#{obj.fueling_dt}" filterMatchMode="contains">
+								<h:outputText value="#{obj.fueling_dt}" />
+							</p:column>
+							<p:column id="col4" sortBy="#{obj.amt}" headerText="Cost">
+								<h:outputText value="#{obj.amt}" />
+							</p:column>
+							<p:column id="col5" sortBy="#{obj.litres}" headerText="Litres">
+								<h:outputText value="#{obj.litres}" />
+							</p:column>
+							<p:column id="col6" headerText="Requester">
+								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
+								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
+							</p:column>
+						</p:dataTable>
+						<br/>
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="apvstat" value="Approval Status: *" />
+							<p:selectOneMenu id="apvstat" value="#{fleetBean.approvalStatus}">
+					  			<f:selectItem itemLabel="APPROVED" itemValue="APPROVED" />
+					  			<f:selectItem itemLabel="DENIED" itemValue="DENIED" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="apvcmt" value="Remarks: " />
+							<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+					  		<p:inputTextarea id="apvcmt" value="#{fleetBean.approvalComment}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+					  		<h:outputText id="counter" />
+					  		</p:panelGrid>
+					  	</p:panelGrid>
+					  	<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.attendToFuelingRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+						</p:panel>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

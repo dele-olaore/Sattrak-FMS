@@ -1,13 +1,13 @@
 package com.dexter.fms.mbean;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -23,37 +23,48 @@ import javax.persistence.Query;
 import javax.xml.rpc.ServiceException;
 
 import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.EResult;
+import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent;
 import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SATTRACKUnitEventResult;
-import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEvent;
 import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEventEEvent;
 import org.tempuri.IZONService;
 import org.tempuri.ZONServiceLocator;
 
+import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationSetup;
+import com.dexter.fms.model.ApplicationSubscriptionModule;
+import com.dexter.fms.model.ApplicationSubscriptionReport;
+import com.dexter.fms.model.ApplicationTypeFunction;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
+import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Module;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
+import com.dexter.fms.model.Report;
+import com.dexter.fms.model.SubscriptionPackage;
+import com.dexter.fms.model.app.Budget;
 import com.dexter.fms.model.app.CorporateTrip;
+import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.ExpenseType;
 import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.app.VehicleFuelData;
-import com.dexter.fms.model.app.VehicleFueling;
 import com.dexter.fms.model.app.VehicleLicense;
 import com.dexter.fms.model.app.VehicleLocationData;
 import com.dexter.fms.model.app.VehicleOdometerData;
+import com.dexter.fms.model.app.VehicleStatusEnum;
+import com.dexter.fms.model.app.VehicleTrackerData;
 import com.dexter.fms.model.ref.FuelType;
 import com.dexter.fms.model.ref.ItemType;
 import com.dexter.fms.model.ref.LicenseType;
 import com.dexter.fms.model.ref.ServiceType;
 import com.dexter.fms.model.ref.TransactionType;
+import com.dexter.fms.model.ref.VehicleWarning;
 
 @ManagedBean(name = "appBean")
 @ApplicationScoped
@@ -90,6 +101,10 @@ public class ApplicationMBean implements Serializable
                 logger.info("Starting license update at: " + new Date());
                 checkLicenses();
                 logger.info("Finished license update at: " + new Date());
+                
+                logger.info("Starting budgets update at: " + new Date());
+                checkBudgets();
+                logger.info("Finished budgets update at: " + new Date());
             }
         };
         
@@ -113,6 +128,7 @@ public class ApplicationMBean implements Serializable
         trackerTimer = new Timer();
 		trackerTask = new TimerTask()
 		{
+			@SuppressWarnings("unchecked")
 			@Override
 			public void run()
 			{
@@ -132,7 +148,8 @@ public class ApplicationMBean implements Serializable
 					if(result.getResult() == EResult.Ok)
 					{
 						lastReceivedId = result.getLastQueriedId();
-						UnitEvent[] unitEvents = result.getUnitEvents();
+						SAATRAKUnitEvent[] unitEvents = result.getUnitEvents();
+						logger.info("tracker result length: " + unitEvents.length);
 						if(unitEvents != null && unitEvents.length > 0)
 						{
 							GeneralDAO gDAO = new GeneralDAO();
@@ -140,7 +157,7 @@ public class ApplicationMBean implements Serializable
 							try
 					    	{
 					    		gDAO.startTransaction();
-					            for(UnitEvent e : unitEvents)
+					            for(SAATRAKUnitEvent e : unitEvents)
 								{
 					            	Query q = gDAO.createQuery("Select e from Vehicle e where e.zonControlId=:zonControlId");
 					            	q.setParameter("zonControlId", e.getUnitID());
@@ -150,14 +167,42 @@ public class ApplicationMBean implements Serializable
 					            	{
 					            		Vehicle v = (Vehicle)vObj;
 					            		
+					            		VehicleTrackerData vtd = new VehicleTrackerData();
+					            		vtd.setCrt_dt(new Date());
+					            		vtd.setCaptured_dt(e.getEventTime().getTime());
+					            		vtd.setFuelLevel(e.getEventFinalValue());
+					            		vtd.setLat(e.getLangitude());
+					            		vtd.setLon(e.getLongitude());
+					            		vtd.setOdometer(e.getDistance());
+					            		vtd.setVehicleTStatus(e.getStatus().getValue());
+					            		vtd.setSpeed(e.getSpeed());
+					            		vtd.setHeading(e.getHeading());
+					            		vtd.setHdop(e.getHDOP());
+					            		vtd.setVehicle(v);
+					            		gDAO.save(vtd);
+					            		
+					            		Hashtable<String, Object> params = new Hashtable<String, Object>();
+					            		params.put("active", true);
+					            		Object subsObj = gDAO.search("VehicleLocationData", params);
+					            		if(subsObj != null)
+					            		{
+					            			Vector<VehicleLocationData> subs = (Vector<VehicleLocationData>)subsObj;
+					            			for(VehicleLocationData vld : subs)
+					            			{
+					            				vld.setActive(false);
+					            				gDAO.update(vld);
+					            			}
+					            		}
+					            		
 					            		VehicleLocationData vld = new VehicleLocationData();
 					            		vld.setVehicle(v);
+					            		vld.setAddress(e.getAddress());
 					            		vld.setCaptured_dt(e.getEventTime().getTime());
 					            		vld.setCrt_dt(new Date());
-					            		//TODO: Where do we get the lon and lat from
-					            		//vld.setLat(lat);
-					            		//vld.setLon(lon);
-					            		//gDAO.save(vld);
+					            		vld.setLat(e.getLangitude());
+					            		vld.setLon(e.getLongitude());
+					            		vld.setActive(true);
+					            		gDAO.save(vld);
 					            		
 					            		VehicleOdometerData vod = new VehicleOdometerData();
 					            		vod.setVehicle(v);
@@ -168,10 +213,19 @@ public class ApplicationMBean implements Serializable
 					            		
 					            		gDAO.save(vod);
 					            		
+					            		VehicleFuelData vfd = new VehicleFuelData();
+					            		vfd.setCaptured_dt(e.getEventTime().getTime());
+					            		vfd.setCrt_dt(new Date());
+					            		vfd.setFuelLevel(e.getEventFinalValue());
+					            		vfd.setSource("Tracker");
+					            		vfd.setVehicle(v);
+					            		
+					            		gDAO.save(vfd);
+					            		
 					            		if(e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Refueled) || 
 					            				e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Drop))
 					            		{
-					            			VehicleFueling vf = new VehicleFueling();
+					            			/*VehicleFueling vf = new VehicleFueling();
 					            			vf.setVehicle(v);
 					            			vf.setCaptured_dt(e.getEventTime().getTime());
 						            		vf.setCrt_dt(new Date());
@@ -181,21 +235,12 @@ public class ApplicationMBean implements Serializable
 						            		vf.setLitres(e.getEventFinalValue() - e.getEventInitValue());
 						            		vf.setLocation(e.getAddress());
 						            		
-						            		gDAO.save(vf);
+						            		gDAO.save(vf);*/
 						            		
 						            		if(e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Refueled))
 						            		{
 						            			// TODO: send email alert here
 						            		}
-						            		
-						            		VehicleFuelData vfd = new VehicleFuelData();
-						            		vfd.setCaptured_dt(e.getEventTime().getTime());
-						            		vfd.setCrt_dt(new Date());
-						            		vfd.setFuelLevel(e.getEventFinalValue());
-						            		vfd.setSource("Tracker");
-						            		vfd.setVehicle(v);
-						            		
-						            		gDAO.save(vfd);
 						            		
 						            		if(e.getEventFinalValue() == 0)
 						            		{
@@ -231,8 +276,13 @@ public class ApplicationMBean implements Serializable
 			}
 		};
 		
-		Calendar c = Calendar.getInstance();
-    	trackerTimer.scheduleAtFixedRate(trackerTask, c.getTime(), 1000 * 60 * tracker_interval); // every 2 minutes after first call
+		//Calendar c = Calendar.getInstance();
+    	//trackerTimer.scheduleAtFixedRate(trackerTask, c.getTime(), 1000 * 60 * tracker_interval); // every 2 minutes after first call
+	}
+	
+	public String getYear()
+	{
+		return ""+Calendar.getInstance().get(Calendar.YEAR);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -246,27 +296,222 @@ public class ApplicationMBean implements Serializable
 		{
 			Vector<PartnerSubscription> subs = (Vector<PartnerSubscription>)subsObj;
 			gDAO.startTransaction();
+			PartnerSubscription prevE = null;
 			for(PartnerSubscription e : subs)
 			{
 				Date now = new Date();
 				boolean change = false;
-				if(e.getStart_dt().before(now) && e.getEnd_dt().after(now) && !e.isActive())
+				if(e.getStart_dt().before(now) && e.getEnd_dt().after(now) && !e.isActive() && !e.isExpired())
 				{
 					e.setActive(true);
 					e.setExpired(false);
 					change = true;
+					
+					activateSubs(e, gDAO); // activate the package.
+					
+					if(prevE != null && prevE.isActive())
+					{
+						prevE.setActive(false);
+						prevE.setExpired(true);
+						gDAO.update(prevE);
+					}
 				}
-				else if(e.isActive() && e.getEnd_dt().before(now))
+				else if(!e.isExpired() && e.getEnd_dt().before(now))
 				{
 					e.setExpired(true);
-					e.setActive(false);
+					//e.setActive(false);
 					change = true;
 				}
 				if(change)
 					gDAO.update(e);
+				
+				prevE = e;
 			}
 			gDAO.commit();
 			gDAO.destroy();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void activateSubs(PartnerSubscription sub, GeneralDAO gDAO)
+	{
+		//TODO: now we need to get the admin user of the partner, and either assigns all the functions available to this subscription to his existing role, 
+		// or create a new role for him and then assign all the functions in this subscription to that role
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("partner", sub.getPartner());
+		params.put("admin", true);
+		Object uObj = gDAO.search("PartnerUser", params);
+		if(uObj != null)
+		{
+			Vector<PartnerUser> uList = (Vector<PartnerUser>)uObj;
+			if(uList.size() > 0)
+			{
+				PartnerUser adminUser = uList.get(0);
+				
+				params = new Hashtable<String, Object>();
+				params.put("user", adminUser);
+				params.put("defaultRole", true);
+				Object rObj = gDAO.search("PartnerUserRole", params);
+				if(rObj != null)
+				{
+					Vector<PartnerUserRole> rList = (Vector<PartnerUserRole>)rObj;
+					if(rList.size() > 0)
+					{
+						PartnerUserRole role = rList.get(0);
+						
+						// clear the previous functions attached to the admin role of the partner
+						params = new Hashtable<String, Object>();
+						params.put("role", role.getRole());
+						Object mrfObj = gDAO.search("MRoleFunction", params);
+						if(mrfObj != null)
+						{
+							Vector<MRoleFunction> mrfList = (Vector<MRoleFunction>)mrfObj;
+							for(MRoleFunction e : mrfList)
+							{
+								gDAO.remove(e);
+							}
+						}
+						
+						// clear the previous reports attached to the main role of the partner
+						params = new Hashtable<String, Object>();
+						params.put("role", role.getRole());
+						Object mrrObj = gDAO.search("MRoleReport", params);
+						if(mrrObj != null)
+						{
+							Vector<MRoleReport> mrrList = (Vector<MRoleReport>)mrrObj;
+							for(MRoleReport e : mrrList)
+							{
+								gDAO.remove(e);
+							}
+						}
+						
+						SubscriptionPackage subp = sub.getSubPackage();
+						
+						// now attach the reports from the current subscription to the role
+						params = new Hashtable<String, Object>();
+						params.put("appTypeReport.appType", subp.getAppType());
+						params.put("subType", subp.getSubType());
+						Object asrObj = gDAO.search("ApplicationSubscriptionReport", params);
+						if(asrObj != null)
+						{
+							Vector<ApplicationSubscriptionReport> mdsList = (Vector<ApplicationSubscriptionReport>)asrObj;
+							for(ApplicationSubscriptionReport e : mdsList)
+							{
+								MRoleReport mrr = new MRoleReport();
+								mrr.setCreatedBy(sub.getCreatedBy());
+								mrr.setCrt_dt(new Date());
+								mrr.setReport(e.getAppTypeReport().getReport());
+								mrr.setRole(role.getRole());
+								
+								gDAO.save(mrr);
+							}
+							
+							Vector<MRole> prolesList = new Vector<MRole>();
+							params = new Hashtable<String, Object>();
+							params.put("partner", sub.getPartner());
+							Object prolesObj = gDAO.search("MRole", params);
+							if(prolesObj != null)
+								prolesList = (Vector<MRole>)prolesObj;
+							for(MRole mr : prolesList)
+							{
+								if(mr.getId() == role.getRole().getId())
+									continue;
+								params = new Hashtable<String, Object>();
+								params.put("role", mr);
+								Object mrrsObj = gDAO.search("MRoleReport", params);
+								if(mrrsObj != null)
+								{
+									Vector<MRoleReport> mrrsList = (Vector<MRoleReport>)mrrsObj;
+									for(MRoleReport mrr : mrrsList)
+									{
+										boolean exist = false;
+										for(ApplicationSubscriptionReport f : mdsList)
+										{
+											if(f.getAppTypeReport().getReport().getId() == mrr.getReport().getId())
+											{
+												exist = true;
+												break;
+											}
+										}
+										if(!exist)
+											gDAO.remove(mrr);
+									}
+								}
+							}
+						}
+						
+						params = new Hashtable<String, Object>();
+						params.put("appTypeModule.appType", subp.getAppType());
+						params.put("subType", subp.getSubType());
+						Object mdsObj = gDAO.search("ApplicationSubscriptionModule", params);
+						if(mdsObj != null)
+						{
+							Vector<ApplicationSubscriptionModule> mdsList = (Vector<ApplicationSubscriptionModule>)mdsObj;
+							for(ApplicationSubscriptionModule e : mdsList)
+							{
+								params = new Hashtable<String, Object>();
+								params.put("appTypeModule", e.getAppTypeModule());
+								Object fsObj = gDAO.search("ApplicationTypeFunction", params);
+								
+								//params = new Hashtable<String, Object>();
+								//params.put("module", e.getAppTypeModule().getModule());
+								//Object fsObj = gDAO.search("MFunction", params);
+								if(fsObj != null)
+								{
+									Vector<ApplicationTypeFunction> atflist = (Vector<ApplicationTypeFunction>) fsObj;
+									
+									//Vector<MFunction> fsList = (Vector<MFunction>)fsObj;
+									
+									for(ApplicationTypeFunction f : atflist)
+									{
+										MRoleFunction mrf = new MRoleFunction();
+										mrf.setCreatedBy(sub.getCreatedBy());
+										mrf.setCrt_dt(new Date());
+										mrf.setFunction(f.getFunction());
+										mrf.setRole(role.getRole());
+										
+										gDAO.save(mrf);
+									}
+									
+									Vector<MRole> prolesList = new Vector<MRole>();
+									params = new Hashtable<String, Object>();
+									params.put("partner", sub.getPartner());
+									Object prolesObj = gDAO.search("MRole", params);
+									if(prolesObj != null)
+										prolesList = (Vector<MRole>)prolesObj;
+									for(MRole mr : prolesList)
+									{
+										if(mr.getId() == role.getRole().getId())
+											continue;
+										params = new Hashtable<String, Object>();
+										params.put("role", mr);
+										params.put("function.module", e.getAppTypeModule().getModule());
+										Object mrfsObj = gDAO.search("MRoleFunction", params);
+										if(mrfsObj != null)
+										{
+											Vector<MRoleFunction> mrfsList = (Vector<MRoleFunction>)mrfsObj;
+											for(MRoleFunction mrf : mrfsList)
+											{
+												boolean exist = false;
+												for(ApplicationTypeFunction f : atflist)
+												{
+													if(f.getFunction().getId() == mrf.getFunction().getId())
+													{
+														exist = true;
+														break;
+													}
+												}
+												if(!exist)
+													gDAO.remove(mrf);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -281,28 +526,79 @@ public class ApplicationMBean implements Serializable
 		{
 			Vector<VehicleLicense> subs = (Vector<VehicleLicense>)subsObj;
 			gDAO.startTransaction();
+			VehicleLicense prevE = null;
 			for(VehicleLicense e : subs)
 			{
 				Date now = new Date();
 				boolean change = false;
-				if(e.getLic_start_dt().before(now) && e.getLic_end_dt().after(now) && !e.isActive())
+				if(e.getLic_start_dt().before(now) && e.getLic_end_dt().after(now) && !e.isActive() && !e.isExpired())
 				{
 					e.setActive(true);
 					e.setExpired(false);
 					change = true;
+					if(prevE != null && prevE.isActive())
+					{
+						prevE.setActive(false);
+						prevE.setExpired(true);
+						gDAO.update(prevE);
+					}
 				}
-				else if(e.isActive() && e.getLic_end_dt().before(now))
+				else if(!e.isExpired() && e.getLic_end_dt().before(now))
 				{
 					e.setExpired(true);
-					e.setActive(false);
+					//e.setActive(false);
 					change = true;
 				}
 				if(change)
 					gDAO.update(e);
+				
+				prevE = e;
 			}
-			gDAO.commit();
-			gDAO.destroy();
 		}
+		gDAO.commit();
+		gDAO.destroy();
+		
+		gDAO = new GeneralDAO();
+		params = new Hashtable<String, Object>();
+		params.put("expired", false);
+		subsObj = gDAO.search("DriverLicense", params);
+		if(subsObj != null)
+		{
+			Vector<DriverLicense> subs = (Vector<DriverLicense>)subsObj;
+			gDAO.startTransaction();
+			DriverLicense prevE = null;
+			for(DriverLicense e : subs)
+			{
+				Date now = new Date();
+				boolean change = false;
+				if(e.getLic_start_dt().before(now) && e.getLic_end_dt().after(now) && !e.isActive() && !e.isExpired())
+				{
+					e.setActive(true);
+					e.setExpired(false);
+					change = true;
+					
+					if(prevE != null && prevE.isActive())
+					{
+						prevE.setActive(false);
+						prevE.setExpired(true);
+						gDAO.update(prevE);
+					}
+				}
+				else if(!e.isExpired() && e.getLic_end_dt().before(now))
+				{
+					e.setExpired(true);
+					//e.setActive(false);
+					change = true;
+				}
+				if(change)
+					gDAO.update(e);
+				
+				prevE = e;
+			}
+		}
+		
+		gDAO.commit();
+		gDAO.destroy();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -312,7 +608,7 @@ public class ApplicationMBean implements Serializable
 		
 		Query q = gDAO.createQuery("Select e from CorporateTrip e where e.approvalStatus=:approvalStatus and e.tripStatus=:tripStatus and e.departureDateTime < :nowDateTime");
 		q.setParameter("approvalStatus", "APPROVED");
-		q.setParameter("tripStatus", null);
+		q.setParameter("tripStatus", "AWAITING");
 		q.setParameter("nowDateTime", new Date());
 		
 		gDAO.startTransaction();
@@ -324,6 +620,9 @@ public class ApplicationMBean implements Serializable
 			for(CorporateTrip e : trips)
 			{
 				e.setTripStatus("ON_TRIP");
+				e.getVehicle().setActiveStatus(VehicleStatusEnum.ON_TRIP.getStatus());
+				
+				gDAO.update(e.getVehicle());
 				gDAO.update(e);
 			}
 		}
@@ -344,7 +643,9 @@ public class ApplicationMBean implements Serializable
 			}
 		}
 		
-		Calendar c = Calendar.getInstance();
+		gDAO.commit();
+		
+		/*Calendar c = Calendar.getInstance();
 		c.add(Calendar.DAY_OF_MONTH, -7);
 		
 		q = gDAO.createQuery("Select e from CorporateTrip e where e.approvalStatus=:approvalStatus and e.tripStatus=:tripStatus and e.estimatedArrivalDateTime < :maxwaitDateTime");
@@ -362,6 +663,31 @@ public class ApplicationMBean implements Serializable
 				e.setCompletedDateTime(new Date());
 				gDAO.update(e);
 			}
+		}*/
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void checkBudgets()
+	{
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("active", true);
+		
+		Object objs = gDAO.search("Budget", params);
+		if(objs != null)
+		{
+			Vector<Budget> budgets = (Vector<Budget>)objs;
+			gDAO.startTransaction();
+			for(Budget b : budgets)
+			{
+				if(b.getEnd_dt().before(new Date()))
+				{
+					b.setActive(false);
+					gDAO.update(b);
+				}
+			}
+			gDAO.commit();
 		}
 	}
 	
@@ -505,10 +831,60 @@ public class ApplicationMBean implements Serializable
 		et.setSystemObj(true);
 		gDAO.save(et);
 		
+		VehicleWarning vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("LDW");
+		vw.setDescription("Lane Departure Warning");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("HWM");
+		vw.setDescription("Headway monitoring");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("FCW");
+		vw.setDescription("Forward Collision Warning (incl. Urban Collision Warning)");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("PED");
+		vw.setDescription("Pedestrian Detection");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("Over Speed");
+		vw.setDescription("Speed over 100 KM/H is over speed");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("Steering");
+		vw.setDescription("Steering percentage during a drive");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("Braking");
+		vw.setDescription("Braking percentage during a drive");
+		gDAO.save(vw);
+		vw = new VehicleWarning();
+		vw.setCrt_dt(new Date());
+		vw.setSystemObj(true);
+		vw.setName("Acceleration");
+		vw.setDescription("Acceleration percentage during a drive");
+		gDAO.save(vw);
+		
 		// create a default partner
 		Partner sattrak = new Partner();
 		sattrak.setName("Sattrak");
 		sattrak.setSattrak(true);
+		sattrak.setFuelingType("Both");
 		sattrak.setCrt_dt(new Date());
 		gDAO.save(sattrak);
 		logger.log(Level.INFO, "Saving partner..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
@@ -564,18 +940,35 @@ public class ApplicationMBean implements Serializable
 			logger.log(Level.INFO, "Updating partner with code: '" + p_id_str + "'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		}
 		
+		Properties adminUserPros = new Properties();
+		try
+		{
+			adminUserPros.load(ApplicationMBean.class.getResourceAsStream("/adminuser.properties"));
+		}
+		catch(Exception ex)
+		{}
+		
 		//create default user
-		PartnerPersonel pp = new PartnerPersonel();
-		pp.setFirstname("Victor");
-		pp.setLastname("Okere");
-		pp.setEmail("okerevictor@gmail.com");
+		final PartnerPersonel pp = new PartnerPersonel();
+		if(adminUserPros.containsKey("admin.firstname"))
+			pp.setFirstname(adminUserPros.getProperty("admin.firstname"));
+		else
+			pp.setFirstname("Victor");
+		if(adminUserPros.containsKey("admin.lastname"))
+			pp.setLastname(adminUserPros.getProperty("admin.lastname"));
+		else
+			pp.setLastname("Okere");
+		if(adminUserPros.containsKey("admin.email"))
+			pp.setEmail(adminUserPros.getProperty("admin.email"));
+		else
+			pp.setEmail("okerevictor@gmail.com");
 		pp.setPartner(sattrak);
 		pp.setCrt_dt(new Date());
 		pp.setHasUser(true);
 		gDAO.save(pp);
 		logger.log(Level.INFO, "Saving user: 'admin'" + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
-		PartnerUser adminUser = new PartnerUser();
+		final PartnerUser adminUser = new PartnerUser();
 		adminUser.setPersonel(pp);
 		adminUser.setPartner(sattrak);
 		adminUser.setPartner_code(sattrak.getCode());
@@ -586,6 +979,29 @@ public class ApplicationMBean implements Serializable
 		adminUser.setAdmin(true);
 		gDAO.save(adminUser);
 		logger.log(Level.INFO, "Saving user: 'admin'" + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		Thread notifyThread = new Thread()
+		{
+			public void run()
+			{
+				StringBuilder body = new StringBuilder("<html><body>");
+				body.append("<p><strong>Dear ").append(pp.getFirstname()).append("</strong></p>");
+				body.append("<p>Your user account details to access the Sattrak Fleet Management System are set up as below: -</p>");
+				body.append("<br/><p>Username: <strong>").append(adminUser.getUsername()).append("</strong><br/>");
+				body.append("Password: <strong>").append("admin").append("</strong></p>");
+				body.append("<p>Regards</br>Sattrak FMS Portal</p>");
+				body.append("</body></html>");
+				try
+				{	
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{pp.getEmail()}, "FMS - Default Admin Setup", body.toString());
+				}
+				catch(Exception ex)
+				{
+					ex.printStackTrace();
+				}
+			}
+		};
+		notifyThread.start();
 		
 		sattrak.setCreatedBy(adminUser);
 		gDAO.update(sattrak);
@@ -761,16 +1177,16 @@ public class ApplicationMBean implements Serializable
 		function62.setActive(true);
 		function62.setCrt_dt(new Date());
 		gDAO.save(function62);
-		logger.log(Level.INFO, "Saving function: 'Manage Personels'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		logger.log(Level.INFO, "Saving function: 'Manage Departments'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		MFunction function63 = new MFunction();
-		function63.setName("Manage Personels");
-		function63.setDescription("Manage your personels.");
+		function63.setName("Manage Personnel");
+		function63.setDescription("Manage your personnels.");
 		function63.setPage_url("manage_staffs");
 		function63.setModule(userManagement);
 		function63.setActive(true);
 		function63.setCrt_dt(new Date());
 		gDAO.save(function63);
-		logger.log(Level.INFO, "Saving function: 'Manage Personels'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		logger.log(Level.INFO, "Saving function: 'Manage Personnels'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		MFunction function64 = new MFunction();
 		function64.setName("Manage Drivers");
 		function64.setDescription("Manage your drivers.");
@@ -903,6 +1319,35 @@ public class ApplicationMBean implements Serializable
 		function75.setCrt_dt(new Date());
 		gDAO.save(function75);
 		logger.log(Level.INFO, "Saving function: 'Fueling Info'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MFunction manageFueling = new MFunction();
+		manageFueling.setName("Manage Fueling");
+		manageFueling.setDescription("View fueling information for your vehicles.");
+		manageFueling.setPage_url("manage_v_fueling");
+		manageFueling.setModule(transactions);
+		manageFueling.setActive(true);
+		manageFueling.setCrt_dt(new Date());
+		gDAO.save(manageFueling);
+		logger.log(Level.INFO, "Saving function: 'Manage Fueling'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction fuelingRequest = new MFunction();
+		fuelingRequest.setName("Request Fueling");
+		fuelingRequest.setDescription("Request for fueling for various vehicles.");
+		fuelingRequest.setPage_url("request_fueling");
+		fuelingRequest.setModule(transactions);
+		fuelingRequest.setActive(true);
+		fuelingRequest.setCrt_dt(new Date());
+		gDAO.save(fuelingRequest);
+		logger.log(Level.INFO, "Saving function: 'Fueling Request'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction fuelingApproval = new MFunction();
+		fuelingApproval.setName("Approve Fueling");
+		fuelingApproval.setDescription("Approve / Deny requests for fueling requests.");
+		fuelingApproval.setPage_url("approve_fueling");
+		fuelingApproval.setModule(transactions);
+		fuelingApproval.setActive(true);
+		fuelingApproval.setCrt_dt(new Date());
+		gDAO.save(fuelingApproval);
+		logger.log(Level.INFO, "Saving function: 'Fueling Approval'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MFunction function76 = new MFunction();
 		function76.setName("License");
 		function76.setDescription("Capture, view and update various kind of license registration/renewal information for your vehicles.");
@@ -912,6 +1357,15 @@ public class ApplicationMBean implements Serializable
 		function76.setCrt_dt(new Date());
 		gDAO.save(function76);
 		logger.log(Level.INFO, "Saving function: 'License Info'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction drvLic = new MFunction();
+		drvLic.setName("Driver's License");
+		drvLic.setDescription("Capture, view and update various drivers license registration/renewal information for your drivers.");
+		drvLic.setPage_url("manage_drvlicense");
+		drvLic.setModule(transactions);
+		drvLic.setActive(true);
+		drvLic.setCrt_dt(new Date());
+		gDAO.save(drvLic);
+		logger.log(Level.INFO, "Saving function: 'Driver License'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MFunction reportsFunction = new MFunction();
 		reportsFunction.setName("Reports");
@@ -933,8 +1387,8 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(function77);
 		logger.log(Level.INFO, "Saving function: 'Location Info'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		MFunction function78 = new MFunction();
-		function78.setName("Driver Info");
-		function78.setDescription("View current and historic driver information for your vehicles.");
+		function78.setName("Driving Info");
+		function78.setDescription("Capture vehicle warnings to determine drivers behaviour.");
 		function78.setPage_url("manage_v_driverinfo");
 		function78.setModule(fleetManagement);
 		function78.setActive(true);
@@ -961,7 +1415,7 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(function791);
 		logger.log(Level.INFO, "Saving function: 'Attend to Trips'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
-		MFunction function792 = new MFunction();
+		/*MFunction function792 = new MFunction();
 		function792.setName("Trips Info");
 		function792.setDescription("View current and historic trips information for your vehicles.");
 		function792.setPage_url("manage_v_tripsinfo");
@@ -969,7 +1423,7 @@ public class ApplicationMBean implements Serializable
 		function792.setActive(true);
 		function792.setCrt_dt(new Date());
 		gDAO.save(function792);
-		logger.log(Level.INFO, "Saving function: 'Trips Info'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		logger.log(Level.INFO, "Saving function: 'Trips Info'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));*/
 		
 		MFunction function811 = new MFunction();
 		function811.setName("Manage Expense Types");
@@ -992,17 +1446,46 @@ public class ApplicationMBean implements Serializable
 		logger.log(Level.INFO, "Saving function: 'Manage Budgets'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MFunction function82 = new MFunction();
-		function82.setName("Manage Expense");
-		function82.setDescription("Manage your expenses.");
+		function82.setName("Expenses");
+		function82.setDescription("Capture and view your expenses.");
 		function82.setPage_url("manage_expenses");
 		function82.setModule(budgetManagement);
 		function82.setActive(true);
 		function82.setCrt_dt(new Date());
 		gDAO.save(function82);
+		logger.log(Level.INFO, "Saving function: 'Expenses'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MFunction mngExpenses = new MFunction();
+		mngExpenses.setName("Manage Expenses");
+		mngExpenses.setDescription("View your expenses.");
+		mngExpenses.setPage_url("manage_all_expenses");
+		mngExpenses.setModule(budgetManagement);
+		mngExpenses.setActive(true);
+		mngExpenses.setCrt_dt(new Date());
+		gDAO.save(mngExpenses);
 		logger.log(Level.INFO, "Saving function: 'Manage Expenses'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
+		MFunction expenseRequest = new MFunction();
+		expenseRequest.setName("Request Expense");
+		expenseRequest.setDescription("Request for expenses.");
+		expenseRequest.setPage_url("request_expenses");
+		expenseRequest.setModule(budgetManagement);
+		expenseRequest.setActive(true);
+		expenseRequest.setCrt_dt(new Date());
+		gDAO.save(expenseRequest);
+		logger.log(Level.INFO, "Saving function: 'Request Expenses'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction expenseApproval = new MFunction();
+		expenseApproval.setName("Approve Expense");
+		expenseApproval.setDescription("Approve/Deny requests for expenses.");
+		expenseApproval.setPage_url("approve_expenses");
+		expenseApproval.setModule(budgetManagement);
+		expenseApproval.setActive(true);
+		expenseApproval.setCrt_dt(new Date());
+		gDAO.save(expenseApproval);
+		logger.log(Level.INFO, "Saving function: 'Approve Expenses'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MFunction function882 = new MFunction();
-		function882.setName("Manage Assets");
+		function882.setName("Stock, Spares and Inventory");
 		function882.setDescription("Manage your assets.");
 		function882.setPage_url("manage_assets");
 		function882.setModule(assetManagement);
@@ -1011,6 +1494,26 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(function882);
 		logger.log(Level.INFO, "Saving function: 'Manage Assets'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
+		MFunction function883 = new MFunction();
+		function883.setName("Manage Customers");
+		function883.setDescription("Manage your customers.");
+		function883.setPage_url("manage_customers");
+		function883.setModule(appManagement);
+		function883.setActive(true);
+		function883.setCrt_dt(new Date());
+		gDAO.save(function883);
+		logger.log(Level.INFO, "Saving function: 'Manage Customers'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MFunction cusBook = new MFunction();
+		cusBook.setName("Customer Booking");
+		cusBook.setDescription("Manage customer trip bookings.");
+		cusBook.setPage_url("manage_cus_booking");
+		cusBook.setModule(transactions);
+		cusBook.setActive(true);
+		cusBook.setCrt_dt(new Date());
+		gDAO.save(cusBook);
+		logger.log(Level.INFO, "Saving function: 'Customer Booking'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MFunction topFunc1 = new MFunction();
 		topFunc1.setName("Capture Top-up");
 		topFunc1.setDescription("Insert top-ups.");
@@ -1018,7 +1521,7 @@ public class ApplicationMBean implements Serializable
 		topFunc1.setModule(transactions);
 		topFunc1.setActive(true);
 		topFunc1.setCrt_dt(new Date());
-		gDAO.save(topFunc1);
+		//gDAO.save(topFunc1);
 		logger.log(Level.INFO, "Saving function: 'Capture Top-up'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MFunction topFunc2 = new MFunction();
@@ -1028,7 +1531,7 @@ public class ApplicationMBean implements Serializable
 		topFunc2.setModule(transactions);
 		topFunc2.setActive(true);
 		topFunc2.setCrt_dt(new Date());
-		gDAO.save(topFunc2);
+		//gDAO.save(topFunc2);
 		logger.log(Level.INFO, "Saving function: 'Manage Top-ups'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MFunction function8 = new MFunction();
@@ -1040,6 +1543,26 @@ public class ApplicationMBean implements Serializable
 		function8.setCrt_dt(new Date());
 		gDAO.save(function8);
 		logger.log(Level.INFO, "Saving function: 'Manage Vendors'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction ttypeFunc = new MFunction();
+		ttypeFunc.setName("License Types");
+		ttypeFunc.setDescription("Manage supported license types.");
+		ttypeFunc.setPage_url("manage_lictypes");
+		ttypeFunc.setModule(appManagement);
+		ttypeFunc.setActive(true);
+		ttypeFunc.setCrt_dt(new Date());
+		gDAO.save(ttypeFunc);
+		logger.log(Level.INFO, "Saving function: 'License Types'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MFunction auditFunc = new MFunction();
+		auditFunc.setName("Audit Trail");
+		auditFunc.setDescription("View various actions performed on the platform.");
+		auditFunc.setPage_url("audit_trails");
+		auditFunc.setModule(appManagement);
+		auditFunc.setActive(true);
+		auditFunc.setCrt_dt(new Date());
+		gDAO.save(auditFunc);
+		logger.log(Level.INFO, "Saving function: 'Audit Trail'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MFunction function9 = new MFunction();
 		function9.setName("Create Transaction");
 		function9.setDescription("Create a new transaction.");
@@ -1047,7 +1570,7 @@ public class ApplicationMBean implements Serializable
 		function9.setModule(transactions);
 		function9.setActive(true);
 		function9.setCrt_dt(new Date());
-		gDAO.save(function9);
+		//gDAO.save(function9);
 		logger.log(Level.INFO, "Saving function: 'Create Transaction'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		MFunction function10 = new MFunction();
 		function10.setName("Manage Transactions");
@@ -1056,7 +1579,7 @@ public class ApplicationMBean implements Serializable
 		function10.setModule(transactions);
 		function10.setActive(true);
 		function10.setCrt_dt(new Date());
-		gDAO.save(function10);
+		//gDAO.save(function10);
 		logger.log(Level.INFO, "Saving function: 'Manage Transactions'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		//create role
 		MRole adminRole = new MRole();
@@ -1219,11 +1742,39 @@ public class ApplicationMBean implements Serializable
 		logger.log(Level.INFO, "Mapping role-function: 75..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		rf77 = new MRoleFunction();
 		rf77.setRole(adminRole);
+		rf77.setFunction(manageFueling);
+		rf77.setCrt_dt(new Date());
+		rf77.setCreatedBy(adminUser);
+		gDAO.save(rf77);
+		logger.log(Level.INFO, "Mapping role-function: manage fueling..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf77 = new MRoleFunction();
+		rf77.setRole(adminRole);
+		rf77.setFunction(fuelingRequest);
+		rf77.setCrt_dt(new Date());
+		rf77.setCreatedBy(adminUser);
+		gDAO.save(rf77);
+		logger.log(Level.INFO, "Mapping role-function: fueling request..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf77 = new MRoleFunction();
+		rf77.setRole(adminRole);
+		rf77.setFunction(fuelingApproval);
+		rf77.setCrt_dt(new Date());
+		rf77.setCreatedBy(adminUser);
+		gDAO.save(rf77);
+		logger.log(Level.INFO, "Mapping role-function: fueling approval..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf77 = new MRoleFunction();
+		rf77.setRole(adminRole);
 		rf77.setFunction(function76);
 		rf77.setCrt_dt(new Date());
 		rf77.setCreatedBy(adminUser);
 		gDAO.save(rf77);
 		logger.log(Level.INFO, "Mapping role-function: 76..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf77 = new MRoleFunction();
+		rf77.setRole(adminRole);
+		rf77.setFunction(drvLic);
+		rf77.setCrt_dt(new Date());
+		rf77.setCreatedBy(adminUser);
+		gDAO.save(rf77);
+		logger.log(Level.INFO, "Mapping role-function: drvLic..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		rf77 = new MRoleFunction();
 		rf77.setRole(adminRole);
 		rf77.setFunction(function77);
@@ -1252,13 +1803,13 @@ public class ApplicationMBean implements Serializable
 		rf77.setCreatedBy(adminUser);
 		gDAO.save(rf77);
 		logger.log(Level.INFO, "Mapping role-function: 791..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
-		rf77 = new MRoleFunction();
+		/*rf77 = new MRoleFunction();
 		rf77.setRole(adminRole);
 		rf77.setFunction(function792);
 		rf77.setCrt_dt(new Date());
 		rf77.setCreatedBy(adminUser);
 		gDAO.save(rf77);
-		logger.log(Level.INFO, "Mapping role-function: 792..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		logger.log(Level.INFO, "Mapping role-function: 792..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));*/
 		MRoleFunction rf6 = new MRoleFunction();
 		rf6.setRole(adminRole);
 		rf6.setFunction(function1);
@@ -1296,6 +1847,29 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(rf82);
 		logger.log(Level.INFO, "Mapping role-function: 82..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
+		rf82 = new MRoleFunction();
+		rf82.setRole(adminRole);
+		rf82.setFunction(mngExpenses);
+		rf82.setCrt_dt(new Date());
+		rf82.setCreatedBy(adminUser);
+		gDAO.save(rf82);
+		logger.log(Level.INFO, "Mapping role-function: manage expenses..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		rf82 = new MRoleFunction();
+		rf82.setRole(adminRole);
+		rf82.setFunction(expenseRequest);
+		rf82.setCrt_dt(new Date());
+		rf82.setCreatedBy(adminUser);
+		gDAO.save(rf82);
+		logger.log(Level.INFO, "Mapping role-function: expense request..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf82 = new MRoleFunction();
+		rf82.setRole(adminRole);
+		rf82.setFunction(expenseApproval);
+		rf82.setCrt_dt(new Date());
+		rf82.setCreatedBy(adminUser);
+		gDAO.save(rf82);
+		logger.log(Level.INFO, "Mapping role-function: expense approval..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MRoleFunction rf882 = new MRoleFunction();
 		rf882.setRole(adminRole);
 		rf882.setFunction(function882);
@@ -1303,6 +1877,14 @@ public class ApplicationMBean implements Serializable
 		rf882.setCreatedBy(adminUser);
 		gDAO.save(rf882);
 		logger.log(Level.INFO, "Mapping role-function: 882..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MRoleFunction rf883 = new MRoleFunction();
+		rf883.setRole(adminRole);
+		rf883.setFunction(function883);
+		rf883.setCrt_dt(new Date());
+		rf883.setCreatedBy(adminUser);
+		gDAO.save(rf883);
+		logger.log(Level.INFO, "Mapping role-function: 883..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MRoleFunction rfTopU = new MRoleFunction();
 		rfTopU.setRole(adminRole);
@@ -1316,7 +1898,7 @@ public class ApplicationMBean implements Serializable
 		rfTopU.setFunction(topFunc2);
 		rfTopU.setCrt_dt(new Date());
 		rfTopU.setCreatedBy(adminUser);
-		gDAO.save(rfTopU);
+		//gDAO.save(rfTopU);
 		logger.log(Level.INFO, "Mapping role-function: TopU-2..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MRoleFunction rf8 = new MRoleFunction();
@@ -1326,6 +1908,23 @@ public class ApplicationMBean implements Serializable
 		rf8.setCreatedBy(adminUser);
 		gDAO.save(rf8);
 		logger.log(Level.INFO, "Mapping role-function: 8..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		rf8 = new MRoleFunction();
+		rf8.setRole(adminRole);
+		rf8.setFunction(ttypeFunc);
+		rf8.setCrt_dt(new Date());
+		rf8.setCreatedBy(adminUser);
+		gDAO.save(rf8);
+		logger.log(Level.INFO, "Mapping role-function: lic type..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		rf8 = new MRoleFunction();
+		rf8.setRole(adminRole);
+		rf8.setFunction(auditFunc);
+		rf8.setCrt_dt(new Date());
+		rf8.setCreatedBy(adminUser);
+		gDAO.save(rf8);
+		logger.log(Level.INFO, "Mapping role-function: audit trail..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MRoleFunction rf9 = new MRoleFunction();
 		rf9.setRole(adminRole);
 		rf9.setFunction(function9);
@@ -1349,7 +1948,169 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(rreport);
 		logger.log(Level.INFO, "Mapping role-function: reports..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
-		
+		MRoleFunction rcusbook = new MRoleFunction();
+		rcusbook.setRole(adminRole);
+		rcusbook.setFunction(cusBook);
+		rcusbook.setCrt_dt(new Date());
+		rcusbook.setCreatedBy(adminUser);
+		gDAO.save(rcusbook);
+		logger.log(Level.INFO, "Mapping role-function: customer booking..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+				
+		// setup reports
+		Report r = new Report();
+		r.setModule("Users");
+		r.setPage_url("reports_allusers");
+		r.setTitle("All User Report");
+		gDAO.save(r);
+		MRoleReport mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Users");
+		r.setPage_url("reports_driverlicdue");
+		r.setTitle("Driver License Due");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Users");
+		r.setPage_url("reports_accidents");
+		r.setTitle("Accident Report");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vbrands");
+		r.setTitle("Vehicle Brands Report");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vrmaint");
+		r.setTitle("Routine Maintenance");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vadhocmaint");
+		r.setTitle("Adhoc Maintenance");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vaccidented");
+		r.setTitle("Accidented Vehicles");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vlicdue");
+		r.setTitle("Licences Due Report");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vages");
+		r.setTitle("Age of Vehicles");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Vehicle / Maintenance");
+		r.setPage_url("reports_vbtreplace");
+		r.setTitle("Battery/Tyre Replacement");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Corporate Trip");
+		r.setPage_url("reports_vtrips");
+		r.setTitle("Trip Report");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Fueling");
+		r.setPage_url("reports_fdaterage");
+		r.setTitle("Date Period");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Fueling");
+		r.setPage_url("reports_fvehicle");
+		r.setTitle("Vehicle");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
+		r = new Report();
+		r.setModule("Expense");
+		r.setPage_url("reports_expense");
+		r.setTitle("Expense Report");
+		gDAO.save(r);
+		mr = new MRoleReport();
+		mr.setCreatedBy(adminUser);
+		mr.setCrt_dt(new Date());
+		mr.setReport(r);
+		mr.setRole(adminRole);
+		gDAO.save(mr);
 		
 		PartnerUserRole adminUserRole = new PartnerUserRole();
 		adminUserRole.setRole(adminRole);
@@ -1363,7 +2124,7 @@ public class ApplicationMBean implements Serializable
 		if(!gDAO.isHasError())
 		{
 			ApplicationSetup setup = new ApplicationSetup();
-			setup.setAppName("FMS");
+			setup.setAppName("Fleet Management System");
 			setup.setAppSetup(true);
 			setup.setCrt_dt(new Date());
 			setup.setVersion("1.0");

@@ -38,16 +38,35 @@
 		<p:dataTable id="objsTable" var="obj" value="#{fleetBean.fleets}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available fleet(s)
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
-				<h:outputText value="#{obj.description}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.vehicleType.name}" headerText="Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
 				<h:outputText value="#{obj.vehicleType.name}" rendered="#{obj.vehicleType != null}" />
@@ -68,7 +87,7 @@
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
 			<p:column headerText="" style="width: 3%">
-				<p:commandLink value="Update" rendered="#{not obj.defaultFleet}" />
+				<p:rowEditor rendered="#{not obj.defaultFleet}" />
 				<h:outputText value="Can't Update" rendered="#{obj.defaultFleet}" />
 			</p:column>
 		</p:dataTable>

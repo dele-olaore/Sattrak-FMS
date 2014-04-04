@@ -1,0 +1,154 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Request Expenses</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Request Expenses" action="#{dashboardBean.gotoPage('request_expenses', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update=":form:tabs:expt2,:form:tabs:apvu2" />
+			  		</p:selectOneMenu>
+		  		</p:panelGrid>
+			
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="bthreqexp" title="Request Expense - Batch">
+						<p:panel id="milreqsPanel">
+							<p:dataTable id="myExpsTable" var="obj" value="#{expenseBean.myExpRequests}"
+								paginator="true" rows="50"
+								paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+								rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+								binding="#{table}">
+								<f:facet name="header">
+									Added expense request(s) [#{expenseBean.myExpRequests.size()}]
+								</f:facet>
+								
+								<p:column id="col1" sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+									<h:outputText value="#{obj.type.name}" />
+								</p:column>
+								<p:column id="col2" headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+									<h:outputText value="#{obj.type.description}" />
+								</p:column>
+								<p:column id="col3" sortBy="#{obj.amount}" headerText="Amount">
+									<h:outputText value="#{obj.amount}" />
+								</p:column>
+								<p:column id="col4" sortBy="#{obj.expense_dt}" headerText="Expense Date">
+									<h:outputText value="#{obj.expense_dt}" />
+								</p:column>
+								<p:column id="col5" headerText="Remarks">
+									<h:outputText value="#{obj.remarks}" />
+								</p:column>
+								<p:column id="col6" headerText="">
+									<p:commandButton update="myExpsTable,:messages3" ajax="true" action="#{expenseBean.removeExpRequestFromBatch(table.rowIndex)}" icon="ui-icon-close" style="margin:0" />
+								</p:column>
+							</p:dataTable>
+							<f:facet name="footer">
+					  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.saveBatchExpRequest}" value="Submit Request(s)" icon="ui-icon-disk" style="margin:0"/>
+					  		</f:facet>
+						</p:panel>
+					
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="expt2" value="Expense Type: *" />
+							<p:selectOneMenu id="expt2" value="#{expenseBean.expType_id}">
+					  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="stdt2" value="Date: *" />
+							<p:calendar id="stdt2" value="#{expenseBean.expRequest.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+							
+							<h:outputLabel for="amt2" value="Amount: *" />
+							<p:inputText id="amt2" value="#{expenseBean.expRequest.amount}" />
+							
+							<h:outputLabel for="desc2" value="Remarks: " />
+							<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+					  		<p:inputTextarea id="desc2" value="#{expenseBean.expRequest.remarks}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+					  		<h:outputText id="counter2" />
+					  		</p:panelGrid>
+					  		
+					  		<h:outputLabel for="apvu2" value="Approval User: *" />
+							<p:selectOneMenu id="apvu2" value="#{expenseBean.approvalUser_id}">
+					  			<f:selectItems value="#{ddBean.getUsersWithFunction(expenseBean.partner.id, 'approve_expenses')}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+					  		
+					  		<f:facet name="footer">
+					  			<p:commandButton update="milreqsPanel,:messages3" ajax="true" onclick="return confirm('Are you sure?');" action="#{expenseBean.addExpRequestToBatch}" value="Add" icon="ui-icon-disk" style="margin:0"/>
+					  		</f:facet>
+						</p:panelGrid>
+					</p:tab>
+					<p:tab id="myexps" title="Your Expense Requests">
+						<p:panel id="myreqsPanel">
+						<p:dataTable id="mySubExpsTable" var="obj" value="#{expenseBean.mySubExpRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+							binding="#{table2}">
+							<f:facet name="header">
+								My expense request(s) [#{expenseBean.mySubExpRequests.size()}]
+							</f:facet>
+							
+							<p:column headerText="Date">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.name}" />
+							</p:column>
+							<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.description}" />
+							</p:column>
+							<p:column sortBy="#{obj.amount}" headerText="Amount">
+								<h:outputText value="#{obj.amount}" />
+							</p:column>
+							<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+								<h:outputText value="#{obj.expense_dt}" />
+							</p:column>
+							<p:column headerText="Remarks">
+								<h:outputText value="#{obj.remarks}" />
+							</p:column>
+							<p:column headerText="Approval User">
+								<h:outputText value="#{obj.approvalUser.personel.firstname} #{obj.approvalUser.personel.lastname}" rendered="#{obj.approvalUser != null}" />
+								<h:outputText value="N/A" rendered="#{obj.approvalUser == null}" />
+							</p:column>
+							<p:column headerText="Approval Date">
+								<h:outputText value="#{obj.approval_dt}" />
+							</p:column>
+							<p:column headerText="Approval Status" sortBy="#{obj.approvalStatus}" filterBy="#{obj.approvalStatus}" filterMatchMode="contains">
+								<h:outputText value="#{obj.approvalStatus}" />
+							</p:column>
+							<p:column headerText="Approval Comment">
+								<h:outputText value="#{obj.approvalComment}" />
+							</p:column>
+						</p:dataTable>
+						</p:panel>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

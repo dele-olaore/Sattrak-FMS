@@ -1,0 +1,129 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Driving Info :: Capture vehicle warnings to determine drivers behaviour</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Driving Info" action="#{dashboardBean.gotoPage('manage_v_driverinfo', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid columns="5">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1, vch1" />
+		  		</p:selectOneMenu>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: *" />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="vch1" />
+		  		</p:selectOneMenu>
+		  		<h:outputText value="" />
+		  		<h:outputText value="" />
+		  		<h:outputText value="" />
+		  		
+		  		<h:outputLabel for="vch1" value="Vehicle: *" />
+				<p:selectOneMenu id="vch1" value="#{fleetBean.vehicle_id}">
+					<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+					<f:selectItems value="#{ddBean.getVehicles(fleetBean.partner_id, fleetBean.fleet_id, fleetBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+				</p:selectOneMenu>
+				<h:outputText value=" OR " />
+				<h:outputLabel for="vchregn1" value="Registration No.: " />
+				<h:inputText id="vchregn1" value="#{fleetBean.regNo}">
+					<p:ajax update="vch1" />
+				</h:inputText>
+			</p:panelGrid>
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="srt" title="Capture Warning">
+					<p:panelGrid columns="1">
+						<p:panelGrid columns="2">
+							<h:outputLabel for="fueldt" value="Event date: *" />
+							<p:calendar id="fueldt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.vehicleBehaviour.eventDate}" navigator="true" />
+							
+							<h:outputLabel for="vwarning" value="Warning: *" />
+					  		<p:selectOneMenu id="vwarning" value="#{fleetBean.warning_id}">
+					  			<f:selectItems value="#{ddBean.vehicleWarnings}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="fuelcost" value="Warning value: *" />
+					  		<p:inputText id="fuelcost" value="#{fleetBean.vehicleBehaviour.warningValue}" />
+						</p:panelGrid>
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveWarning}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="complt" title="Manage Warnings">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="fuelstdt" value="Start date: *" />
+						<p:calendar id="fuelstdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.stdt}" navigator="true" />
+						
+						<h:outputLabel for="fueleddt" value="End date: *" />
+						<p:calendar id="fueleddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.eddt}" navigator="true" />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.resetVehicleBehaviours}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="fuelingsTable" var="obj" value="#{fleetBean.vehicleBehaviours}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Found warning(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						
+						<p:column sortBy="#{obj.eventDate}" headerText="Event date">
+							<h:outputText value="#{obj.eventDate}" />
+						</p:column>
+						<p:column headerText="Warning" filterBy="#{obj.warning.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.warning.name}(#{obj.warning.description})" />
+						</p:column>
+						<p:column sortBy="#{obj.warningValue}" headerText="Warning Value">
+							<h:outputText value="#{obj.warningValue}" />
+						</p:column>
+						<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver" filterBy="#{obj.driver.personel.firstname}" filterMatchMode="contains">
+							<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="#{obj.driver != null}" />
+						</p:column>
+						<p:column headerText="">
+							<p:commandLink value="Update" onclick="return false;" />
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

@@ -27,13 +27,22 @@
 		<p:dataTable id="partnersTable" var="obj" value="#{partnerBean.partners}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available partners
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{partnerBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{partnerBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.code}" headerText="Code" filterBy="#{obj.code}" filterMatchMode="contains">
 				<h:outputText value="#{obj.code}" />
@@ -42,14 +51,38 @@
 				<h:outputText value="Yes" rendered="#{obj.sattrak}" />
 				<h:outputText value="No" rendered="#{not obj.sattrak}" />
 			</p:column>
+			<p:column headerText="Fueling">
+				<h:outputText value="#{obj.fuelingType}" />
+			</p:column>
 			<p:column headerText="Address">
-				<h:outputText value="#{obj.addr1}, #{obj.addr2}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.addr1}, #{obj.addr2}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.addr1}" />, <p:inputText value="#{obj.addr2}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Email">
-				<h:outputText value="#{obj.email}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.email}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.email}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Phone">
-				<h:outputText value="#{obj.phone}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.phone}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.phone}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
@@ -59,7 +92,7 @@
 				<p:commandLink value="#{obj.users.size()} user(s)" rendered="#{obj.users != null}" />
 			</p:column>
 			<p:column headerText="" style="width: 10%">
-				<p:commandLink value="Update" />
+				<p:rowEditor />
 			</p:column>
 		</p:dataTable>
 		</p:panel>
@@ -75,6 +108,9 @@
   		<h:outputLabel for="ptname" value="Name: *" />
   		<p:inputText id="ptname" value="#{partnerBean.partner.name}" />
   		
+  		<h:outputLabel for="plogo" value="Logo: " />
+  			<p:fileUpload id="plogo" value="#{partnerBean.partnerLogo}" mode="simple" />
+  		
   		<h:outputLabel for="ptaddr1" value="Address line 1: " />
   		<p:inputText id="ptaddr1" value="#{partnerBean.partner.addr1}" />
   		
@@ -86,6 +122,13 @@
   		
   		<h:outputLabel for="ptemail" value="Email: " />
   		<p:inputText id="ptemail" value="#{partnerBean.partner.email}" />
+  		
+  		<h:outputLabel for="ptftype" value="Fueling Type: " />
+  		<p:selectOneMenu id="ptftype" value="#{partnerBean.partner.fuelingType}">
+  			<f:selectItem itemLabel="Manual" itemValue="Manual" />
+  			<f:selectItem itemLabel="Automated" itemValue="Automated" />
+  			<f:selectItem itemLabel="Both" itemValue="Both" />
+  		</p:selectOneMenu>
   		
   		<h:outputLabel for="ptadmin" value="Admin details: " />
   		<p:panelGrid id="ptadmin" columns="2" cellpadding="5">

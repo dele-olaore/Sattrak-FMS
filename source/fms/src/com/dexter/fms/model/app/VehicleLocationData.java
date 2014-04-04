@@ -27,6 +27,7 @@ public class VehicleLocationData implements Serializable
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date captured_dt;
 	
+	private String address;
 	private double lon;
 	private double lat;
 	
@@ -60,6 +61,14 @@ public class VehicleLocationData implements Serializable
 
 	public void setCaptured_dt(Date captured_dt) {
 		this.captured_dt = captured_dt;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
 	public double getLon() {

@@ -31,6 +31,7 @@ public class VehicleParameters implements Serializable
 	
 	private String tyresize;
 	private String tankcapacity;
+	private String calibratedcapacity;
 	private String color;
 	private byte[] photo;
 	private FuelType fuelType;
@@ -83,6 +84,14 @@ public class VehicleParameters implements Serializable
 
 	public void setTankcapacity(String tankcapacity) {
 		this.tankcapacity = tankcapacity;
+	}
+
+	public String getCalibratedcapacity() {
+		return calibratedcapacity;
+	}
+
+	public void setCalibratedcapacity(String calibratedcapacity) {
+		this.calibratedcapacity = calibratedcapacity;
 	}
 
 	public String getColor() {

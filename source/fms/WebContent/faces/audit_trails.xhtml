@@ -1,0 +1,71 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Audit Trails</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Audit Trails" action="#{dashboardBean.gotoPage('audit_trails', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		<h:outputLabel for="acddt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{userBean.audit_st}" navigator="true" />
+						
+						<h:outputLabel for="acdrdt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{userBean.audit_end}" navigator="true" />
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{userBean.resetAudits}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+			
+				<p:dataTable id="auditsTable" var="obj" value="#{userBean.audits}"
+					paginator="true" rows="100"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Found trail(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.user.username}" headerText="User" filterBy="#{obj.user.username}" filterMatchMode="contains">
+						<h:outputText value="#{obj.user.username}" />
+					</p:column>
+					<p:column sortBy="#{obj.action_dt}" headerText="Date/Time">
+						<h:outputText value="#{obj.action_dt}" />
+					</p:column>
+					<p:column headerText="Narration" filterBy="#{obj.narration}" filterMatchMode="contains">
+						<h:outputText value="#{obj.narration}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

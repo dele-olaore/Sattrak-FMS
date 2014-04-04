@@ -1,0 +1,331 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Customer Bookings</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Customer Bookings" action="#{dashboardBean.gotoPage('manage_cus_booking', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{rentalBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="true" update=":form:tabs,:form:payPanel,:form:newSVPanel,:form:newPPanel" action="#{rentalBean.resetBookings}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="settingTab" title="Pricing">
+						<p:commandLink value="New Service Type" onclick="servicetypedlg.show();" />
+						<p:dataTable id="svtypesTable" var="obj" value="#{rentalBean.serviceTypes}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Available service type(s)
+							</f:facet>
+							
+							<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.name}" />
+							</p:column>
+							
+							<p:column headerText="" style="width: 5%">
+								<p:commandLink value="Update" />
+							</p:column>
+						</p:dataTable>
+						<br/><br/>
+						<p:commandLink value="New Pricing" onclick="pricingdlg.show();" />
+						<p:dataTable id="pricesTable" var="obj" value="#{rentalBean.priceSettings}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Available pricing
+							</f:facet>
+							
+							<p:column sortBy="#{obj.vehicleType.name}" headerText="Vehicle Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicleType.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.serviceType.name}" headerText="Service Type" filterBy="#{obj.serviceType.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.serviceType.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.durationType}" headerText="Duration Type" filterBy="#{obj.durationType}" filterMatchMode="contains">
+								<h:outputText value="#{obj.durationType}" />
+							</p:column>
+							<p:column sortBy="#{obj.amountPerDurationType}" headerText="Amount (per duration)">
+								<h:outputText value="#{obj.amountPerDurationType}" />
+							</p:column>
+							<p:column headerText="" style="width: 5%">
+								<p:commandLink value="Update" />
+							</p:column>
+						</p:dataTable>
+					</p:tab>
+					<p:tab id="startBookingTab" title="Capture Customer Booking">
+						<p:panelGrid id="startBkPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<f:facet name="header"></f:facet>
+						
+						<h:outputLabel value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<h:outputText value="#{rentalBean.partner.name}" rendered="#{dashboardBean.user.partner.sattrak}" />
+						
+						<h:outputLabel for="cusid" value="Customer: *" />
+						<p:selectOneMenu id="cusid" value="#{rentalBean.customer_id}">
+							<f:selectItems value="#{rentalBean.customers}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="bkdt" value="Trip date: *" />
+						<p:calendar id="bkdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{rentalBean.booking.book_dt}" navigator="true" />
+				  		
+				  		<h:outputLabel for="picloc" value="Pickup Location: *" />
+  						<p:inputText id="picloc" value="#{rentalBean.booking.pickupLocation}" />
+  						
+  						<h:outputLabel for="destg" value="Destination: *" />
+  						<p:inputText id="destg" value="#{rentalBean.booking.destination}" />
+  						
+  						<h:outputLabel for="nop" value="No of Persons: " />
+  						<p:inputText id="nop" value="#{rentalBean.booking.noOfPersons}" />
+  						
+  						<h:outputLabel for="pservt" value="Service Type: *" />
+						<p:selectOneMenu id="pservt" value="#{rentalBean.serviceType_id2}">
+							<f:selectItems value="#{rentalBean.serviceTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vt1" value="Vehicle Type: *" />
+						<p:selectOneMenu id="vt1" value="#{rentalBean.vehicleType_id2}">
+							<f:selectItems value="#{rentalBean.vehicleTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="pdurt" value="Duration Type: *" />
+						<p:selectOneMenu id="pdurt" value="#{rentalBean.booking.durationType}">
+							<f:selectItem itemLabel="HOUR" itemValue="HOUR" />
+							<f:selectItem itemLabel="DAY" itemValue="DAY" />
+							<f:selectItem itemLabel="WEEK" itemValue="WEEK" />
+							<f:selectItem itemLabel="MONTH" itemValue="MONTH" />
+							<f:selectItem itemLabel="YEAR" itemValue="YEAR" />
+				  		</p:selectOneMenu>
+  						
+  						<h:outputLabel for="durh" value="Duration (per type): " />
+  						<p:inputText id="durh" value="#{rentalBean.booking.durationCount}" />
+				  		
+				  		<h:outputLabel for="othcmt" value="Other comment: " />
+  						<p:inputText id="othcmt" value="#{rentalBean.booking.otherComment}" />
+				  		
+				  		<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{rentalBean.startBooking}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+				  		
+				  		</p:panelGrid>
+					</p:tab>
+					<p:tab id="payBookingTab" title="Booking Payment [#{rentalBean.bookings.size()}]">
+						<p:dataTable id="bookingsTable" var="obj" value="#{rentalBean.bookings}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Available bookings
+							</f:facet>
+							
+							<p:column sortBy="#{obj.customer.firstname}" headerText="Customer" filterBy="#{obj.customer.firstname}" filterMatchMode="contains">
+								<h:outputText value="#{obj.customer.firstname} #{obj.customer.lastname}" />
+							</p:column>
+							<p:column sortBy="#{obj.book_dt}" headerText="Trip Date">
+								<h:outputText value="#{obj.book_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.end_dt}" headerText="End Date">
+								<h:outputText value="#{obj.end_dt}" />
+							</p:column>
+							<p:column headerText="Pickup Loc." filterBy="#{obj.pickupLocation}" filterMatchMode="contains">
+								<h:outputText value="#{obj.pickupLocation}" />
+							</p:column>
+							<p:column headerText="Destination" filterBy="#{obj.destination}" filterMatchMode="contains">
+								<h:outputText value="#{obj.destination}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicleType.name}" headerText="Vehicle Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicleType.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.serviceType.name}" headerText="Service Type" filterBy="#{obj.serviceType.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.serviceType.name}" />
+							</p:column>
+							<p:column headerText="Duration">
+								<h:outputText value="#{obj.durationCount} #{obj.durationType}(S)" />
+							</p:column>
+							<p:column sortBy="#{obj.amount}" headerText="Amount">
+								<h:outputText value="#{obj.amount}" />
+							</p:column>
+							<p:column headerText="" style="width: 3%">
+								<p:commandButton update=":form:payPanel" oncomplete="paydlg.show();" icon="ui-icon-disk" title="Pay">
+									<f:setPropertyActionListener value="#{obj}" target="#{rentalBean.booking}" />
+								</p:commandButton>
+							</p:column>
+							<p:column headerText="" style="width: 3%">
+								<p:commandButton update="bookingsTable" onclick="return confirm('Are you sure?');" action="#{rentalBean.cancelBooking}" icon="ui-icon-close" title="Cancel">
+									<f:setPropertyActionListener value="#{obj}" target="#{rentalBean.booking}" />
+								</p:commandButton>
+							</p:column>
+						</p:dataTable>
+					</p:tab>
+					<p:tab id="completeBookingTab" title="Complete Trips [#{rentalBean.paidBookings.size()}]">
+						<p:dataTable id="paidbookingsTable" var="obj" value="#{rentalBean.paidBookings}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Available ongoing trip(s)
+							</f:facet>
+							
+							<p:column sortBy="#{obj.customer.firstname}" headerText="Customer" filterBy="#{obj.customer.firstname}" filterMatchMode="contains">
+								<h:outputText value="#{obj.customer.firstname} #{obj.customer.lastname}" />
+							</p:column>
+							<p:column sortBy="#{obj.book_dt}" headerText="Trip Date">
+								<h:outputText value="#{obj.book_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.end_dt}" headerText="End Date">
+								<h:outputText value="#{obj.end_dt}" />
+							</p:column>
+							<p:column headerText="Pickup Loc." filterBy="#{obj.pickupLocation}" filterMatchMode="contains">
+								<h:outputText value="#{obj.pickupLocation}" />
+							</p:column>
+							<p:column headerText="Destination" filterBy="#{obj.destination}" filterMatchMode="contains">
+								<h:outputText value="#{obj.destination}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicleType.name}" headerText="Vehicle Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicleType.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.serviceType}" headerText="Service Type" filterBy="#{obj.serviceType}" filterMatchMode="contains">
+								<h:outputText value="#{obj.serviceType}" />
+							</p:column>
+							<p:column sortBy="#{obj.amount}" headerText="Amount">
+								<h:outputText value="#{obj.amount}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Vehicle">
+								<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+								<h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
+							</p:column>
+							<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver">
+								<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="#{obj.driver != null}" />
+								<h:outputText value="N/A" rendered="#{obj.driver == null}" />
+							</p:column>
+							<p:column headerText="" style="width: 3%">
+								<p:commandButton update="paidbookingsTable" onclick="return confirm('Are you sure?');" action="#{rentalBean.completeTrip}" icon="ui-icon-disk" title="Complete">
+									<f:setPropertyActionListener value="#{obj}" target="#{rentalBean.booking}" />
+								</p:commandButton>
+							</p:column>
+						</p:dataTable>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="paymentDialog" header="Booking Payment" widgetVar="paydlg" modal="true" dynamic="true">
+		<p:panelGrid id="payPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<p:panelGrid columns="5">
+			<f:facet name="header">Select vehicle for trip</f:facet>
+	  		<h:outputLabel for="flt1" value="Fleet: *" />
+			<p:selectOneMenu id="flt1" value="#{rentalBean.fleet_id}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{rentalBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="vch1" />
+	  		</p:selectOneMenu>
+	  		<h:outputText value="" />
+	  		<h:outputText value="" />
+	  		<h:outputText value="" />
+	  		
+	  		<h:outputLabel for="vch1" value="Vehicle: *" />
+			<p:selectOneMenu id="vch1" value="#{rentalBean.vehicle_id}">
+				<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+				<f:selectItems value="#{ddBean.getVehicles(rentalBean.partner_id, rentalBean.fleet_id, rentalBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+			</p:selectOneMenu>
+			<h:outputText value=" OR " />
+			<h:outputLabel for="vchregn1" value="Registration No.: " />
+			<h:inputText id="vchregn1" value="#{rentalBean.regNo}">
+				<p:ajax update="vch1" />
+			</h:inputText>
+		</p:panelGrid>
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{rentalBean.payForBooking}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newSVDialog" header="New Service Type" widgetVar="servicetypedlg" modal="true" dynamic="true">
+		<p:panelGrid id="newSVPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+		<h:outputText value="#{rentalBean.partner.name}" rendered="#{dashboardBean.user.partner.sattrak}" />
+		
+		<h:outputLabel for="psvt" value="Service Type: *" />
+		<p:inputText id="psvt" value="#{rentalBean.serviceType.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{rentalBean.saveRentalServiceType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newPricingDialog" header="New Pricing" widgetVar="pricingdlg" modal="true" dynamic="true">
+		<p:panelGrid id="newPPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+		<h:outputText value="#{rentalBean.partner.name}" rendered="#{dashboardBean.user.partner.sattrak}" />
+		
+		<h:outputLabel for="pvt" value="Vehicle Type: *" />
+		<p:selectOneMenu id="pvt" value="#{rentalBean.vehicleType_id}">
+			<f:selectItems value="#{rentalBean.vehicleTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+		<h:outputLabel for="pservt" value="Service Type: *" />
+		<p:selectOneMenu id="pservt" value="#{rentalBean.serviceType_id}">
+			<f:selectItems value="#{rentalBean.serviceTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="pdurt" value="Duration Type: *" />
+		<p:selectOneMenu id="pdurt" value="#{rentalBean.priceSetting.durationType}">
+			<f:selectItem itemLabel="HOUR" itemValue="HOUR" />
+			<f:selectItem itemLabel="DAY" itemValue="DAY" />
+			<f:selectItem itemLabel="WEEK" itemValue="WEEK" />
+			<f:selectItem itemLabel="MONTH" itemValue="MONTH" />
+			<f:selectItem itemLabel="YEAR" itemValue="YEAR" />
+  		</p:selectOneMenu>
+		
+  		<h:outputLabel for="paperhour" value="Amount (per duration type): *" />
+  		<p:inputText id="paperhour" value="#{rentalBean.priceSetting.amountPerDurationType}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{rentalBean.saveSetting}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

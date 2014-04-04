@@ -1,0 +1,143 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Customers</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Customers" action="#{dashboardBean.gotoPage('manage_customers', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			<p:commandLink value="New Customer" onclick="dlg.show();" />
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{rentalBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="true" update="customersTable" action="#{rentalBean.resetCustomers}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				<p:dataTable id="customersTable" var="obj" value="#{rentalBean.customers}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available customer(s)
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{rentalBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{rentalBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.firstname}" headerText="First name" filterBy="#{obj.firstname}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.firstname}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.firstname}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.lastname}" headerText="Last name" filterBy="#{obj.lastname}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.lastname}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.lastname}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column headerText="Address">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.address}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.address}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.phone}" headerText="Phone" filterBy="#{obj.phone}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.phone}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.phone}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.email}" headerText="Email" filterBy="#{obj.email}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.email}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.email}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 5%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newCustomerDialog" header="New Customer" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+		<h:outputText value="#{rentalBean.partner.name}" rendered="#{dashboardBean.user.partner.sattrak}" />
+		
+  		<h:outputLabel for="cusfname" value="First name: *" />
+  		<p:inputText id="cusfname" value="#{rentalBean.customer.firstname}" />
+  		
+  		<h:outputLabel for="cuslname" value="Last name: " />
+  		<p:inputText id="cuslname" value="#{rentalBean.customer.lastname}" />
+  		
+  		<h:outputLabel for="cusaddr" value="Address: " />
+  		<p:inputText id="cusaddr" value="#{rentalBean.customer.address}" />
+  		
+  		<h:outputLabel for="cusemail" value="Email: " />
+  		<p:inputText id="cusemail" value="#{rentalBean.customer.email}" />
+  		
+  		<h:outputLabel for="cusphone" value="Phone: " />
+  		<p:inputText id="cusphone" value="#{rentalBean.customer.phone}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{rentalBean.saveCustomer}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

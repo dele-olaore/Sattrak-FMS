@@ -1,0 +1,146 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="All User Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="staffdept,staffrg" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="staffdept" value="Department: " />
+					<p:selectOneMenu id="staffdept" value="#{reportsBean.department_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{reportsBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="staffrg" value="Region: " />
+					<p:selectOneMenu id="staffrg" value="#{reportsBean.region_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{reportsBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.search}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.allUsers != null and reportsBean.allUsers.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'all_users_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="all_users_report" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'all_users_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(1, 'all_users_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="all_users_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="all_users_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="all_users_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="all_users_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="all_users_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.allUsers}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Found user(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.username}" filterBy="#{obj.username}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="User name" />  
+						</f:facet>
+						<h:outputText value="#{obj.username}" />
+					</p:column>
+					<p:column sortBy="#{obj.personel.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Full name" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.firstname} #{obj.personel.lastname}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Email" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.email}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Dept." />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.department.name}" rendered="#{obj.personel.department != null}" />
+						<h:outputText value="N/A" rendered="#{obj.personel.department == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Region" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.region.name}" rendered="#{obj.personel.region != null}" />
+						<h:outputText value="N/A" rendered="#{obj.personel.region == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Phone" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.phone}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Position" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.position}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+			<br/><br/><br/>
+		</h:body>
+	</f:view>
+</html>

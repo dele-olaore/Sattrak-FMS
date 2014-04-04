@@ -11,36 +11,32 @@
 		<div class="wrapper">
 			<div class="box">
 				<font color="white"><p:messages id="messages2" showDetail="true" autoUpdate="true" closable="true" /></font>
-				<div class="header grey">
-					<img src="#{request.contextPath}/resources/img/icons/packs/fugue/16x16/lock.png" width="16" height="16" />
-					<h3>Login</h3>
-				</div>
-				
-				<h:form class="form_example">
+				<h:form class="form_example" rendered="#{dashboardBean.user == null}">
+					<div class="header grey">
+						<img src="#{request.contextPath}/resources/img/icons/packs/fugue/16x16/lock.png" width="16" height="16" />
+						<h3>Login</h3>
+					</div>
 					<div class="content no-padding">
 						<div class="section _100">
 							<label>
 							Username
 							</label>
-							<div>
-								<p:inputText id="username" value="#{loginBean.username}" required="true" classStyle="required" />
-							</div>
+							<br/>
+							<p:inputText id="username" value="#{loginBean.username}" required="true" classStyle="required" />
 						</div>
 						<div class="section _100">
 							<label>
 							Password
 							</label>
-							<div>
-								<p:password id="password" value="#{loginBean.password}" required="true" classStyle="required" />
-							</div>
+							<br/>
+							<p:password id="password" value="#{loginBean.password}" required="true" classStyle="required" />
 						</div>
 						<div class="section _100">
 							<label>
 							Partner Code
 							</label>
-							<div>
-								<p:inputText id="partner_code" value="#{loginBean.partner_code}" required="true" classStyle="required" />
-							</div>
+							<br/>
+							<p:inputText id="partner_code" value="#{loginBean.partner_code}" required="true" classStyle="required" />
 						</div>
 					</div>
 					<div class="actions">
@@ -54,6 +50,48 @@
 							<p:commandButton ajax="false" value="Login" action="#{loginBean.login}" rendered="#{appBean.appSetup}" />
 							<h:outputText value=" " rendered="#{not appBean.appSetup}" />
 							<p:commandButton ajax="false" immediate="true" onclick="return confirm('Are you sure?');" value="Setup The Platform" action="#{appBean.setup}" rendered="#{not appBean.appSetup}" />
+						</div>
+					</div>
+				</h:form>
+				<h:form class="form_example2" rendered="#{dashboardBean.user != null and (not dashboardBean.user.activated)}">
+					<div class="header grey">
+						<img src="#{request.contextPath}/resources/img/icons/packs/fugue/16x16/lock.png" width="16" height="16" />
+						<h3>Change default password</h3>
+					</div>
+					<div class="content no-padding">
+						<div class="section _100">
+							<label>
+							Initial Password
+							</label>
+							<div>
+								<p:password id="oldpass" value="#{dashboardBean.oldpassword}" required="true" classStyle="required" />
+							</div>
+						</div>
+						<div class="section _100">
+							<label>
+							New Password
+							</label>
+							<div>
+								<p:password id="newpass" value="#{dashboardBean.newpassword}" required="true" classStyle="required" />
+							</div>
+						</div>
+						<div class="section _100">
+							<label>
+							Confirm Password
+							</label>
+							<div>
+								<p:password id="cpass" value="#{dashboardBean.cpassword}" required="true" classStyle="required" />
+							</div>
+						</div>
+					</div>
+					<div class="actions">
+						<div class="actions-left" style="margin-top: 8px;">
+							<label>
+								
+							</label>
+						</div>
+						<div class="actions-right">
+							<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{dashboardBean.changeInitPassword}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 						</div>
 					</div>
 				</h:form>

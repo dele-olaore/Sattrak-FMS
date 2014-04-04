@@ -39,6 +39,8 @@ public class MRole implements Serializable
 	@Transient
 	private List<MFunction> functions;
 	@Transient
+	private List<Report> reports;
+	@Transient
 	private boolean selected;
 	
 	public MRole()
@@ -90,6 +92,14 @@ public class MRole implements Serializable
 
 	public void setFunctions(List<MFunction> functions) {
 		this.functions = functions;
+	}
+
+	public List<Report> getReports() {
+		return reports;
+	}
+
+	public void setReports(List<Report> reports) {
+		this.reports = reports;
 	}
 
 	public Date getCrt_dt() {

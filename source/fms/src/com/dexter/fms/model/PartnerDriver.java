@@ -10,8 +10,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
+import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.ref.DriverGrade;
 
 @Entity
@@ -46,6 +48,9 @@ public class PartnerDriver implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	@Transient
+	private Vehicle vehicle;
 	
 	public PartnerDriver()
 	{}
@@ -136,6 +141,14 @@ public class PartnerDriver implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
 	}
 	
 }

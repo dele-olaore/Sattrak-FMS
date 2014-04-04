@@ -47,7 +47,9 @@ public class CorporateTrip implements Serializable
 	@ManyToOne
 	private PartnerUser approveUser;
 	
-	private String tripStatus; // ON_TRIP, SHOULD_BE_COMPLETED, COMPLETED
+	private String tripStatus; // AWAITING, ON_TRIP, SHOULD_BE_COMPLETED, COMPLETION_REQUEST, COMPLETED, CANCELED
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date completeRequestDateTime;
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date completedDateTime;
 	
@@ -167,6 +169,14 @@ public class CorporateTrip implements Serializable
 
 	public void setTripStatus(String tripStatus) {
 		this.tripStatus = tripStatus;
+	}
+
+	public Date getCompleteRequestDateTime() {
+		return completeRequestDateTime;
+	}
+
+	public void setCompleteRequestDateTime(Date completeRequestDateTime) {
+		this.completeRequestDateTime = completeRequestDateTime;
 	}
 
 	public Date getCompletedDateTime() {

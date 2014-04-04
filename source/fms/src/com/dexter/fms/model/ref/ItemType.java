@@ -5,7 +5,10 @@ import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
+
+import com.dexter.fms.model.Partner;
 
 @Entity
 public class ItemType implements Serializable
@@ -18,6 +21,9 @@ public class ItemType implements Serializable
 	private Long id;
 	
 	private String name;
+	
+	@ManyToOne
+	private Partner partner;
 	
 	public ItemType()
 	{}
@@ -36,6 +42,14 @@ public class ItemType implements Serializable
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Partner getPartner() {
+		return partner;
+	}
+
+	public void setPartner(Partner partner) {
+		this.partner = partner;
 	}
 	
 }

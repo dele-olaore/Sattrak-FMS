@@ -24,6 +24,8 @@
 		<tr>
 		<td colspan="2">
 			<p:outputPanel id="OPanel">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+			<p:tab id="newTab" title="Request for trip">
 			<p:panelGrid id="newstpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
 			<f:facet name="header"></f:facet>
 	  		
@@ -73,6 +75,82 @@
 	  		</f:facet>
 	  		
 	  		</p:panelGrid>
+	  		</p:tab>
+	  		<p:tab id="awaitingTab" title="Awaiting trip(s) [#{ctripBean.myAwaitingTrips.size()}]">
+	  			<p:dataTable id="awitingTable" var="obj" value="#{ctripBean.myAwaitingTrips}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						My awaiting trip(s) [#{ctripBean.myAwaitingTrips.size()}]
+					</f:facet>
+					
+					<p:column sortBy="#{obj.staff.firstname}" headerText="Request by" filterBy="#{obj.staff.firstname}" filterMatchMode="contains">
+						<h:outputText value="#{obj.staff.firstname} #{obj.staff.lastname}" />
+					</p:column>
+					
+					<p:column sortBy="#{obj.departureDateTime}" headerText="Departure">
+						Time: <h:outputText value="#{obj.departureDateTime}" /><br/>
+						Location: <h:outputText value="#{obj.departureLocation}" />
+					</p:column>
+					
+					<p:column headerText="Destination">
+						<h:outputText value="#{obj.arrivalLocation}" />
+					</p:column>
+					
+					<p:column headerText="Purpose">
+						<h:outputText value="#{obj.purpose}" />
+					</p:column>
+					
+					<p:column sortBy="#{obj.estimatedArrivalDateTime}" headerText="Est. Arrival Time">
+						<h:outputText value="#{obj.estimatedArrivalDateTime}" />
+					</p:column>
+					
+					<p:column headerText="" style="width:5%;">
+						<p:commandButton ajax="false" value="Cancel" action="#{ctripBean.cancelMyTrip}" onclick="return confirm('Are you sure?');">
+							<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
+						</p:commandButton>
+					</p:column>
+				</p:dataTable>
+	  		</p:tab>
+	  		<p:tab id="completeTab" title="Complete trip(s) [#{ctripBean.myOngoingTrips.size()}]">
+	  			<p:dataTable id="ongoingsTable" var="obj" value="#{ctripBean.myOngoingTrips}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						My pending trip completion(s) [#{ctripBean.myOngoingTrips.size()}]
+					</f:facet>
+					
+					<p:column sortBy="#{obj.staff.firstname}" headerText="Request by" filterBy="#{obj.staff.firstname}" filterMatchMode="contains">
+						<h:outputText value="#{obj.staff.firstname} #{obj.staff.lastname}" />
+					</p:column>
+					
+					<p:column sortBy="#{obj.departureDateTime}" headerText="Departure">
+						Time: <h:outputText value="#{obj.departureDateTime}" /><br/>
+						Location: <h:outputText value="#{obj.departureLocation}" />
+					</p:column>
+					
+					<p:column headerText="Destination">
+						<h:outputText value="#{obj.arrivalLocation}" />
+					</p:column>
+					
+					<p:column headerText="Purpose">
+						<h:outputText value="#{obj.purpose}" />
+					</p:column>
+					
+					<p:column sortBy="#{obj.estimatedArrivalDateTime}" headerText="Est. Arrival Time">
+						<h:outputText value="#{obj.estimatedArrivalDateTime}" />
+					</p:column>
+					
+					<p:column headerText="" style="width:5%;">
+						<p:commandButton ajax="false" value="Request Completion" action="#{ctripBean.requestCompleteTrip}" onclick="return confirm('Are you sure?');">
+							<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
+						</p:commandButton>
+					</p:column>
+				</p:dataTable>
+	  		</p:tab>
+	  		</p:tabView>
 	  		</p:outputPanel>
 	  	</td>
 	  	</tr>

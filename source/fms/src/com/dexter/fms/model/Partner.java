@@ -26,6 +26,7 @@ public class Partner implements Serializable
 	private String code;
 	
 	private boolean isSattrak;
+	private String fuelingType; // Manual, Automated, Both
 	
 	private String addr1;
 	private String addr2;
@@ -76,6 +77,14 @@ public class Partner implements Serializable
 
 	public void setSattrak(boolean isSattrak) {
 		this.isSattrak = isSattrak;
+	}
+
+	public String getFuelingType() {
+		return fuelingType;
+	}
+
+	public void setFuelingType(String fuelingType) {
+		this.fuelingType = fuelingType;
 	}
 
 	public String getAddr1() {

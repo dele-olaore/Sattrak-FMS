@@ -36,6 +36,8 @@ public class SubscriptionPackage implements Serializable
 	
 	@Transient
 	private Vector<ApplicationSubscriptionModule> modules;
+	@Transient
+	private Vector<ApplicationSubscriptionReport> reports;
 	
 	public SubscriptionPackage()
 	{}
@@ -94,6 +96,14 @@ public class SubscriptionPackage implements Serializable
 
 	public void setModules(Vector<ApplicationSubscriptionModule> modules) {
 		this.modules = modules;
+	}
+
+	public Vector<ApplicationSubscriptionReport> getReports() {
+		return reports;
+	}
+
+	public void setReports(Vector<ApplicationSubscriptionReport> reports) {
+		this.reports = reports;
 	}
 	
 }

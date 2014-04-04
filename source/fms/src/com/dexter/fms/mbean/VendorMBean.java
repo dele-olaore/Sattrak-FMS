@@ -12,6 +12,8 @@ import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
 
+import org.primefaces.event.RowEditEvent;
+
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.ref.ServiceType;
@@ -41,6 +43,36 @@ public class VendorMBean implements Serializable
 	
 	public VendorMBean()
 	{}
+	
+	public void onEdit(RowEditEvent event)
+	{
+		GeneralDAO gDAO = new GeneralDAO();
+		boolean ret = false;
+		Object eventSource = event.getObject();
+		
+		gDAO.startTransaction();
+		ret = gDAO.update(eventSource);
+		
+		if(ret)
+		{
+			gDAO.commit();
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity updated successfully.");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		else
+		{
+			gDAO.rollback();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to update entity. " + gDAO.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		gDAO.destroy();
+	}
+	
+	public void onCancel(RowEditEvent event)
+	{
+		msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Update canceled!");
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
 	
 	public void saveVendor()
 	{

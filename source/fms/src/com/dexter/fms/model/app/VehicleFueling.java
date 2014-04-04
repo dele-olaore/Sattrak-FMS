@@ -35,6 +35,9 @@ public class VehicleFueling implements Serializable
 	private double litres;
 	private double fuelLevel;
 	
+	private String source;
+	//TODO: Include the source of the transaction here. Possible values are: Cash, Card
+	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	
@@ -106,6 +109,14 @@ public class VehicleFueling implements Serializable
 
 	public void setFuelLevel(double fuelLevel) {
 		this.fuelLevel = fuelLevel;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
 	}
 
 	public Date getCrt_dt() {

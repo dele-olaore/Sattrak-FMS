@@ -34,6 +34,8 @@ public class MFunction implements Serializable
 	@Column(unique=true)
 	private String page_url;
 	
+	private int displayIndex;
+	
 	private boolean active;
 	
 	@Temporal(TemporalType.TIMESTAMP)
@@ -107,6 +109,14 @@ public class MFunction implements Serializable
 
 	public void setPage_url(String page_url) {
 		this.page_url = page_url;
+	}
+
+	public int getDisplayIndex() {
+		return displayIndex;
+	}
+
+	public void setDisplayIndex(int displayIndex) {
+		this.displayIndex = displayIndex;
 	}
 
 	public boolean isActive() {

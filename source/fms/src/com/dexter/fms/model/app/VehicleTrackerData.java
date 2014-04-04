@@ -1,7 +1,6 @@
 package com.dexter.fms.model.app;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -28,11 +27,16 @@ public class VehicleTrackerData implements Serializable
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date captured_dt;
 	
-	private BigDecimal odometer;
-	private BigDecimal fuelLevel;
+	private double odometer;
+	private double fuelLevel;
 	
-	private BigDecimal lon;
-	private BigDecimal lat;
+	private double lon;
+	private double lat;
+	
+	private double speed;
+	private int heading;
+	private int hdop;
+	private String vehicleTStatus;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -64,36 +68,68 @@ public class VehicleTrackerData implements Serializable
 		this.captured_dt = captured_dt;
 	}
 
-	public BigDecimal getOdometer() {
+	public double getOdometer() {
 		return odometer;
 	}
 
-	public void setOdometer(BigDecimal odometer) {
+	public void setOdometer(double odometer) {
 		this.odometer = odometer;
 	}
 
-	public BigDecimal getFuelLevel() {
+	public double getFuelLevel() {
 		return fuelLevel;
 	}
 
-	public void setFuelLevel(BigDecimal fuelLevel) {
+	public void setFuelLevel(double fuelLevel) {
 		this.fuelLevel = fuelLevel;
 	}
 
-	public BigDecimal getLon() {
+	public double getLon() {
 		return lon;
 	}
 
-	public void setLon(BigDecimal lon) {
+	public void setLon(double lon) {
 		this.lon = lon;
 	}
 
-	public BigDecimal getLat() {
+	public double getLat() {
 		return lat;
 	}
 
-	public void setLat(BigDecimal lat) {
+	public void setLat(double lat) {
 		this.lat = lat;
+	}
+
+	public double getSpeed() {
+		return speed;
+	}
+
+	public void setSpeed(double speed) {
+		this.speed = speed;
+	}
+
+	public int getHeading() {
+		return heading;
+	}
+
+	public void setHeading(int heading) {
+		this.heading = heading;
+	}
+
+	public int getHdop() {
+		return hdop;
+	}
+
+	public void setHdop(int hdpo) {
+		this.hdop = hdpo;
+	}
+
+	public String getVehicleTStatus() {
+		return vehicleTStatus;
+	}
+
+	public void setVehicleTStatus(String vehicleTStatus) {
+		this.vehicleTStatus = vehicleTStatus;
 	}
 
 	public Date getCrt_dt() {

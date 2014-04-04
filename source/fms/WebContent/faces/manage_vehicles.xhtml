@@ -20,7 +20,7 @@
 		<td align="right">
 			<p:commandLink value="New Vehicle" action="#{dashboardBean.gotoPage('new_vehicle', true)}" ajax="false" />
 			<h:outputText value=" | " />
-			<p:commandLink value="Batch Load Vehicles" action="#{dashboardBean.gotoPage('batch_vehicles', true)}" ajax="false" />
+			<p:commandLink value="Batch Load Vehicles" action="#{dashboardBean.gotoPage('batchload_vehicles', true)}" ajax="false" />
 		</td>
 		</tr>
 		<tr>
@@ -47,25 +47,41 @@
 			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
 				paginator="true" rows="10"
 				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 				<f:facet name="header">
 					Available vehicle(s)
 				</f:facet>
+				<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
+        		<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
 				
-				<p:column sortBy="#{obj.zonControlId}" headerText="Zon Control ID">
-					<h:outputText value="#{obj.zonControlId}" />
+				<p:column sortBy="#{obj.zonControlId}" headerText="Tracker ID">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.zonControlId}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{obj.zonControlId}" />
+						</f:facet>
+					</p:cellEditor>
 				</p:column>
 				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
-					<h:outputText value="#{obj.registrationNo}" />
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.registrationNo}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{obj.registrationNo}" />
+						</f:facet>
+					</p:cellEditor>
 				</p:column>
 				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
-					<h:outputText value="#{obj.model.name}" />
+					<h:outputText value="#{obj.model.name} (#{obj.model.year})" />
 				</p:column>
 				<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.fleet.name}" filterMatchMode="contains">
 					<h:outputText value="#{obj.fleet.name}" />
 				</p:column>
-				<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
-					<h:outputText value="#{obj.partner.name}" />
+				<p:column sortBy="#{obj.activeStatus}" headerText="Status" filterBy="#{obj.activeStatus}" filterMatchMode="contains">
+					<h:outputText value="#{obj.activeStatus}" />
 				</p:column>
 				<p:column headerText="Params" style="width: 3%">
 					<p:commandButton update=":form:vparamsPanel" oncomplete="vparamsdlg.show();" icon="ui-icon-search" title="View">
@@ -99,7 +115,7 @@
 					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 				</p:column>
 				<p:column headerText="" style="width: 3%">
-					<p:commandLink value="Update" /><br/><br/>
+					<p:rowEditor /><br/><br/>
 					<p:commandButton update=":messages3,:form:objsTable" onclick="return confirm('Are you sure?');" value="Dash Track" action="#{fleetBean.addVehicleTrack}">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
@@ -144,6 +160,9 @@
 				</p:column>
 				<p:column sortBy="#{vpr.tankcapacity}" headerText="Tank capacity">
 					<h:outputText value="#{vpr.tankcapacity}" />
+				</p:column>
+				<p:column sortBy="#{vpr.calibratedcapacity}" headerText="Calibrated capacity">
+					<h:outputText value="#{vpr.calibratedcapacity}" />
 				</p:column>
 				<p:column sortBy="#{vpr.color}" headerText="Color">
 					<h:outputText value="#{vpr.color}" />
@@ -206,6 +225,10 @@
 					<h:outputText value="#{drv.start_dt}" />
 				</p:column>
 				
+				<p:column sortBy="#{drv.end_dt}" headerText="End date">
+					<h:outputText value="#{drv.end_dt}" />
+				</p:column>
+				
 				<p:column sortBy="#{drv.active}" headerText="Status">
 					<h:outputText value="Active" rendered="#{drv.active}" />
 					<h:outputText value="Not active" rendered="#{not drv.active}" />
@@ -226,13 +249,16 @@
 		<f:facet name="header">Due Details for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
 		
 		<h:outputText value="Registration due date: " />
-		<h:outputText value="" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_lic.lic_end_dt}" rendered="#{fleetBean.selectedVehicle.last_lic != null and fleetBean.selectedVehicle.last_lic.lic_end_dt != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_lic == null or fleetBean.selectedVehicle.last_lic.lic_end_dt == null}" />
 		
 		<h:outputText value="Insurance due date: " />
-		<h:outputText value="" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_insur.lic_end_dt}" rendered="#{fleetBean.selectedVehicle.last_insur != null and fleetBean.selectedVehicle.last_insur.lic_end_dt != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_insur == null or fleetBean.selectedVehicle.last_insur.lic_end_dt == null}" />
 		
-		<h:outputText value="Maintenance due date: " />
-		<h:outputText value="" />
+		<h:outputText value="Maintenance (Next odometer): " />
+		<h:outputText value="#{fleetBean.selectedVehicle.maint_odometer}" rendered="#{fleetBean.selectedVehicle.maint_odometer != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.maint_odometer == null}" />
 		
 		</p:panelGrid>
 	</p:dialog>
@@ -258,31 +284,28 @@
 		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.vendor == null}" />
 		
 		<h:outputText value="Last registration with:" />
-		<h:outputText value="" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_lic.vendor.name}" rendered="#{fleetBean.selectedVehicle.last_lic != null and fleetBean.selectedVehicle.last_lic.vendor != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_lic == null or fleetBean.selectedVehicle.last_lic.vendor == null}" />
 		
 		<h:outputText value="Last registration on:" />
-		<h:outputText value="" />
-		
-		<h:outputText value="" />
-		<p:commandLink value="View registration history" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_lic.lic_start_dt}" rendered="#{fleetBean.selectedVehicle.last_lic != null and fleetBean.selectedVehicle.last_lic.lic_start_dt != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_lic == null or fleetBean.selectedVehicle.last_lic.lic_start_dt == null}" />
 		
 		<h:outputText value="Last insurance with: " />
-		<h:outputText value="" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_insur.vendor.name}" rendered="#{fleetBean.selectedVehicle.last_insur != null and fleetBean.selectedVehicle.last_insur.vendor != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_insur == null or fleetBean.selectedVehicle.last_insur.vendor == null}" />
 		
 		<h:outputText value="Last insurance on: " />
-		<h:outputText value="" />
-		
-		<h:outputText value="" />
-		<p:commandLink value="View insurance history" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_insur.lic_start_dt}" rendered="#{fleetBean.selectedVehicle.last_insur != null and fleetBean.selectedVehicle.last_insur.lic_start_dt != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_insur == null or fleetBean.selectedVehicle.last_insur.lic_start_dt == null}" />
 		
 		<h:outputText value="Last maintenance with:" />
-		<h:outputText value="" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_rout_maint.vendor.name}" rendered="#{fleetBean.selectedVehicle.last_rout_maint != null and fleetBean.selectedVehicle.last_rout_maint.vendor != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_rout_maint == null or fleetBean.selectedVehicle.last_rout_maint.vendor == null}" />
 		
 		<h:outputText value="Last maintenance on:" />
-		<h:outputText value="" />
-		
-		<h:outputText value="" />
-		<p:commandLink value="View maintenance history" />
+		<h:outputText value="#{fleetBean.selectedVehicle.last_rout_maint.start_dt}" rendered="#{fleetBean.selectedVehicle.last_rout_maint != null and fleetBean.selectedVehicle.last_rout_maint.start_dt != null}" />
+		<h:outputText value="N/A" rendered="#{fleetBean.selectedVehicle.last_rout_maint == null or fleetBean.selectedVehicle.last_rout_maint.start_dt == null}" />
 		
 		</p:panelGrid>
 	</p:dialog>

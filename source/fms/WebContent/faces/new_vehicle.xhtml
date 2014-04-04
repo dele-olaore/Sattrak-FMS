@@ -59,19 +59,19 @@
 		  		
 		  		<h:outputLabel for="flmodel1" value="Model: *" />
 				<p:selectOneMenu id="flmodel1" value="#{fleetBean.vehicleModel_id}">
-					<f:selectItems value="#{fleetBean.vmodels}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					<f:selectItems value="#{fleetBean.vmodels}" var="it" itemLabel="#{it.name} (#{it.year})" itemValue="#{it.id}" />
 		  		</p:selectOneMenu>
 		  		
-		  		<h:outputLabel for="zonid" value="Zon Control ID: *" />
+		  		<h:outputLabel for="zonid" value="Tracker ID: " />
 		  		<p:inputText id="zonid" value="#{fleetBean.vehicle.zonControlId}" />
 		  		
 		  		<h:outputLabel for="vregno" value="Registration No.: *" />
 				<p:inputText id="vregno" value="#{fleetBean.vehicle.registrationNo}" />
 				
-				<h:outputLabel for="vengno" value="Engine No.: *" />
+				<h:outputLabel for="vengno" value="Engine No.: " />
 				<p:inputText id="vengno" value="#{fleetBean.vehicle.engineNo}" />
 				
-				<h:outputLabel for="vchasno" value="Chassis No.: *" />
+				<h:outputLabel for="vchasno" value="Chassis No.: " />
 				<p:inputText id="vchasno" value="#{fleetBean.vehicle.chasisNo}" />
 				
 				<h:outputLabel for="vpurdate" value="Purchased Date: " />
@@ -115,6 +115,9 @@
 		  		
 		  		<h:outputLabel for="vparamtankc" value="Tank Capacity: " />
 				<p:inputText id="vparamtankc" value="#{fleetBean.vehicleParam.tankcapacity}" />
+				
+				<h:outputLabel for="vparamtankc2" value="Calibrated Capacity: " />
+				<p:inputText id="vparamtankc2" value="#{fleetBean.vehicleParam.calibratedcapacity}" />
 				
 				<h:outputLabel for="vparamclor" value="Color: " />
 				<p:inputText id="vparamclor" value="#{fleetBean.vehicleParam.color}" />

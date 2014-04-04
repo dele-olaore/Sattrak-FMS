@@ -10,7 +10,7 @@ package org.datacontract.schemas._2004._07.ZONIntegrationWCFService;
 public class SATTRACKUnitEventResult  implements java.io.Serializable {
     private org.datacontract.schemas._2004._07.ZONIntegrationWCFService.EResult result;
 
-    private org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEvent[] unitEvents;
+    private org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent[] unitEvents;
 
     private java.lang.Long lastQueriedId;
 
@@ -19,7 +19,7 @@ public class SATTRACKUnitEventResult  implements java.io.Serializable {
 
     public SATTRACKUnitEventResult(
            org.datacontract.schemas._2004._07.ZONIntegrationWCFService.EResult result,
-           org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEvent[] unitEvents,
+           org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent[] unitEvents,
            java.lang.Long lastQueriedId) {
            this.result = result;
            this.unitEvents = unitEvents;
@@ -52,7 +52,7 @@ public class SATTRACKUnitEventResult  implements java.io.Serializable {
      * 
      * @return unitEvents
      */
-    public org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEvent[] getUnitEvents() {
+    public org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent[] getUnitEvents() {
         return unitEvents;
     }
 
@@ -62,7 +62,7 @@ public class SATTRACKUnitEventResult  implements java.io.Serializable {
      * 
      * @param unitEvents
      */
-    public void setUnitEvents(org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEvent[] unitEvents) {
+    public void setUnitEvents(org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent[] unitEvents) {
         this.unitEvents = unitEvents;
     }
 
@@ -155,10 +155,10 @@ public class SATTRACKUnitEventResult  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("unitEvents");
         elemField.setXmlName(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "UnitEvents"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "UnitEvent"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent"));
         elemField.setMinOccurs(0);
         elemField.setNillable(true);
-        elemField.setItemQName(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "UnitEvent"));
+        elemField.setItemQName(new javax.xml.namespace.QName("http://schemas.datacontract.org/2004/07/ZONIntegrationWCFService", "SAATRAKUnitEvent"));
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("lastQueriedId");

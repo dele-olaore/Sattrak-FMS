@@ -14,17 +14,23 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
+import javax.servlet.http.HttpServletRequest;
 
+import org.primefaces.event.RowEditEvent;
 import org.primefaces.model.UploadedFile;
 
+import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationSubscriptionModule;
-import com.dexter.fms.model.MFunction;
+import com.dexter.fms.model.ApplicationSubscriptionReport;
+import com.dexter.fms.model.ApplicationTypeFunction;
 import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
+import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerPersonel;
+import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
@@ -48,6 +54,9 @@ public class PartnerMBean implements Serializable
 	private UploadedFile partnerUserPhoto;
 	private PartnerSubscription subscription;
 	
+	private UploadedFile partnerLogo;
+	private PartnerSetting setting;
+	
 	private Vector<Partner> partners;
 	private Vector<PartnerSubscription> partnerSubscriptions;
 	
@@ -61,6 +70,72 @@ public class PartnerMBean implements Serializable
 	
 	public PartnerMBean()
 	{}
+	
+	public void onEdit(RowEditEvent event)
+	{
+		GeneralDAO gDAO = new GeneralDAO();
+		boolean ret = false;
+		Object eventSource = event.getObject();
+		
+		gDAO.startTransaction();
+		ret = gDAO.update(eventSource);
+		
+		if(ret)
+		{
+			gDAO.commit();
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity updated successfully.");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		else
+		{
+			gDAO.rollback();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to update entity. " + gDAO.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		gDAO.destroy();
+	}
+	
+	public void onCancel(RowEditEvent event)
+	{
+		msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Update canceled!");
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void saveSetting()
+	{
+		if(getPartnerLogo() != null)
+		{
+			PartnerSetting sett = new PartnerSetting();
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", dashBean.getUser().getPartner());
+			
+			Object pSettingsObj = gDAO.search("PartnerSetting", params);
+			if(pSettingsObj != null)
+			{
+				Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
+				for(PartnerSetting e : pSettingsList)
+				{
+					sett = e;
+				}
+			}
+			
+			sett.setLogo(getPartnerLogo().getContents());
+			sett.setPartner(dashBean.getUser().getPartner());
+			gDAO.startTransaction();
+			if(sett.getId() != null)
+				gDAO.update(sett);
+			else
+				gDAO.save(sett);
+			gDAO.commit();
+			gDAO.destroy();
+			
+			setSetting(null);
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
 	public void saveSubscription()
@@ -77,10 +152,13 @@ public class PartnerMBean implements Serializable
 				Object pkgObj = gDAO.find(SubscriptionPackage.class, getPackage_id());
 				if(pkgObj != null)
 				{
+					SubscriptionPackage pkg = (SubscriptionPackage)pkgObj;
+					
 					sub.setPartner((Partner)pObj);
-					sub.setSubPackage((SubscriptionPackage)pkgObj);
+					sub.setSubPackage(pkg);
 					sub.setStart_dt(getSubStdt());
 					sub.setCrt_dt(new Date());
+					sub.setCreatedBy(dashBean.getUser());
 					sub.setExpired(false);
 					
 					if(getSubDocument() != null)
@@ -88,117 +166,205 @@ public class PartnerMBean implements Serializable
 					
 					Calendar c = Calendar.getInstance();
 					c.setTime(getSubStdt());
-					c.add(Calendar.YEAR, 1);
-					
+					if(pkg.getSubType().isDemo())
+					{
+						c.add(Calendar.DATE, pkg.getSubType().getDays());
+					}
+					else
+					{
+						c.add(Calendar.YEAR, 1);
+					}
 					Date end_dt = c.getTime();
 					sub.setEnd_dt(end_dt);
 					
 					Date now = new Date();
-					
 					if(getSubStdt().before(now) && end_dt.after(now))
+					{
 						sub.setActive(true);
+						sub.setExpired(false);
+						// TODO: Update the current active to in-active
+					}
 					else if(end_dt.before(now))
+					{
+						sub.setActive(false);
 						sub.setExpired(true);
+					}
 					
 					gDAO.startTransaction();
 					boolean ret = gDAO.save(sub);
 					if(ret)
 					{
-						//TODO: now we need to get the admin user of the partner, and either assigns all the functions available to this subscription to his existing role, 
-						// or create a new role for him and then assign all the functions in this subscription to that role
-						Hashtable<String, Object> params = new Hashtable<String, Object>();
-						params.put("partner", (Partner)pObj);
-						params.put("admin", true);
-						Object uObj = gDAO.search("PartnerUser", params);
-						if(uObj != null)
+						if(sub.isActive() && !sub.isExpired())
 						{
-							Vector<PartnerUser> uList = (Vector<PartnerUser>)uObj;
-							if(uList.size() > 0)
+							//TODO: now we need to get the admin user of the partner, and either assigns all the functions available to this subscription to his existing role, 
+							// or create a new role for him and then assign all the functions in this subscription to that role
+							Hashtable<String, Object> params = new Hashtable<String, Object>();
+							params.put("partner", (Partner)pObj);
+							params.put("admin", true);
+							Object uObj = gDAO.search("PartnerUser", params);
+							if(uObj != null)
 							{
-								PartnerUser adminUser = uList.get(0);
-								
-								params = new Hashtable<String, Object>();
-								params.put("user", adminUser);
-								params.put("defaultRole", true);
-								Object rObj = gDAO.search("PartnerUserRole", params);
-								if(rObj != null)
+								Vector<PartnerUser> uList = (Vector<PartnerUser>)uObj;
+								if(uList.size() > 0)
 								{
-									Vector<PartnerUserRole> rList = (Vector<PartnerUserRole>)rObj;
-									if(rList.size() > 0)
+									PartnerUser adminUser = uList.get(0);
+									
+									params = new Hashtable<String, Object>();
+									params.put("user", adminUser);
+									params.put("defaultRole", true);
+									Object rObj = gDAO.search("PartnerUserRole", params);
+									if(rObj != null)
 									{
-										PartnerUserRole role = rList.get(0);
-										
-										// clear the previous functions attached to the admin role of the partner
-										params = new Hashtable<String, Object>();
-										params.put("role", role.getRole());
-										Object mrfObj = gDAO.search("MRoleFunction", params);
-										if(mrfObj != null)
+										Vector<PartnerUserRole> rList = (Vector<PartnerUserRole>)rObj;
+										if(rList.size() > 0)
 										{
-											Vector<MRoleFunction> mrfList = (Vector<MRoleFunction>)mrfObj;
-											for(MRoleFunction e : mrfList)
+											PartnerUserRole role = rList.get(0);
+											
+											// clear the previous functions attached to the admin role of the partner
+											params = new Hashtable<String, Object>();
+											params.put("role", role.getRole());
+											Object mrfObj = gDAO.search("MRoleFunction", params);
+											if(mrfObj != null)
 											{
-												gDAO.remove(e);
-											}
-										}
-										
-										SubscriptionPackage subp = (SubscriptionPackage)pkgObj;
-										
-										params = new Hashtable<String, Object>();
-										params.put("appTypeModule.appType", subp.getAppType());
-										params.put("subType", subp.getSubType());
-										Object mdsObj = gDAO.search("ApplicationSubscriptionModule", params);
-										if(mdsObj != null)
-										{
-											Vector<ApplicationSubscriptionModule> mdsList = (Vector<ApplicationSubscriptionModule>)mdsObj;
-											for(ApplicationSubscriptionModule e : mdsList)
-											{
-												params = new Hashtable<String, Object>();
-												params.put("module", e.getAppTypeModule().getModule());
-												Object fsObj = gDAO.search("MFunction", params);
-												if(fsObj != null)
+												Vector<MRoleFunction> mrfList = (Vector<MRoleFunction>)mrfObj;
+												for(MRoleFunction e : mrfList)
 												{
-													Vector<MFunction> fsList = (Vector<MFunction>)fsObj;
+													gDAO.remove(e);
+												}
+											}
+											
+											// clear the previous reports attached to the main role of the partner
+											params = new Hashtable<String, Object>();
+											params.put("role", role.getRole());
+											Object mrrObj = gDAO.search("MRoleReport", params);
+											if(mrrObj != null)
+											{
+												Vector<MRoleReport> mrrList = (Vector<MRoleReport>)mrrObj;
+												for(MRoleReport e : mrrList)
+												{
+													gDAO.remove(e);
+												}
+											}
+											
+											SubscriptionPackage subp = (SubscriptionPackage)pkgObj;
+											
+											// now attach the reports from the current subscription to the role
+											params = new Hashtable<String, Object>();
+											params.put("appTypeReport.appType", subp.getAppType());
+											params.put("subType", subp.getSubType());
+											Object asrObj = gDAO.search("ApplicationSubscriptionReport", params);
+											if(asrObj != null)
+											{
+												Vector<ApplicationSubscriptionReport> mdsList = (Vector<ApplicationSubscriptionReport>)asrObj;
+												for(ApplicationSubscriptionReport e : mdsList)
+												{
+													MRoleReport mrr = new MRoleReport();
+													mrr.setCreatedBy(dashBean.getUser());
+													mrr.setCrt_dt(new Date());
+													mrr.setReport(e.getAppTypeReport().getReport());
+													mrr.setRole(role.getRole());
 													
-													for(MFunction f : fsList)
-													{
-														MRoleFunction mrf = new MRoleFunction();
-														mrf.setCreatedBy(dashBean.getUser());
-														mrf.setCrt_dt(new Date());
-														mrf.setFunction(f);
-														mrf.setRole(role.getRole());
-														
-														gDAO.save(mrf);
-													}
-													
-													Vector<MRole> prolesList = new Vector<MRole>();
+													gDAO.save(mrr);
+												}
+												
+												Vector<MRole> prolesList = new Vector<MRole>();
+												params = new Hashtable<String, Object>();
+												params.put("partner", (Partner)pObj);
+												Object prolesObj = gDAO.search("MRole", params);
+												if(prolesObj != null)
+													prolesList = (Vector<MRole>)prolesObj;
+												for(MRole mr : prolesList)
+												{
+													if(mr.getId() == role.getRole().getId())
+														continue;
 													params = new Hashtable<String, Object>();
-													params.put("partner", (Partner)pObj);
-													Object prolesObj = gDAO.search("MRole", params);
-													if(prolesObj != null)
-														prolesList = (Vector<MRole>)prolesObj;
-													for(MRole mr : prolesList)
+													params.put("role", mr);
+													Object mrrsObj = gDAO.search("MRoleReport", params);
+													if(mrrsObj != null)
 													{
-														if(mr.getId() == role.getRole().getId())
-															continue;
-														params = new Hashtable<String, Object>();
-														params.put("role", mr);
-														Object mrfsObj = gDAO.search("MRoleFunction", params);
-														if(mrfsObj != null)
+														Vector<MRoleReport> mrrsList = (Vector<MRoleReport>)mrrsObj;
+														for(MRoleReport mrr : mrrsList)
 														{
-															Vector<MRoleFunction> mrfsList = (Vector<MRoleFunction>)mrfsObj;
-															for(MRoleFunction mrf : mrfsList)
+															boolean exist = false;
+															for(ApplicationSubscriptionReport f : mdsList)
 															{
-																boolean exist = false;
-																for(MFunction f : fsList)
+																if(f.getAppTypeReport().getReport().getId() == mrr.getReport().getId())
 																{
-																	if(f.getId() == mrf.getFunction().getId())
-																	{
-																		exist = true;
-																		break;
-																	}
+																	exist = true;
+																	break;
 																}
-																if(!exist)
-																	gDAO.remove(mrf);
+															}
+															if(!exist)
+																gDAO.remove(mrr);
+														}
+													}
+												}
+											}
+											
+											params = new Hashtable<String, Object>();
+											params.put("appTypeModule.appType", subp.getAppType());
+											params.put("subType", subp.getSubType());
+											Object mdsObj = gDAO.search("ApplicationSubscriptionModule", params);
+											if(mdsObj != null)
+											{
+												Vector<ApplicationSubscriptionModule> mdsList = (Vector<ApplicationSubscriptionModule>)mdsObj;
+												for(ApplicationSubscriptionModule e : mdsList)
+												{
+													params = new Hashtable<String, Object>();
+													params.put("appTypeModule", e.getAppTypeModule());
+													Object fsObj = gDAO.search("ApplicationTypeFunction", params);
+													
+													//params = new Hashtable<String, Object>();
+													//params.put("module", e.getAppTypeModule().getModule());
+													//Object fsObj = gDAO.search("MFunction", params);
+													if(fsObj != null)
+													{
+														Vector<ApplicationTypeFunction> atflist = (Vector<ApplicationTypeFunction>) fsObj;
+														
+														//Vector<MFunction> fsList = (Vector<MFunction>)fsObj;
+														
+														for(ApplicationTypeFunction f : atflist)
+														{
+															MRoleFunction mrf = new MRoleFunction();
+															mrf.setCreatedBy(dashBean.getUser());
+															mrf.setCrt_dt(new Date());
+															mrf.setFunction(f.getFunction());
+															mrf.setRole(role.getRole());
+															
+															gDAO.save(mrf);
+														}
+														
+														Vector<MRole> prolesList = new Vector<MRole>();
+														params = new Hashtable<String, Object>();
+														params.put("partner", (Partner)pObj);
+														Object prolesObj = gDAO.search("MRole", params);
+														if(prolesObj != null)
+															prolesList = (Vector<MRole>)prolesObj;
+														for(MRole mr : prolesList)
+														{
+															if(mr.getId() == role.getRole().getId())
+																continue;
+															params = new Hashtable<String, Object>();
+															params.put("role", mr);
+															params.put("function.module", e.getAppTypeModule().getModule());
+															Object mrfsObj = gDAO.search("MRoleFunction", params);
+															if(mrfsObj != null)
+															{
+																Vector<MRoleFunction> mrfsList = (Vector<MRoleFunction>)mrfsObj;
+																for(MRoleFunction mrf : mrfsList)
+																{
+																	boolean exist = false;
+																	for(ApplicationTypeFunction f : atflist)
+																	{
+																		if(f.getFunction().getId() == mrf.getFunction().getId())
+																		{
+																			exist = true;
+																			break;
+																		}
+																	}
+																	if(!exist)
+																		gDAO.remove(mrf);
+																}
 															}
 														}
 													}
@@ -312,6 +478,15 @@ public class PartnerMBean implements Serializable
 					gDAO.update(getPartner());
 					logger.log(Level.INFO, "Updating partner with code: '" + p_id_str + "'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 					
+					if(getPartnerLogo() != null)
+					{
+						PartnerSetting sett = new PartnerSetting();
+						sett.setPartner(getPartner());
+						sett.setLogo(getPartnerLogo().getContents());
+						
+						gDAO.save(sett);
+					}
+					
 					// create a default fleet for the partner
 					Fleet defaultFleet = new Fleet();
 					defaultFleet.setDefaultFleet(true);
@@ -333,6 +508,7 @@ public class PartnerMBean implements Serializable
 					ret = gDAO.save(getPartnerPersonel());
 					
 					getPartnerUser().setPersonel(getPartnerPersonel());
+					final String pwordB4Hash = getPartnerUser().getPassword();
 					getPartnerUser().setPassword(Hasher.getHashValue(getPartnerUser().getPassword()));
 					getPartnerUser().setPartner(getPartner());
 					getPartnerUser().setPartner_code(getPartner().getCode());
@@ -364,6 +540,36 @@ public class PartnerMBean implements Serializable
 						gDAO.save(userRole);
 						
 						gDAO.commit();
+						
+						HttpServletRequest origRequest = (HttpServletRequest)FacesContext.getCurrentInstance().getExternalContext().getRequest();
+						
+						final StringBuilder body = new StringBuilder("<html><body>");
+						body.append("<p>Dear <strong>").append(getPartnerPersonel().getFirstname()).append("</strong></p>");
+						body.append("<p>Your partner account '").append(getPartner().getName()).append("' is set up on the Sattrak Fleet Management System as below: -</p>");
+						body.append("<p>Web Address: ").append(origRequest.getProtocol()+"://"+origRequest.getServerName()+":"+origRequest.getServerPort()+"/fms/faces/index.xhtml").append("</br></br>");
+						body.append("Username: ").append(getPartnerUser().getUsername()).append("</br></br>");
+						body.append("Password: ").append(pwordB4Hash).append("</br></br>");
+						body.append("Partner Code: ").append(getPartner().getCode()).append("</br></br></p>");
+						body.append("<p>Regards</br></br>Sattrak FMS Portal</p>");
+						body.append("</body></html>");
+						
+						final String email = getPartnerPersonel().getEmail();
+						Thread notifyThread = new Thread()
+						{
+							public void run()
+							{
+								try
+								{
+									if(email != null)
+										Emailer.sendEmail("fms@sattrakservices.com", new String[]{email}, "FMS - Account Setup", body.toString());
+								}
+								catch(Exception ex)
+								{
+									ex.printStackTrace();
+								}
+							}
+						};
+						notifyThread.start();
 						
 						setPartnerPersonel(null);
 						setPartners(null);
@@ -456,6 +662,39 @@ public class PartnerMBean implements Serializable
 
 	public void setSubscription(PartnerSubscription subscription) {
 		this.subscription = subscription;
+	}
+
+	public UploadedFile getPartnerLogo() {
+		return partnerLogo;
+	}
+
+	public void setPartnerLogo(UploadedFile partnerLogo) {
+		this.partnerLogo = partnerLogo;
+	}
+
+	@SuppressWarnings("unchecked")
+	public PartnerSetting getSetting() {
+		if(setting == null)
+		{
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", dashBean.getUser().getPartner());
+			GeneralDAO gDAO = new GeneralDAO();
+			Object pSettingsObj = gDAO.search("PartnerSetting", params);
+			if(pSettingsObj != null)
+			{
+				Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
+				for(PartnerSetting e : pSettingsList)
+				{
+					setting = e;
+				}
+			}
+			gDAO.destroy();
+		}
+		return setting;
+	}
+
+	public void setSetting(PartnerSetting setting) {
+		this.setting = setting;
 	}
 
 	@SuppressWarnings("unchecked")

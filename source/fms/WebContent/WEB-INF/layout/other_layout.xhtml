@@ -10,7 +10,8 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 	xmlns:ui="http://java.sun.com/jsf/facelets"
 	xmlns:h="http://java.sun.com/jsf/html"
 	xmlns:f="http://java.sun.com/jsf/core"
-	xmlns:p="http://primefaces.org/ui">
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:c="http://java.sun.com/jsp/jstl/core">
 	<!--<![endif]-->
 	<f:view>
 	<ui:insert name="metadata"/>
@@ -66,6 +67,11 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 	
 	<h:body>
 		<p:growl id="messages3" sticky="true" showDetail="true" />
+		<p:ajaxStatus onstart="statusDialog.show();" onsuccess="statusDialog.hide();"/>
+		<p:dialog modal="true" widgetVar="statusDialog" header="Status" draggable="false" closable="false" showEffect="explode" hideEffect="explode">
+			<p:graphicImage value="/resources/images/ajax-loader.gif" />
+		</p:dialog>
+		
 		<table width="100%">
 		<tr valign="top"><td height="600px">
 		<!-- Begin of #height-wrapper -->
@@ -76,27 +82,31 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 				<!-- Begin of the header toolbar -->
 				<div id="header_toolbar">
 					<div class="container_12">
-						<h1 class="grid_8"><img src="#{request.contextPath}/resources/images/satraklogo.jpg" alt="" width="212" height="51" /> - Fleet Management System</h1>
+						<h1 class="grid_8"><!--<img src="#{request.contextPath}/resources/images/satraklogo.jpg" alt="" width="212" height="51" /> - Fleet Management System-->
+							<img src="#{request.contextPath}/imageservlet/#{partnerBean.setting.id}:partner:#{appBean.randomNumber}" width="212" height="51" alt="logo" /> - #{dashboardBean.user.partner.name}
+						</h1>
 						<!-- Start of right part -->
 						<div class="grid_4">
 							<!-- A small toolbar button -->
 							
-							<!--<div class="toolbar_small">
+							<div class="toolbar_small">
 								<div class="toolbutton">
-									<span><?php echo $totalRows_peralert + $totalRows_vehalert + ($totalRows_fuelrequest + $totalRows_maintrequest + $totalRows_vehiclerequest) + $totalRows_vehassign + $ren_num ;?></span>
-									<img src="img/icons/16x16/mail.png" width="16" height="16" alt="mail" >
+									<span><h:outputText value="#{notifyBean.notifications.size()}" /></span>
+									<img src="#{request.contextPath}/resources/img/icons/16x16/mail.png" width="16" height="16" alt="mail" />
 								</div>
 								<div class="toolbox">
 									<span class="arrow"></span>
-									<h3>Your Messages</h3>
+									<h3>Your Notifications</h3>
 									<ul class="mail">
-										<li>
-											<a href="#"> <strong>10:15</strong>Need your Help!
-											<small>
-												From: John
-											</small> </a>
-										</li>
-										<li>
+										<ui:repeat value="#{notifyBean.notifications}" var="notif">
+											<li>
+												<strong>#{notif.subject}</strong>#{notif.message}
+												<small>
+													<p:commandLink value="Mark" action="#{notifyBean.gotoNotificationPage(notif.id, notif.page_url, false)}" ajax="false" />
+												</small>
+											</li>
+										</ui:repeat>
+										<!--<li>
 											<a href="#"> <strong>9:55</strong>New comment on you theme
 											<small>
 												From: themeforest
@@ -113,12 +123,26 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 											<small>
 												From: Jane
 											</small></a>
-										</li>
+										</li>-->
 									</ul>
-									<a class="inbox" href="#">Go to inbox &raquo;</a>
+									<p:commandLink value="Mark All" action="#{notifyBean.markAll}" rendered="#{notifyBean.notifications != null and notifyBean.notifications.size() > 0}" styleClass="inbox" ajax="false" />
 								</div>
-							</div> -->
+							</div>
 							<!-- End of small toolbar button -->
+							
+							<p:menubar rendered="#{dashboardBean.user != null and (dashboardBean.otherModulesKeys != null and dashboardBean.otherModulesKeys.size() > 0)}">
+								<p:submenu label="Other Modules">
+								<c:forEach items="${dashboardBean.otherModulesKeys.toArray()}" var="mdule">
+									<span>
+									<p:submenu label="#{dashboardBean.getModuleDisplayName(mdule)}">
+										<c:forEach items="${dashboardBean.getModuleFunctions(mdule).toArray()}" var="mfunc">
+											<p:menuitem value="#{mfunc.name}"  action="#{dashboardBean.gotoPage(mfunc.page_url, false)}" rendered="#{dashboardBean.user != null}" />
+										</c:forEach>
+									</p:submenu>
+									</span>
+								</c:forEach>
+								</p:submenu>
+							</p:menubar>
 							
 							<!-- A large toolbar button --> 
 							<div class="toolbar_large">
@@ -189,7 +213,8 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 		<h:form>
 		<footer>
 			<div class="container_12">
-				Copyright 2013. Powered by Sattrak. All rights reserved.
+				<img src="#{request.contextPath}/resources/images/satraklogo.jpg" alt="" width="212" height="51" /> - Fleet Management System.
+				Copyright #{appBean.year}. Powered by Sattrak. All rights reserved.
 				<div id="button_bar">
 					<ul>
 						<li>

@@ -27,19 +27,55 @@
 		<p:dataTable id="modulesTable" var="obj" value="#{appTypeBean.modules}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available modules
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Module name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.display_name}" headerText="Module display name" filterBy="#{obj.display_name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.display_name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.display_name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.display_name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Module description">
-				<h:outputText value="#{obj.description}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter2" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column sortBy="#{obj.displayIndex}" headerText="Display Index">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.displayIndex}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.displayIndex}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
@@ -49,7 +85,7 @@
 				<p:commandLink value="#{obj.functions.size()} function(s)" />
 			</p:column>
 			<p:column headerText="" style="width: 10%">
-				<p:commandLink value="Update" />
+				<p:rowEditor />
 			</p:column>
 		</p:dataTable>
 		</p:panel>
@@ -58,6 +94,35 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="newModuleDialog" header="New Module" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="mname" value="Name: *" />
+  		<p:inputText id="mname" value="#{appTypeBean.module.name}" />
+  		
+  		<h:outputLabel for="mdname" value="Display Text: *" />
+  		<p:inputText id="mdname" value="#{appTypeBean.module.display_name}" />
+  		
+  		<h:outputLabel for="mdesc" value="Description: " />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="mdesc" value="#{appTypeBean.module.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<h:outputLabel for="micon" value="Icon: " />
+  		<p:inputText id="micon" value="#{appTypeBean.module.icon_url}" />
+  		
+  		<h:outputLabel for="mpage" value="Page URL: " />
+  		<p:inputText id="mpage" value="#{appTypeBean.module.main_page_url}" />
+		
+		</p:panelGrid>
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveModule}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.dexter.fms.model.PartnerPersonel;
+import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.VehicleParameters;
 
@@ -58,9 +59,15 @@ public class ImagesServlet extends HttpServlet
 			
 			String r_id = details.split(":")[0];
 			String photo = details.split(":")[1];
+			Long id = 0L;
 			try
 			{
-				Long id = Long.parseLong(r_id);
+				try
+				{
+					id = Long.parseLong(r_id);
+				}
+				catch(Exception ig)
+				{}
 				
 				byte[] data = null;
 				
@@ -83,6 +90,12 @@ public class ImagesServlet extends HttpServlet
 					VehicleParameters vps = em.find(VehicleParameters.class, id);
 					if(vps != null && vps.getPhoto() != null)
 						data = vps.getPhoto();
+				}
+				else if(photo.equalsIgnoreCase("partner"))
+				{
+					PartnerSetting ps = em.find(PartnerSetting.class, id);
+						if(ps != null && ps.getLogo() != null)
+							data = ps.getLogo();
 				}
 				
 				if(data != null)
@@ -111,9 +124,19 @@ public class ImagesServlet extends HttpServlet
 				}
 				else
 				{
-					File defaultIcon = new File(request.getRealPath("/resources/img/icons/16x16/user.png"));
-					response.setHeader("Content-Type", getServletContext().getMimeType("image/png"));
-			        response.setHeader("Content-Disposition", "inline; filename=\"photo\"");
+					File defaultIcon = null;
+					if(photo.equalsIgnoreCase("partner"))
+					{
+						defaultIcon = new File(request.getRealPath("/resources/images/satraklogo.jpg"));
+						response.setHeader("Content-Type", getServletContext().getMimeType("image/jpg"));
+				        response.setHeader("Content-Disposition", "inline; filename=\"logo\"");
+					}
+					else
+					{
+						defaultIcon = new File(request.getRealPath("/resources/img/icons/16x16/user.png"));
+						response.setHeader("Content-Type", getServletContext().getMimeType("image/png"));
+				        response.setHeader("Content-Disposition", "inline; filename=\"photo\"");
+					}
 	
 			        BufferedInputStream input = null;
 			        BufferedOutputStream output = null;

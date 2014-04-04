@@ -1,0 +1,150 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Corporate Trip Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		<h:outputLabel for="acddt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="acdrdt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchCorTrips}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.corTrips != null and reportsBean.corTrips.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(8, 'ctrips_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="ctrips_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(8, 'ctrips_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(8, 'ctrips_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="ctrips_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="ctrips_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="ctrips_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="ctrips_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="ctrips_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.corTrips}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.corTrips != null and reportsBean.corTrips.size() > 0}">
+					<f:facet name="header">
+						Found corporate trip(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.staff.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Requester" />  
+						</f:facet>
+						<h:outputText value="#{obj.staff.firstname} #{obj.staff.lastname}" />
+					</p:column>
+					<p:column sortBy="#{obj.staff.department.name}">
+						<f:facet name="header">
+							 <h:outputText value="Department" />  
+						</f:facet>
+						<h:outputText value="#{obj.staff.department.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.vehicle.registrationNo}" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="obj.vehicle != null" />
+						<h:outputText value="N/A" rendered="obj.vehicle == null" />
+					</p:column>
+					<p:column filterBy="#{obj.departureLocation}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Departure Location" />  
+						</f:facet>
+						<h:outputText value="#{obj.departureLocation}" />
+					</p:column>
+					<p:column filterBy="#{obj.arrivalLocation}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Arrival Location" />  
+						</f:facet>
+						<h:outputText value="#{obj.arrivalLocation}" />
+					</p:column>
+					<p:column sortBy="#{obj.departureDateTime}">
+						<f:facet name="header">
+							 <h:outputText value="Departure Date and Time" />  
+						</f:facet>
+						<h:outputText value="#{obj.departureDateTime}" />
+					</p:column>
+					<p:column sortBy="#{obj.estimatedArrivalDateTime}">
+						<f:facet name="header">
+							 <h:outputText value="Est. Arrival Date and Time" />  
+						</f:facet>
+						<h:outputText value="#{obj.estimatedArrivalDateTime}" />
+					</p:column>
+					<p:column sortBy="#{obj.completeRequestDateTime}">
+						<f:facet name="header">
+							 <h:outputText value="Act. Arrival Date and Time" />  
+						</f:facet>
+						<h:outputText value="#{obj.completeRequestDateTime}" />
+					</p:column>
+					<p:column sortBy="#{obj.tripStatus}">
+						<f:facet name="header">
+							 <h:outputText value="Status" />  
+						</f:facet>
+						<h:outputText value="#{obj.tripStatus}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

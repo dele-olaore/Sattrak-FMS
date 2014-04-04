@@ -38,6 +38,8 @@ public class ApplicationType implements Serializable
 	
 	@Transient
 	private Vector<Module> modules;
+	@Transient
+	private Vector<Report> reports;
 	
 	public ApplicationType()
 	{}
@@ -90,6 +92,16 @@ public class ApplicationType implements Serializable
 
 	public void setModules(Vector<Module> modules) {
 		this.modules = modules;
+	}
+
+	public Vector<Report> getReports() {
+		if(reports == null)
+			reports = new Vector<Report>();
+		return reports;
+	}
+
+	public void setReports(Vector<Report> reports) {
+		this.reports = reports;
 	}
 	
 }

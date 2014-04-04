@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Vector;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -29,6 +30,7 @@ public class VehicleMake implements Serializable
     @GeneratedValue
 	private Long id;
 	
+	@Column(unique=true)
 	private String name;
 	
 	@Temporal(TemporalType.TIMESTAMP)

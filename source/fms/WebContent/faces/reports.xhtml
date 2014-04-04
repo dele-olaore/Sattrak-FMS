@@ -1,0 +1,47 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Reports</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Reports" action="#{dashboardBean.gotoPage('reports', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		</tr>
+		<tr>
+		<td>
+			<p:outputPanel id="OPanel">
+				<p:layout style="min-width:400px;min-height:500px;" id="layout">
+					<p:layoutUnit position="west" resizable="true" size="300" minSize="300" maxSize="300">
+						<p:accordionPanel var="rptmodule" value="#{dashboardBean.reportsModules}">
+							<p:tab title="#{rptmodule}">
+								<ui:repeat value="#{dashboardBean.getModuleReports(rptmodule)}" var="rpt">								
+									<p:commandLink value="#{rpt.title}" action="#{reportsBean.gotoReportPage(rpt.page_url, true)}" ajax="false" /><br/><br/>
+								</ui:repeat>
+							</p:tab>
+						</p:accordionPanel>
+					</p:layoutUnit>
+					<p:layoutUnit position="center">
+						<ui:include src="#{reportsBean.report_page}" />
+						<br/><br/><br/>
+					</p:layoutUnit>
+				</p:layout>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

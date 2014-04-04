@@ -32,7 +32,7 @@
 			<p:selectOneMenu id="rlptn" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 	  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-	  			<p:ajax update="rlfuncs" />
+	  			<p:ajax update="rlfuncs, rlrpts" />
 	  		</p:selectOneMenu>
 	  		
 	  		<h:outputLabel for="rlname" value="Name: *" />
@@ -53,6 +53,18 @@
 			
 				<p:selectBooleanCheckbox value="#{obj.selected}" />
 				<h:outputText value="#{obj.name} (#{obj.module.name}) | #{obj.description})" />
+			
+			</p:dataGrid>
+			
+			<h:outputLabel for="rlrpts" value="Role report(s): " />
+			<p:dataGrid id="rlrpts" var="obj" value="#{userBean.partnerReports}"
+				columns="1">
+				<f:facet name="header">
+					Available report(s) for partner
+				</f:facet>
+			
+				<p:selectBooleanCheckbox value="#{obj.selected}" />
+				<h:outputText value="#{obj.title} (#{obj.module})" />
 			
 			</p:dataGrid>
 			

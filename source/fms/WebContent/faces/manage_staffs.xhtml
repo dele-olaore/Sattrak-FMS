@@ -20,7 +20,7 @@
 		<td align="right">
 			<p:commandLink value="New Personel" action="#{dashboardBean.gotoPage('new_staff', true)}" ajax="false" />
 			<h:outputText value=" | " />
-			<p:commandLink value="Batch Load Personels" />
+			<p:commandLink value="Batch Load Personels" action="#{dashboardBean.gotoPage('batchload_personel', true)}" ajax="false" />
 		</td>
 		</tr>
 		<tr>
@@ -82,23 +82,26 @@
 			<p:column sortBy="#{obj.region.name}" headerText="Region" filterBy="#{obj.region.name}" filterMatchMode="contains" style="width: 5%">
 				<h:outputText value="#{obj.region.name}" />
 			</p:column>
-			<p:column sortBy="#{obj.hasUser}" headerText="User" style="width: 3%">
+			<p:column sortBy="#{obj.hasUser}" headerText="User" style="width: 6%">
 				<h:outputText value="Yes" rendered="#{obj.hasUser}" />
-				<h:outputText value="No" rendered="#{not obj.hasUser}" />
+				<p:commandLink ajax="true" oncomplete="makeuserdlg.show();" update=":form:newUserPanel" value="No [Make User]" rendered="#{not obj.hasUser}">
+					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
+				</p:commandLink>
 			</p:column>
-			<p:column sortBy="#{obj.hasDriver}" headerText="Driver" style="width: 3%">
+			<p:column sortBy="#{obj.hasDriver}" headerText="Driver" style="width: 6%">
 				<h:outputText value="Yes" rendered="#{obj.hasDriver}" />
-				<h:outputText value="No" rendered="#{not obj.hasDriver}" />
+				<p:commandLink ajax="true" oncomplete="makedriverdlg.show();" update=":form:newDriverPanel" value="No [Make Driver]" rendered="#{not obj.hasDriver}">
+					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
+				</p:commandLink>
 			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
-			<p:column headerText="" style="width: 2%">
-				<p:commandLink value="View" />
-			</p:column>
 			<p:column headerText="" style="width: 3%">
-				<p:commandLink value="Update" />
+				<p:commandButton ajax="false" action="#{userBean.initStaffEdit}" icon="ui-icon-pencil">
+					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
+				</p:commandButton>
 			</p:column>
 		</p:dataTable>
 		</p:panel>
@@ -107,6 +110,81 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="newUserDialog" header="New User" widgetVar="makeuserdlg" modal="true" dynamic="true">
+		<p:panelGrid id="newUserPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Personel" />
+		<h:outputText value="#{userBean.personel.firstname} #{userBean.personel.lastname}" />
+		
+		<h:outputLabel for="stuname" value="Username: *" />
+		<p:inputText id="stuname" value="#{userBean.user.username}" />
+		
+		<h:outputLabel for="stupword" value="Password: *" />
+		<p:password id="stupword" value="#{userBean.user.password}" />
+		
+		<h:outputLabel for="stucpword" value="Confirm Password: *" />
+		<p:password id="stucpword" value="#{userBean.cpassword}" />
+		
+		<h:outputLabel for="sturoles" value="Role(s): " />
+		<p:dataGrid id="sturoles" var="obj" columns="1" value="#{userBean.mroles}">
+			<f:facet name="header">
+				Available role(s)
+			</f:facet>
+			<p:selectBooleanCheckbox value="#{obj.selected}" />
+		<h:outputText value="#{obj.name}" />
+		</p:dataGrid>
+		
+		</p:panelGrid>
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(8)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
+	<p:dialog id="newDriverDialog" header="New Driver" widgetVar="makedriverdlg" modal="true" dynamic="true">
+		<p:panelGrid id="newDriverPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Personel" />
+		<h:outputText value="#{userBean.personel.firstname} #{userBean.personel.lastname}" />
+		
+		<h:outputLabel for="stdrvgrd" value="Grade: " />
+		<p:selectOneMenu id="stdrvgrd" value="#{userBean.driverGrade_id}">
+			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+  			<f:selectItems value="#{userBean.driverGrades}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		<h:outputText value="Grade does not exist?" />
+		<p:commandLink id="newdglink" value="New Driver Grade" onclick="dgdlg.show();" />
+		
+		<h:outputLabel for="stdrvlicno" value="Driver's license No.: " />
+		<p:inputText id="stdrvlicno" value="#{userBean.drvLicenseNo}" />
+		
+		<h:outputLabel for="stdrvliceddt" value="Driver's license expiry date: " />
+		<p:calendar id="stdrvliceddt" value="#{userBean.drvLicenseExpiryDate}" showOn="button" />
+		
+		<h:outputLabel for="stdrvlicphoto" value="Driver's license photo: " />
+		<p:fileUpload id="stdrvlicphoto" value="#{userBean.driverslicPhoto}" mode="simple" />
+ 		
+		<h:outputLabel for="stdrvguarantor" value="Guarantor.: " />
+		<p:inputText id="stdrvguarantor" value="#{userBean.guarantor}" />
+		
+		<h:outputLabel for="stdrvcfile" value="Driver's certification file: " />
+		<p:fileUpload id="stdrvcfile" value="#{userBean.certFile}" mode="simple" />
+		
+		</p:panelGrid>
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(9)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
+	<p:dialog id="newGradeDialog" header="New Driver Grade" widgetVar="dgdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

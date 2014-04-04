@@ -36,12 +36,14 @@
 			  		</f:facet>
 				</p:panelGrid>
 				<p:dataTable id="usrsTable" var="obj" value="#{userBean.users}"
-					paginator="true" rows="10"
+					paginator="true" rows="20"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+					rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true" editable="true">
 					<f:facet name="header">
 						Available user(s)
 					</f:facet>
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
 					
 					<p:column headerText="">
 						<img src="#{request.contextPath}/imageservlet/#{obj.personel.id}:personel:#{appBean.randomNumber}" width="50" height="50" alt="driver" />
@@ -56,10 +58,31 @@
 						<h:outputText value="#{obj.partner.name}" />
 					</p:column>
 					<p:column sortBy="#{obj.username}" headerText="Username" filterBy="#{obj.username}" filterMatchMode="contains">
-						<h:outputText value="#{obj.username}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.username}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.username}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column headerText="Status" style="width: 5%">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="Active" rendered="#{obj.active}" />
+								<h:outputText value="In-Active" rendered="#{not obj.active}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:selectBooleanCheckbox value="#{obj.active}" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="Role" style="width: 5%">
 						<h:outputText value="#{obj.roles.size()} role(s)" />
+						<p:commandLink value=" Edit" action="#{userBean.initUserRoleEdit}" icon="ui-icon-pencil" oncomplete="edituserroledlg.show();">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.user}" />
+						</p:commandLink>
 					</p:column>
 					<p:column sortBy="#{obj.personel.department.name}" headerText="Department" filterBy="#{obj.personel.department.name}" filterMatchMode="contains" style="width: 5%">
 						<h:outputText value="#{obj.personel.department.name}" />
@@ -72,7 +95,7 @@
 						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 					</p:column>
 					<p:column headerText="" style="width: 3%">
-						<p:commandLink value="Update" />
+						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>
@@ -81,6 +104,30 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="editUserRoleDialog" header="Update user roles" widgetVar="edituserroledlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Username: " />
+		<h:outputText value="#{userBean.user.username}" />
+		
+		<h:outputLabel for="sturoles" value="Role(s): "/>
+		<p:dataGrid id="sturoles" var="obj" columns="1" value="#{userBean.mroles}">
+			<f:facet name="header">
+				Available role(s)
+			</f:facet>
+			
+			<p:selectBooleanCheckbox value="#{obj.selected}" />
+			<h:outputText value="#{obj.name}" />
+		</p:dataGrid>
+		
+		</p:panelGrid>
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.edit(4)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

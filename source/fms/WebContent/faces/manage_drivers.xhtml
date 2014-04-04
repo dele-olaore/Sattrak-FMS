@@ -43,7 +43,7 @@
 						Available driver(s)
 					</f:facet>
 					
-					<p:column headerText="">
+					<p:column headerText="" style="width: 5%">
 						<img src="#{request.contextPath}/imageservlet/#{obj.personel.id}:personel:#{appBean.randomNumber}" width="50" height="50" alt="driver" />
 					</p:column>
 					<p:column sortBy="#{obj.personel.lastname}" headerText="Last name" filterBy="#{obj.personel.lastname}" filterMatchMode="contains">
@@ -64,21 +64,41 @@
 					<p:column sortBy="#{obj.personel.region.name}" headerText="Region" filterBy="#{obj.personel.region.name}" filterMatchMode="contains" style="width: 5%">
 						<h:outputText value="#{obj.personel.region.name}" />
 					</p:column>
-					<p:column headerText="Created">
+					<p:column headerText="Created" style="width: 7%">
 						On: <h:outputText value="#{obj.crt_dt}" /><br/>
 						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 					</p:column>
 					<p:column headerText="Query" style="width: 3%">
-						<p:commandLink value="View" />
+						<p:commandLink update=":form:queryPanel" oncomplete="newquerydlg.show();" value="Capture">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.driver}" />
+						</p:commandLink>
+						<br/>
+						<br/>
+						<p:commandLink update=":form:viewqueryPanel,:form:queriesTable" oncomplete="viewqueriesdlg.show();" value="View">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.driver}" />
+						</p:commandLink>
 					</p:column>
 					<p:column headerText="Vehicle" style="width: 3%">
-						<p:commandLink value="View" />
+						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+						<h:outputText value="Not Assigned" rendered="#{obj.vehicle == null}" />
 					</p:column>
 					<p:column headerText="Score" style="width: 3%">
-						<p:commandLink value="View" />
+						<p:commandLink value="View" onclick="alert('Under construction!');return false;" />
+					</p:column>
+					<p:column headerText="Over Time" style="width: 4%">
+						<p:commandLink update=":form:overtimePanel" oncomplete="newovertimedlg.show();" value="Capture">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.driver}" />
+						</p:commandLink>
+						<br/>
+						<br/>
+						<p:commandLink update=":form:viewovertimePanel,:form:overtimesTable" oncomplete="viewovertimedlg.show();" value="View">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.driver}" />
+						</p:commandLink>
 					</p:column>
 					<p:column headerText="" style="width: 3%">
-						<p:commandLink value="View" />
+						<p:commandButton icon="ui-icon-pencil" update=":form:viewDriverPanel" oncomplete="viewdriverdlg.show();">
+							<f:setPropertyActionListener value="#{obj}" target="#{userBean.driver}" />
+						</p:commandButton>
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>
@@ -86,6 +106,195 @@
 		</tr>
 		</table>
 	</div>
+	
+	<p:dialog id="viewDriverDialog" header="View/Update Driver" widgetVar="viewdriverdlg" modal="true" dynamic="true">
+		<p:panelGrid id="viewDriverPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="dvrName5" value="Driver: *" />
+  		<h:outputText id="dvrName5" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
+		
+		<h:outputLabel for="stdrvgrd" value="Grade: " />
+		<p:selectOneMenu id="stdrvgrd" value="#{userBean.driverGrade_id}">
+			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+  			<f:selectItems value="#{userBean.driverGrades}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		<h:outputText value="Grade does not exist?" />
+		<p:commandLink id="newdglink" value="New Driver Grade" onclick="dgdlg.show();" />
+		
+		<h:outputLabel for="stdrvlicno" value="Driver's license No.: " />
+		<p:inputText id="stdrvlicno" value="#{userBean.driver.drvLicenseNo}" />
+		
+		<h:outputLabel for="stdrvguarantor" value="Guarantor.: " />
+		<p:inputText id="stdrvguarantor" value="#{userBean.driver.guarantor}" />
+		
+		<h:outputLabel for="stdrvcfile" value="Driver's certification file: " />
+		<p:fileUpload id="stdrvcfile" value="#{userBean.certFile}" mode="simple" />
+		
+		</p:panelGrid>
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.edit(2)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
+	<p:dialog id="newOvertimeDialog" header="Capture overtime" widgetVar="newovertimedlg" modal="true" dynamic="true">
+		<p:panelGrid id="overtimePanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="dvrName" value="Driver: *" />
+  		<h:outputText id="dvrName" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
+  		
+  		<h:outputLabel for="overtimedate" value="Date: *" />
+		<p:calendar id="overtimedate" value="#{userBean.overtime.tranDate}" showOn="button" />
+  		
+  		<h:outputLabel for="overtimehours" value="Overtime Hours: *" />
+  		<p:inputText id="overtimehours" value="#{userBean.overtime.overtimehours}">
+  			<p:ajax update="amt" />
+  		</p:inputText>
+  		
+  		<h:outputLabel for="overtimerateperhour" value="Amount Per Hour: *" />
+  		<p:inputText id="overtimerateperhour" value="#{userBean.overtime.amountPerHour}">
+  			<p:ajax update="amt" />
+  		</p:inputText>
+  		
+  		<h:outputLabel for="amt" value="Amount: " />
+  		<h:outputText id="amt" value="#{userBean.overtime.amount}" />
+  		
+  		<h:outputLabel for="overtimedesc" value="Reason: *" />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="overtimedesc" value="#{userBean.overtime.reason}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(6)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="viewOvertimeDialog" header="View overtime" widgetVar="viewovertimedlg" modal="true" dynamic="true">
+		<p:panelGrid id="viewovertimePanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="dvrName4" value="Driver: *" />
+  		<h:outputText id="dvrName4" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
+  		
+  		<h:outputLabel for="overtimestdate" value="Start Date: *" />
+		<p:calendar id="overtimestdate" value="#{userBean.overtimeStDate}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+		
+		<h:outputLabel for="overtimeenddate" value="End Date: *" />
+		<p:calendar id="overtimeenddate" value="#{userBean.overtimeEndDate}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="true" update="overtimesTable" action="#{userBean.resetOvertimes}" value="Search" icon="ui-icon-view" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  		<p:dataTable id="overtimesTable" var="obj" value="#{userBean.overtimes}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Found overtime record(s) [#{userBean.overtimes.size()}]
+			</f:facet>
+			
+			<p:column sortBy="#{obj.tranDate}" headerText="Date">
+				<h:outputText value="#{obj.tranDate}" />
+			</p:column>
+			<p:column sortBy="#{obj.overtimehours}" headerText="Hours">
+				<h:outputText value="#{obj.overtimehours}" />
+			</p:column>
+			<p:column sortBy="#{obj.amountPerHour}" headerText="Amount Per Hour">
+				<h:outputText value="#{obj.amountPerHour}" />
+			</p:column>
+			<p:column sortBy="#{obj.amount}" headerText="Amount">
+				<h:outputText value="#{obj.amount}" />
+			</p:column>
+			<p:column headerText="Reason" filterBy="#{obj.reason}" filterMatchMode="contains">
+				<h:outputText value="#{obj.reason}" />
+			</p:column>
+			<p:column headerText="Created" style="width: 7%">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:commandLink value="Delete" />
+			</p:column>
+		</p:dataTable>
+  	</p:dialog>
+	
+	<p:dialog id="newQueryDialog" header="Capture Query" widgetVar="newquerydlg" modal="true" dynamic="true">
+		<p:panelGrid id="queryPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="dvrName3" value="Driver: *" />
+  		<h:outputText id="dvrName3" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
+  		
+  		<h:outputLabel for="querydate" value="Date: *" />
+		<p:calendar id="querydate" value="#{userBean.dvrQuery.tranDate}" showOn="button" />
+  		
+  		<h:outputLabel for="querygrade" value="Grade: *" />
+  		<p:selectOneMenu id="querygrade" value="#{userBean.dvrQuery.queryGrade}">
+			<f:selectItem itemLabel="LOW" itemValue="LOW" />
+			<f:selectItem itemLabel="MEDIUM" itemValue="MEDIUM" />
+			<f:selectItem itemLabel="HIGH" itemValue="HIGH" />
+		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="querydesc" value="Reason: *" />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="querydesc" value="#{userBean.dvrQuery.queryRemarks}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter2" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(7)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="viewQueryDialog" header="View queries" widgetVar="viewqueriesdlg" modal="true" dynamic="true">
+		<p:panelGrid id="viewqueryPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="dvrName2" value="Driver: *" />
+  		<h:outputText id="dvrName2" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
+  		
+  		<h:outputLabel for="querystdate" value="Start Date: *" />
+		<p:calendar id="querystdate" value="#{userBean.queryStDate}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+		
+		<h:outputLabel for="queryenddate" value="End Date: *" />
+		<p:calendar id="queryenddate" value="#{userBean.queryEndDate}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="true" update="queriesTable" action="#{userBean.resetQueries}" value="Search" icon="ui-icon-view" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  		<p:dataTable id="queriesTable" var="obj" value="#{userBean.dvrQueries}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+			<f:facet name="header">
+				Found query record(s) [#{userBean.dvrQueries.size()}]
+			</f:facet>
+			
+			<p:column sortBy="#{obj.tranDate}" headerText="Date">
+				<h:outputText value="#{obj.tranDate}" />
+			</p:column>
+			<p:column sortBy="#{obj.queryGrade}" headerText="Grade">
+				<h:outputText value="#{obj.queryGrade}" />
+			</p:column>
+			<p:column headerText="Remarks" filterBy="#{obj.queryRemarks}" filterMatchMode="contains">
+				<h:outputText value="#{obj.queryRemarks}" />
+			</p:column>
+			<p:column headerText="Created" style="width: 7%">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:commandLink value="Delete" />
+			</p:column>
+		</p:dataTable>
+  	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

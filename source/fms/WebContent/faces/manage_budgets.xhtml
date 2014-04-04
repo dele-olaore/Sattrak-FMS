@@ -24,19 +24,20 @@
 		<tr>
 		<td colspan="2">
 			<p:outputPanel id="OPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" update="objsTable" action="#{expenseBean.resetSetupbudgets}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+			
 			<p:tabView id="tabs" dynamic="true" cache="false">
 				<p:tab id="stp" title="Setup Budget">
-					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
-						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
-						<p:selectOneMenu id="ptn1" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
-							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
-				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-				  		</p:selectOneMenu>
-				  		
-				  		<f:facet name="footer">
-				  			<p:commandButton ajax="false" update="objsTable" action="#{expenseBean.resetSetupbudgets}" value="Search" icon="ui-icon-search" style="margin:0"/>
-				  		</f:facet>
-					</p:panelGrid>
 					<p:dataTable id="objsTable" var="obj" value="#{expenseBean.setupbudgets}"
 						paginator="true" rows="50"
 						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
@@ -79,7 +80,61 @@
 					</p:panelGrid>
 				</p:tab>
 				<p:tab id="mng" title="Manage Budgets">
-					
+					<p:dataTable id="pendsTable" var="obj" value="#{expenseBean.budgets}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+						<f:facet name="header">
+							Active budget(s) [#{expenseBean.budgets.size()}]
+						</f:facet>
+						<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
+        				<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
+						
+						<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.type.name}" />
+						</p:column>
+						<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+							<h:outputText value="#{obj.type.description}" />
+						</p:column>
+						<p:column sortBy="#{obj.amount}" headerText="Budget Amount">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.amount}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{obj.amount}" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column sortBy="#{obj.start_dt}" headerText="Begin Date">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.start_dt}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:calendar value="#{obj.start_dt}" showOn="button" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column sortBy="#{obj.end_dt}" headerText="End Date">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{obj.end_dt}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:calendar value="#{obj.end_dt}" showOn="button" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column headerText="" style="width: 6%">
+							<p:rowEditor />
+						</p:column>
+						<p:column headerText="" style="width: 6%">
+							<p:commandButton ajax="true" icon="ui-icon-close" title="Delete" onclick="return confirm('Are you sure?');" action="#{expenseBean.deleteBudget}" update=":messages3,pendsTable">
+								<f:setPropertyActionListener value="#{obj}" target="#{expenseBean.budget}" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
 				</p:tab>
 			</p:tabView>
 			</p:outputPanel>

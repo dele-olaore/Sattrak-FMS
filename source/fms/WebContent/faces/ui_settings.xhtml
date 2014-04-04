@@ -7,10 +7,51 @@
 <ui:define name="title">Settings</ui:define>
 <ui:define name="content">
 	<br/><br/>
-	<h:form id="form" enctype="multipart/form-data">
 	<div class="content">
-		
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+			<tr><td>
+				<p:outputPanel id="newstOPanel">
+					<h:form id="form" enctype="multipart/form-data">
+					<p:panelGrid id="newstpanel" columns="3" cellpadding="5" style="margin-bottom:10px;">
+					<f:facet name="header">Settings</f:facet>
+						<h:outputLabel for="plogo" value="Logo: " />
+						<p:fileUpload id="plogo" value="#{partnerBean.partnerLogo}" mode="simple" />
+						<h:outputText value="NOTE: Dimension of logo is 212x51 pixels." />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.saveSetting}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					</h:form>
+					<br/><br/>
+					<h:form id="form2">
+					<p:panelGrid id="newstpanel" columns="3" cellpadding="5" style="margin-bottom:10px;">
+					<f:facet name="header">Settings</f:facet>
+						<h:outputLabel for="utheme" value="Theme: " />
+						<p:selectOneMenu id="utheme" value="#{dashboardBean.theme}">
+							<f:selectItem itemLabel="Aristo (Default)" itemValue="aristo" />
+							<f:selectItem itemLabel="Dark Hive" itemValue="dark-hive" />
+							<f:selectItem itemLabel="Swanky Purse" itemValue="swanky-purse" />
+							<f:selectItem itemLabel="UI Darkness" itemValue="ui-darkness" />
+						</p:selectOneMenu>
+						<h:outputText value="NOTE: Theme settings applys to only your profile. Other users can select their theme." />
+						
+						<h:outputLabel for="ucolor" value="Header color: " />
+						<p:selectOneMenu id="ucolor" value="#{dashboardBean.headercolor}">
+							<f:selectItem itemLabel="Blue (Default)" itemValue="header_main" />
+							<f:selectItem itemLabel="Gold 3D" itemValue="header_main_2" />
+							<f:selectItem itemLabel="Brown Red 3D" itemValue="header_main_3" />
+						</p:selectOneMenu>
+						<h:outputText value="NOTE: Header color settings applys to only your profile. Other users can select their theme." />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{dashboardBean.updateTheme}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					</h:form>
+				</p:outputPanel>
+			</td></tr>
+		</table>
 	</div>
-	</h:form>
 </ui:define>
 </ui:composition>

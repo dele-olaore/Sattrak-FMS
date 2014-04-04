@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Vector;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -30,9 +31,9 @@ public class VehicleModel implements Serializable
 	private String name;
 	private String year;
 	
-	@ManyToOne
+	@ManyToOne(cascade = {CascadeType.PERSIST})
 	private VehicleMake maker;
-	@ManyToOne
+	@ManyToOne(cascade = {CascadeType.PERSIST})
 	private VehicleType type;
 	
 	@Temporal(TemporalType.TIMESTAMP)

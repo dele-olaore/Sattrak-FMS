@@ -52,15 +52,50 @@
 			</p:column>
 			
 			<p:rowExpansion>
-				<p:dataTable id="functions2Table" var="obj2" value="#{obj.functions}">
+				<p:dataTable id="functions2Table" var="obj2" value="#{obj.functions}" editable="true">
+					<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
+        			
 					<p:column sortBy="#{obj2.name}" headerText="Function name" filterBy="#{obj2.name}" filterMatchMode="contains">
-						<h:outputText value="#{obj2.name}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj2.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj2.name}" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="Function description">
-						<h:outputText value="#{obj2.description}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj2.description}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+						  		<p:inputTextarea value="#{obj2.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+						  		<h:outputText id="counter" />
+						  		</p:panelGrid>
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj2.displayIndex}" headerText="Display Index">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj2.displayIndex}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj2.displayIndex}" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="" style="width: 10%">
-						<p:commandLink value="Update" />
+						<p:commandLink value="Change Module..." action="#{appTypeBean.initFunctionModuleChange}" update=":form:cdmodulePanel" oncomplete="cdmoduledlg.show();">
+							<f:setPropertyActionListener value="#{obj2}" target="#{appTypeBean.function}" />
+						</p:commandLink>
+					</p:column>
+					<p:column headerText="" style="width: 10%">
+						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
 			</p:rowExpansion>
@@ -71,6 +106,29 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="cdModuleDialog" header="Change Function Module" widgetVar="cdmoduledlg" modal="true" dynamic="true">
+		<p:panelGrid id="cdmodulePanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Function: *" />
+		<h:outputText value="#{appTypeBean.function.name}" />
+		
+		<h:outputLabel value="Current Module: *" />
+		<h:outputText value="#{appTypeBean.function.module.name}" />
+		
+		<h:outputLabel for="cdmodule" value="New Module: *" />
+		<p:selectOneMenu id="cdmodule" value="#{appTypeBean.module_id}">
+  			<f:selectItems value="#{appTypeBean.modules}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+		</p:panelGrid>
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveEditFunction}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

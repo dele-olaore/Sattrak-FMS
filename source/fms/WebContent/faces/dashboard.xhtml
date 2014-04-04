@@ -33,12 +33,113 @@
 			<td>
 				<p:dashboard id="board" model="#{dashboardBean.model}">
 					
-					<p:panel id="alerts" header="Alerts">
+					<p:panel id="alerts" header="Alerts" toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="alertsPanel">
 						<!-- like drivers wihtout license info, vehicles not assigned to a driver, drivers without a vehicle -->
 						<!-- No of vehicles active, no of ... -->
 					</p:panel>
 					
-					<p:panel id="duelics" header="Recent and upcoming expirations">
+					<p:panel id="bookings" header="Recent customer bookings and completed trips"
+						 toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="bookingsPanel">
+						<p:tabView id="bookingstabs" dynamic="true" cache="false">
+							<p:tab id="payBookingTab" title="Booking Payment [#{rentalBean.bookings.size()}]">
+								<p:dataTable id="bookingsTable" var="obj" value="#{rentalBean.bookings}"
+									paginator="true" rows="50"
+									paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+									rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+									<f:facet name="header">
+										Available bookings
+									</f:facet>
+									
+									<p:column sortBy="#{obj.customer.firstname}" headerText="Customer" filterBy="#{obj.customer.firstname}" filterMatchMode="contains">
+										<h:outputText value="#{obj.customer.firstname} #{obj.customer.lastname}" />
+									</p:column>
+									<p:column sortBy="#{obj.book_dt}" headerText="Trip Date">
+										<h:outputText value="#{obj.book_dt}" />
+									</p:column>
+									<p:column sortBy="#{obj.end_dt}" headerText="End Date">
+										<h:outputText value="#{obj.end_dt}" />
+									</p:column>
+									<p:column headerText="Pickup Loc." filterBy="#{obj.pickupLocation}" filterMatchMode="contains">
+										<h:outputText value="#{obj.pickupLocation}" />
+									</p:column>
+									<p:column headerText="Destination" filterBy="#{obj.destination}" filterMatchMode="contains">
+										<h:outputText value="#{obj.destination}" />
+									</p:column>
+									<p:column sortBy="#{obj.vehicleType.name}" headerText="Vehicle Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
+										<h:outputText value="#{obj.vehicleType.name}" />
+									</p:column>
+									<p:column sortBy="#{obj.serviceType.name}" headerText="Service Type" filterBy="#{obj.serviceType.name}" filterMatchMode="contains">
+										<h:outputText value="#{obj.serviceType.name}" />
+									</p:column>
+									<p:column headerText="Duration">
+										<h:outputText value="#{obj.durationCount} #{obj.durationType}(S)" />
+									</p:column>
+									<p:column sortBy="#{obj.amount}" headerText="Amount">
+										<h:outputText value="#{obj.amount}" />
+									</p:column>
+									<p:column headerText="" style="width: 3%">
+										<p:commandLink value="Pay at Booking..." action="#{dashboardBean.gotoPage('manage_cus_booking', false)}" />
+									</p:column>
+									<p:column headerText="" style="width: 3%">
+										<p:commandButton update="bookingsTable" onclick="return confirm('Are you sure?');" action="#{rentalBean.cancelBooking}" icon="ui-icon-close" title="Cancel">
+											<f:setPropertyActionListener value="#{obj}" target="#{rentalBean.booking}" />
+										</p:commandButton>
+									</p:column>
+								</p:dataTable>
+							</p:tab>
+							<p:tab id="completeBookingTab" title="Complete Trips [#{rentalBean.paidBookings.size()}]">
+								<p:dataTable id="paidbookingsTable" var="obj" value="#{rentalBean.paidBookings}"
+									paginator="true" rows="50"
+									paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+									rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+									<f:facet name="header">
+										Available ongoing trip(s)
+									</f:facet>
+									
+									<p:column sortBy="#{obj.customer.firstname}" headerText="Customer" filterBy="#{obj.customer.firstname}" filterMatchMode="contains">
+										<h:outputText value="#{obj.customer.firstname} #{obj.customer.lastname}" />
+									</p:column>
+									<p:column sortBy="#{obj.book_dt}" headerText="Trip Date">
+										<h:outputText value="#{obj.book_dt}" />
+									</p:column>
+									<p:column sortBy="#{obj.end_dt}" headerText="End Date">
+										<h:outputText value="#{obj.end_dt}" />
+									</p:column>
+									<p:column headerText="Pickup Loc." filterBy="#{obj.pickupLocation}" filterMatchMode="contains">
+										<h:outputText value="#{obj.pickupLocation}" />
+									</p:column>
+									<p:column headerText="Destination" filterBy="#{obj.destination}" filterMatchMode="contains">
+										<h:outputText value="#{obj.destination}" />
+									</p:column>
+									<p:column sortBy="#{obj.vehicleType.name}" headerText="Vehicle Type" filterBy="#{obj.vehicleType.name}" filterMatchMode="contains">
+										<h:outputText value="#{obj.vehicleType.name}" />
+									</p:column>
+									<p:column sortBy="#{obj.serviceType}" headerText="Service Type" filterBy="#{obj.serviceType}" filterMatchMode="contains">
+										<h:outputText value="#{obj.serviceType}" />
+									</p:column>
+									<p:column sortBy="#{obj.amount}" headerText="Amount">
+										<h:outputText value="#{obj.amount}" />
+									</p:column>
+									<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Vehicle">
+										<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+										<h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
+									</p:column>
+									<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver">
+										<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="#{obj.driver != null}" />
+										<h:outputText value="N/A" rendered="#{obj.driver == null}" />
+									</p:column>
+									<p:column headerText="" style="width: 3%">
+										<p:commandButton update="paidbookingsTable" onclick="return confirm('Are you sure?');" action="#{rentalBean.completeTrip}" icon="ui-icon-disk" title="Complete">
+											<f:setPropertyActionListener value="#{obj}" target="#{rentalBean.booking}" />
+										</p:commandButton>
+									</p:column>
+								</p:dataTable>
+							</p:tab>
+						</p:tabView>
+					</p:panel>
+					
+					<p:panel id="duelics" header="Recent and upcoming expirations"
+						toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="duelicsPanel">
 						<p:commandButton ajax="true" update="licsTable" action="#{dashboardBean.resetExpLicenses}" value="Reset" />
 						<br/><br/>
 						<p:dataTable var="lic" id="licsTable" value="#{dashboardBean.upcomingAndRecentExpirations}"
@@ -62,13 +163,13 @@
 								<h:outputText value="#{lic[3]}" />
 							</p:column>
 							<p:column headerText="Status">
-								<h:outputText value="#{lic[4]}" />
+								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[4]}" /></font>
 							</p:column>
 						</p:dataTable>
 						
 					</p:panel>
 					
-					<p:panel id="trackv" header="Vehicles location tracker">
+					<p:panel id="trackv" header="Vehicles location tracker" toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="trackvPanel">
 						<p:panelGrid columns="2">
 						
 						<p:panelGrid columns="1">
@@ -111,7 +212,7 @@
 						</p:panelGrid>
 					</p:panel>
 					
-					<p:panel id="duemaints" header="Due and Upcoming maintenance">
+					<p:panel id="duemaints" header="Due and Upcoming maintenance" toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="duemaintsPanel">
 						<p:commandButton ajax="true" update="maintslicsTable" action="#{dashboardBean.resetExpMaints}" value="Reset" />
 						<br/><br/>
 						<p:dataTable var="lic" id="maintslicsTable" value="#{dashboardBean.upcomingMaintenances}"
@@ -140,7 +241,8 @@
 						</p:dataTable>
 					</p:panel>
 					
-					<p:panel id="recentexpenses" header="Most recent expenses (#{dashboardBean.expsBack} back)">
+					<p:panel id="recentexpenses" header="Most recent expenses (#{dashboardBean.expsBack} back)"
+						 toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="recentexpensesPanel">
 						<p:panelGrid columns="1" style="width:100%">
 						<p:panelGrid columns="3">
 							<h:outputLabel id="explbl" for="vexpback" value="How far back? " />

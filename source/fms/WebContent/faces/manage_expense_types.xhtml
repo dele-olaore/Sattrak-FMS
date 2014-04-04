@@ -12,7 +12,7 @@
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
 		<td align="left" width="50%">
-			<p:breadCrumb>  
+			<p:breadCrumb>
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Expense Types" action="#{dashboardBean.gotoPage('manage_expense_types', false)}" ajax="false" />
     		</p:breadCrumb>
@@ -38,16 +38,35 @@
 		<p:dataTable id="expTypesTable" var="obj" value="#{expenseBean.expTypes}"
 			paginator="true" rows="50"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available expense type(s)
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
-				<h:outputText value="#{obj.description}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
 				<h:outputText value="#{obj.partner.name}" rendered="#{obj.partner != null}" />
@@ -58,7 +77,7 @@
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
 			</p:column>
 			<p:column headerText="" style="width: 3%">
-				<p:commandLink value="Update" rendered="#{not obj.systemObj}" />
+				<p:rowEditor rendered="#{not obj.systemObj}" />
 				<h:outputText value="Can't Update" rendered="#{obj.systemObj}" />
 			</p:column>
 		</p:dataTable>
@@ -73,10 +92,9 @@
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
-		<h:outputLabel for="roleptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
-		<p:selectOneMenu id="roleptn2" value="#{expenseBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
-  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-  		</p:selectOneMenu>
+		<h:outputLabel value="Partner: *" />
+		<h:outputText value="#{expenseBean.partner.name}" rendered="#{expenseBean.partner != null}" />
+		<h:outputText value="Please select a partner" rendered="#{expenseBean.partner == null}" />
 		
   		<h:outputLabel for="exptname" value="Name: *" />
   		<p:inputText id="exptname" value="#{expenseBean.expType.name}" />

@@ -36,6 +36,9 @@ public class PartnerSubscription implements Serializable
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	
+	@ManyToOne
+	private PartnerUser createdBy;
+	
 	private byte[] invoice;
 	
 	public PartnerSubscription()
@@ -95,6 +98,14 @@ public class PartnerSubscription implements Serializable
 
 	public void setCrt_dt(Date crt_dt) {
 		this.crt_dt = crt_dt;
+	}
+
+	public PartnerUser getCreatedBy() {
+		return createdBy;
+	}
+
+	public void setCreatedBy(PartnerUser createdBy) {
+		this.createdBy = createdBy;
 	}
 
 	public SubscriptionPackage getSubPackage() {

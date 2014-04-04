@@ -60,7 +60,9 @@
 							</p:column>
 							
 							<p:column headerText="" style="width:5%;">
-								<p:commandButton value="Attend To" />
+								<p:commandButton update=":form:display" oncomplete="dlg.show();" icon="ui-icon-search" value="Attend To">
+									<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
+								</p:commandButton>
 							</p:column>
 						</p:dataTable>
 					</p:tab>
@@ -100,11 +102,62 @@
 							</p:column>
 							
 							<p:column headerText="Manifest" style="width:5%;">
-								<p:commandButton value="View" />
+								<p:commandButton value="View" onclick="alert('Under Construction!');return false;" />
 							</p:column>
 							
 							<p:column headerText="" style="width:5%;">
-								<p:commandButton value="Locate" />
+								<p:commandButton value="Locate" onclick="alert('Under Construction!');return false;" />
+							</p:column>
+							
+						</p:dataTable>
+					</p:tab>
+					<p:tab id="completionTab" title="Completion request(s) [#{ctripBean.completionTripRequests.size()}]">
+						<p:dataTable id="completionreqsTable" var="obj" value="#{ctripBean.completionTripRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Completion request(s)
+							</f:facet>
+							
+							<p:column headerText="Vehicle">
+								Reg. No: <h:outputText value="#{obj.vehicle.registrationNo}" /><br/>
+								Driver: <h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" />
+							</p:column>
+							
+							<p:column sortBy="#{obj.staff.firstname}" headerText="Request by" filterBy="#{obj.staff.firstname}" filterMatchMode="contains">
+								<h:outputText value="#{obj.staff.firstname} #{obj.staff.lastname}" />
+							</p:column>
+							
+							<p:column sortBy="#{obj.departureDateTime}" headerText="Departure">
+								Time: <h:outputText value="#{obj.departureDateTime}" /><br/>
+								Location: <h:outputText value="#{obj.departureLocation}" />
+							</p:column>
+							
+							<p:column headerText="Destination">
+								<h:outputText value="#{obj.arrivalLocation}" />
+							</p:column>
+							
+							<p:column headerText="Purpose">
+								<h:outputText value="#{obj.purpose}" />
+							</p:column>
+							
+							<p:column sortBy="#{obj.estimatedArrivalDateTime}" headerText="Est. Arrival Time">
+								<h:outputText value="#{obj.estimatedArrivalDateTime}" />
+							</p:column>
+							
+							<p:column headerText="Request date" style="width:5%;">
+								<h:outputText value="#{obj.completeRequestDateTime}" />
+							</p:column>
+							
+							<p:column headerText="" style="width:5%;">
+								<p:commandButton value="Complete" action="#{ctripBean.completeTrip}" onclick="return confirm('Are you sure?');" update="completionreqsTable">
+									<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
+								</p:commandButton>
+								<h:outputText value=" / " />
+								<p:commandButton value="Un Complete" action="#{ctripBean.uncompleteTrip}" onclick="return confirm('Are you sure?');" update="completionreqsTable">
+									<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
+								</p:commandButton>
 							</p:column>
 							
 						</p:dataTable>
@@ -116,6 +169,52 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="attendToDialog" header="Attend To Trip Request" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid id="display" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Request by: <h:outputText value="#{ctripBean.trip.staff.firstname} #{ctripBean.trip.staff.lastname}" /></f:facet>
+		
+		<h:outputLabel for="appr" value="Approval type: *" />
+  		<p:selectOneMenu id="appr" value="#{ctripBean.trip.approvalStatus}">
+  			<f:selectItem itemLabel="APPROVE" itemValue="APPROVED" />
+  			<f:selectItem itemLabel="DECLINE" itemValue="DECLINED" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="apprcmt" value="Approval comment: *" />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="apprcmt" value="#{ctripBean.trip.approvalReason}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<h:outputLabel for="vehicles" value="Trip Vehicle: " />
+  		<p:panelGrid columns="5">
+	  		<h:outputLabel for="flt1" value="Fleet: " />
+			<p:selectOneMenu id="flt1" value="#{ctripBean.fleet_id}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ctripBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="vch1" />
+	  		</p:selectOneMenu>
+	  		<h:outputText value="" />
+	  		<h:outputText value="" />
+	  		<h:outputText value="" />
+	  		
+	  		<h:outputLabel for="vch1" value="Vehicle: *" />
+			<p:selectOneMenu id="vch1" value="#{ctripBean.vehicle_id}">
+				<f:selectItems value="#{ddBean.getActiveVehicles(dashBean.user.partner.id, ctripBean.fleet_id, ctripBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+			</p:selectOneMenu>
+			<h:outputText value=" OR " />
+			<h:outputLabel for="vchregn1" value="Registration No.: " />
+			<h:inputText id="vchregn1" value="#{ctripBean.regNo}">
+				<p:ajax update="vch1" />
+			</h:inputText>
+		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{ctripBean.attendToTrip}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

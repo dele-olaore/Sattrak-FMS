@@ -84,6 +84,7 @@
 				  		
 				  		<h:outputLabel for="licvendor" value="Vendor: " />
 						<p:selectOneMenu id="licvendor" value="#{fleetBean.vendor_id}">
+							<f:selectItem itemLabel="-- None --" itemValue="0" />
 							<f:selectItems value="#{fleetBean.vlicensesVendors}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 						</p:selectOneMenu>
 					</p:panelGrid>
@@ -145,6 +146,7 @@
 						</p:column>
 						<p:column sortBy="#{obj.vendor.name}" headerText="Vendor">
 							<h:outputText value="#{obj.vendor.name}" rendered="#{obj.vendor != null}" />
+							<h:outputText value="None" rendered="#{obj.vendor == null}" />
 						</p:column>
 						<p:column headerText="Created">
 							On: <h:outputText value="#{obj.crt_dt}" /><br/>

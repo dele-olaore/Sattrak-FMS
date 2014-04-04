@@ -25,6 +25,9 @@ public class SubscriptionType implements Serializable
 	private String name;
 	private String description;
 	
+	private boolean demo; // indicates if this subscription is a demo. If it is, then the duration is the amount of days specified in the days varable
+	private int days;
+	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	
@@ -56,6 +59,22 @@ public class SubscriptionType implements Serializable
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public boolean isDemo() {
+		return demo;
+	}
+
+	public void setDemo(boolean demo) {
+		this.demo = demo;
+	}
+
+	public int getDays() {
+		return days;
+	}
+
+	public void setDays(int days) {
+		this.days = days;
 	}
 
 	public Date getCrt_dt() {

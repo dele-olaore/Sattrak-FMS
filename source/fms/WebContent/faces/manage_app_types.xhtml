@@ -18,7 +18,7 @@
     		</p:breadCrumb>
 		</td>
 		<td align="right">
-			<p:commandLink value="New Application Type" onclick="dlg.show();" />
+			<p:commandLink value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" /><!-- onclick="dlg.show();" -->
 		</td>
 		</tr>
 		<tr>
@@ -27,27 +27,72 @@
 		<p:dataTable id="appTypesTable" var="obj" value="#{appTypeBean.appTypes}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available application types
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
-				<h:outputText value="#{obj.description}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter2" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
 			<p:column headerText="Modules" style="width: 10%">
-				<p:commandLink value="#{obj.modules.size()} module(s)" />
+				<p:rowToggler /> 
+				<p:commandLink ajax="false" value="#{obj.modules.size()} module(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
+					<f:setPropertyActionListener value="#{obj}" target="#{appTypeBean.appType}" />
+				</p:commandLink>
 			</p:column>
-			<p:column headerText="" style="width: 10%">
-				<p:commandLink value="Update" />
+			<p:column headerText="Reports" style="width: 10%">
+				<p:commandLink ajax="false" value="#{obj.reports.size()} report(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
+					<f:setPropertyActionListener value="#{obj}" target="#{appTypeBean.appType}" />
+				</p:commandLink>
 			</p:column>
+			<p:column headerText="" style="width: 6%">
+				<p:rowEditor />
+			</p:column>
+			
+			<p:rowExpansion>
+				<p:dataTable var="obj2" value="#{obj.modules}">
+					<p:column headerText="Module">
+						<h:outputText value="#{obj2.name} : #{obj2.functions.size()} function(s)" /> 
+					</p:column>
+					<p:column headerText="Function(s)">
+						<p:dataGrid var="obj3" value="#{obj2.functions}" columns="1">
+							<h:outputText value="#{obj3.name}" />  
+						</p:dataGrid>
+					</p:column>
+				</p:dataTable>
+				<p:dataTable var="obj3" value="#{obj.reports}">
+					<p:column headerText="Report">
+						<h:outputText value="#{obj3.title}" /> 
+					</p:column>
+				</p:dataTable>
+			</p:rowExpansion>
 		</p:dataTable>
 		</p:panel>
 		</td>
@@ -66,23 +111,64 @@
 		<p:dataTable id="appSubsTable" var="obj" value="#{appTypeBean.subTypes}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
 			<f:facet name="header">
 				Available subscription types
 			</f:facet>
+			<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
 			
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
-				<h:outputText value="#{obj.description}" />
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter3" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter3" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column headerText="Type">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="Demo" rendered="#{obj.demo}" />
+						<h:outputText value="Full" rendered="#{not obj.demo}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:selectBooleanCheckbox value="#{obj.demo}" />
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column headerText="Duration">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.days} day(s)" rendered="#{obj.demo}" />
+						<h:outputText value="1 Year" rendered="#{not obj.demo}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.days}" />
+					</f:facet>
+				</p:cellEditor>
 			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
-			<p:column headerText="" style="width: 10%">
-				<p:commandLink value="Update" />
+			<p:column headerText="" style="width: 6%">
+				<p:rowEditor />
 			</p:column>
 		</p:dataTable>
 		</p:panel>
@@ -121,10 +207,10 @@
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
 			<p:column headerText="Modules" style="width: 10%">
-				<p:commandLink value="#{obj.modules.size()} module(s)" />
+				<p:commandLink value="#{obj.modules.size()} module(s) [Edit]" />
 			</p:column>
-			<p:column headerText="" style="width: 10%">
-				<p:commandLink value="Update" />
+			<p:column headerText="Reports" style="width: 10%">
+				<p:commandLink value="#{obj.reports.size()} report(s) [Edit]" />
 			</p:column>
 		</p:dataTable>
 		</p:panel>
@@ -163,6 +249,19 @@
   			
   		</p:dataGrid>
   		
+  		<h:outputLabel for="aptreports" value="Reports: " />
+  		<p:dataGrid id="aptreports" var="mdule" value="#{appTypeBean.reports}" columns="2"
+  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+  			rowsPerPageTemplate="20,40,60">
+  			<f:facet name="header">
+  			</f:facet>
+  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+  				<p:selectBooleanCheckbox value="#{mdule.selected}" />
+  				<h:outputText value="#{mdule.title})" />  
+        	</p:panelGrid>
+  			
+  		</p:dataGrid>
+  		
   		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
   		</f:facet>
@@ -183,6 +282,12 @@
   		<h:outputText id="counter2" />
   		</p:panelGrid>
   		
+  		<h:outputLabel for="apsdemo" value="Demo: " />
+  		<p:selectBooleanCheckbox id="apsdemo" value="#{appTypeBean.subType.demo}" />
+  		
+  		<h:outputLabel for="apsdemodays" value="Demo Duration (Days): " />
+  		<p:inputText id="apsdemodays" value="#{appTypeBean.subType.days}" />
+  		
   		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveSubType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
   		</f:facet>
@@ -198,7 +303,7 @@
   		<p:selectOneMenu id="pkapt" value="#{appTypeBean.appType_id}">
   			<f:selectItem itemLabel="" itemValue="0" />
   			<f:selectItems value="#{ddBean.allAppTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-  			<p:ajax update="pkmodules" />
+  			<p:ajax update="pkmodules, pkreports" />
   		</p:selectOneMenu>
   		
   		<h:outputLabel for="pksbt" value="Subscription Type: *" />
@@ -218,6 +323,22 @@
   			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
   				<p:selectBooleanCheckbox value="#{mdule.selected}" />
   				<h:outputText value="#{mdule.module.name}(#{mdule.module.display_name})" />  
+        	</p:panelGrid>
+  			
+  		</p:dataGrid>
+  		
+  		<h:outputLabel for="pkreports" value="Reports: " />
+  		<p:dataGrid id="pkreports" var="rpt" value="#{appTypeBean.appTypeReports}" columns="2"
+  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+  			rowsPerPageTemplate="20,40,60">
+  			<f:facet name="header">
+  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllReports(true)}" value="Select All" update="pkreports" style="margin:0" />
+  				|
+  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllReports(false)}" value="De-select All" update="pkreports" style="margin:0" />
+  			</f:facet>
+  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+  				<p:selectBooleanCheckbox value="#{rpt.selected}" />
+  				<h:outputText value="#{rpt.report.title}" />
         	</p:panelGrid>
   			
   		</p:dataGrid>

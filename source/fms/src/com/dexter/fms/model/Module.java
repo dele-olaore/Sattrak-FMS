@@ -29,6 +29,8 @@ public class Module implements Serializable
 	private String icon_url;
 	private String main_page_url;
 	
+	private int displayIndex;
+	
 	private boolean active;
 	
 	@Temporal(TemporalType.TIMESTAMP)
@@ -91,6 +93,14 @@ public class Module implements Serializable
 
 	public void setMain_page_url(String main_page_url) {
 		this.main_page_url = main_page_url;
+	}
+
+	public int getDisplayIndex() {
+		return displayIndex;
+	}
+
+	public void setDisplayIndex(int displayIndex) {
+		this.displayIndex = displayIndex;
 	}
 
 	public boolean isActive() {

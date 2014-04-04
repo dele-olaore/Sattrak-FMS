@@ -41,6 +41,8 @@ public class DriverLicense implements Serializable
 	@Temporal(TemporalType.DATE)
 	private Date lic_end_dt;
 	
+	private String drvLicenseNo;
+	
 	private byte[] document;
 	
 	@ManyToOne
@@ -112,6 +114,14 @@ public class DriverLicense implements Serializable
 
 	public void setLic_end_dt(Date lic_end_dt) {
 		this.lic_end_dt = lic_end_dt;
+	}
+
+	public String getDrvLicenseNo() {
+		return drvLicenseNo;
+	}
+
+	public void setDrvLicenseNo(String drvLicenseNo) {
+		this.drvLicenseNo = drvLicenseNo;
 	}
 
 	public byte[] getDocument() {

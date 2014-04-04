@@ -8,17 +8,21 @@ import java.util.logging.Logger;
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
+import javax.persistence.Query;
 
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationType;
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.SubscriptionPackage;
 import com.dexter.fms.model.SubscriptionType;
 import com.dexter.fms.model.app.Fleet;
 import com.dexter.fms.model.app.Vehicle;
+import com.dexter.fms.model.app.VehicleStatusEnum;
 import com.dexter.fms.model.ref.DriverGrade;
 import com.dexter.fms.model.ref.LicenseType;
 import com.dexter.fms.model.ref.TransactionType;
+import com.dexter.fms.model.ref.VehicleWarning;
 
 @ManagedBean(name = "ddBean")
 @SessionScoped
@@ -35,12 +39,46 @@ public class DropDownMBean implements Serializable
 	{}
 	
 	@SuppressWarnings("unchecked")
+	public Vector<VehicleWarning> getVehicleWarnings()
+	{
+		//TODO This should be per partner
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Object obj = gDAO.findAll("VehicleWarning");
+		gDAO.destroy();
+		if(obj != null)
+		{
+			return (Vector<VehicleWarning>)obj;
+		}
+		else
+			return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerUser> getUsersWithFunction(Long partner_id, String page_url)
+	{
+		//TODO This should be per partner
+		GeneralDAO gDAO = new GeneralDAO();
+		String qstr = "Select e from PartnerUser e where e.id in (Select pur.user.id from PartnerUserRole pur where pur.role.id in (Select mr.role.id from MRoleFunction mr where mr.function.page_url=:page_url)) and e.partner.id=:partner_id";
+		Query q = gDAO.createQuery(qstr);
+		q.setParameter("page_url", page_url);
+		q.setParameter("partner_id", partner_id);
+		
+		Object retObj = gDAO.search(q, 0);
+		if(retObj != null)
+			return (Vector<PartnerUser>)retObj;
+		else
+			return null;
+	}
+	
+	@SuppressWarnings("unchecked")
 	public Vector<TransactionType> getTransactionTypes()
 	{
 		//TODO This should be per partner
 		GeneralDAO gDAO = new GeneralDAO();
 		
 		Object obj = gDAO.findAll("TransactionType");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<TransactionType>)obj;
@@ -56,6 +94,7 @@ public class DropDownMBean implements Serializable
 		GeneralDAO gDAO = new GeneralDAO();
 		
 		Object obj = gDAO.findAll("LicenseType");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<LicenseType>)obj;
@@ -89,6 +128,41 @@ public class DropDownMBean implements Serializable
 			params.put("registrationNo", regNo);
 		
 		Object resultObj = gDAO.search("Vehicle", params);
+		gDAO.destroy();
+		if(resultObj != null)
+			return (Vector<Vehicle>)resultObj;
+		else
+			return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<Vehicle> getActiveVehicles(Long partner_id, Long fleet_id, String regNo)
+	{
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		
+		if(partner_id != null && partner_id > 0)
+		{
+			Object partnerObj = gDAO.find(Partner.class, partner_id);
+			if(partnerObj != null)
+				params.put("partner", (Partner)partnerObj);
+		}
+		
+		if(fleet_id != null && fleet_id > 0)
+		{
+			Object fleetObj = gDAO.find(Fleet.class, fleet_id);
+			if(fleetObj != null)
+				params.put("fleet", (Fleet)fleetObj);
+		}
+		
+		if(regNo != null && regNo.trim().length() > 0)
+			params.put("registrationNo", regNo);
+		
+		params.put("activeStatus", VehicleStatusEnum.ACTIVE.getStatus());
+		
+		Object resultObj = gDAO.search("Vehicle", params);
+		gDAO.destroy();
 		if(resultObj != null)
 			return (Vector<Vehicle>)resultObj;
 		else
@@ -104,6 +178,7 @@ public class DropDownMBean implements Serializable
 		params.put("isSattrak", false);
 		
 		Object obj = gDAO.search("Partner", params);
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<Partner>)obj;
@@ -119,6 +194,7 @@ public class DropDownMBean implements Serializable
 		GeneralDAO gDAO = new GeneralDAO();
 		
 		Object obj = gDAO.findAll("DriverGrade");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<DriverGrade>)obj;
@@ -133,6 +209,7 @@ public class DropDownMBean implements Serializable
 		GeneralDAO gDAO = new GeneralDAO();
 		
 		Object obj = gDAO.findAll("Partner");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<Partner>)obj;
@@ -146,6 +223,7 @@ public class DropDownMBean implements Serializable
 	{
 		GeneralDAO gDAO = new GeneralDAO();
 		Object obj = gDAO.findAll("SubscriptionPackage");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<SubscriptionPackage>)obj;
@@ -159,6 +237,7 @@ public class DropDownMBean implements Serializable
 	{
 		GeneralDAO gDAO = new GeneralDAO();
 		Object obj = gDAO.findAll("ApplicationType");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<ApplicationType>)obj;
@@ -172,6 +251,7 @@ public class DropDownMBean implements Serializable
 	{
 		GeneralDAO gDAO = new GeneralDAO();
 		Object obj = gDAO.findAll("SubscriptionType");
+		gDAO.destroy();
 		if(obj != null)
 		{
 			return (Vector<SubscriptionType>)obj;

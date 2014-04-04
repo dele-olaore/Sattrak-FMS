@@ -1,0 +1,97 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">New Application Type</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Application Types" action="#{dashboardBean.gotoPage('manage_app_types', false)}" ajax="false" />
+    			<p:menuitem value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+					<f:facet name="header"></f:facet>
+					
+			  		<h:outputLabel for="aptname" value="Name: *" />
+			  		<p:inputText id="aptname" value="#{appTypeBean.appType.name}" />
+			  		
+			  		<h:outputLabel for="aptdesc" value="Description: " />
+			  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+			  		<p:inputTextarea id="aptdesc" value="#{appTypeBean.appType.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+			  		<h:outputText id="counter" />
+			  		</p:panelGrid>
+			  		
+			  		<h:outputLabel for="aptmodules" value="Modules: " />
+			  		<p:dataTable id="aptmodules" var="obj" value="#{appTypeBean.modules}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Available modules and functions
+						</f:facet>
+						
+						<p:column style="width:2%">
+							<p:rowToggler />
+						</p:column>
+						<p:column headerText="">
+							<p:selectBooleanCheckbox value="#{obj.selected}">
+								<p:ajax listener="#{appTypeBean.updateModulesFunctionsChecked(obj.id)}" update="aptmfunctions" />
+							</p:selectBooleanCheckbox>
+						</p:column>
+						<p:column headerText="Module">
+							<h:outputText value="#{obj.display_name}" />
+						</p:column>
+						
+						<p:rowExpansion>
+							<p:dataTable id="aptmfunctions" var="obj2" value="#{obj.functions}">
+								<p:column headerText="">
+									<p:selectBooleanCheckbox value="#{obj2.selected}" />
+								</p:column>
+								<p:column headerText="Function">
+									<h:outputText value="#{obj2.name}" />
+								</p:column>
+							</p:dataTable>
+						</p:rowExpansion>
+			  		</p:dataTable>
+			  		
+			  		<h:outputLabel for="aptreports" value="Reports: " />
+			  		<p:dataGrid id="aptreports" var="mdule" value="#{appTypeBean.reports}" columns="2"
+			  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+			  			rowsPerPageTemplate="20,40,60">
+			  			<f:facet name="header">
+			  			</f:facet>
+			  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+			  				<p:selectBooleanCheckbox value="#{mdule.selected}" />
+			  				<h:outputText value="#{mdule.title}" />  
+			        	</p:panelGrid>
+			  		</p:dataGrid>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+			  		</f:facet>
+		  		</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

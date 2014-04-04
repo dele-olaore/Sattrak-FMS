@@ -66,15 +66,32 @@
 			<p:rowExpansion>
 				<p:commandLink value="New Subscription" onclick="dlg.show();" /><br/>
 				<p:dataTable id="partnersubsTable" var="obj2" value="#{obj.subscriptions}"
-					rendered="#{obj.subscriptions != null and obj.subscriptions.size() > 0}">
+					rendered="#{obj.subscriptions != null and obj.subscriptions.size() > 0}" editable="true">
+					<p:ajax event="rowEdit" listener="#{partnerBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{partnerBean.onCancel}" update=":messages3" />
+        			
 					<p:column sortBy="#{obj2.subPackage.name}" headerText="Name" filterBy="#{obj2.subPackage.name}" filterMatchMode="contains">
 						<h:outputText value="#{obj2.subPackage.name}" />
 					</p:column>
 					<p:column headerText="Start date" sortBy="#{obj2.start_dt}">
-						<h:outputText value="#{obj2.start_dt}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj2.start_dt}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:calendar value="#{obj2.start_dt}" showOn="button" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="End date" sortBy="#{obj2.end_dt}">
-						<h:outputText value="#{obj2.end_dt}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj2.end_dt}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:calendar value="#{obj2.end_dt}" showOn="button" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="Status" sortBy="#{obj2.active}">
 						<h:outputText value="Active" rendered="#{obj2.active}" />
@@ -91,7 +108,7 @@
 						
 					</p:column>
 					<p:column headerText="" style="width: 10%">
-						<p:commandLink value="Update" />
+						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
 				<center>

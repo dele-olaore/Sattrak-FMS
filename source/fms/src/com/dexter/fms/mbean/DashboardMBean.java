@@ -1,17 +1,21 @@
 package com.dexter.fms.mbean;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.Locale;
+import java.util.List;
 import java.util.Vector;
 import java.util.logging.Logger;
 
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
+import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.persistence.Query;
 
@@ -30,9 +34,13 @@ import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRoleFunction;
+import com.dexter.fms.model.MRoleReport;
+import com.dexter.fms.model.Module;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
+import com.dexter.fms.model.PartnerUserSetting;
+import com.dexter.fms.model.Report;
 import com.dexter.fms.model.app.DashboardVehicle;
 import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.Expense;
@@ -57,8 +65,12 @@ public class DashboardMBean implements Serializable
 	private PartnerUser user;
 	private Vector<PartnerUserRole> userRoles;
 	private Vector<MRoleFunction> rolesFunctions;
+	private Vector<MRoleReport> rolesReports;
 	
 	private Hashtable<String, Vector<MFunction>> userModulesFunctions;
+	
+	private String[] reportsModules;
+	private Hashtable<String, Vector<Report>> moduleReports;
 	
 	private String oldpassword;
 	private String newpassword;
@@ -66,6 +78,8 @@ public class DashboardMBean implements Serializable
 	
 	private String function_page = "dashboard";
 	
+	private String theme;
+	private String headercolor;
 	private DashboardModel model;
 	
 	private MapModel vtrackingModel;
@@ -98,6 +112,7 @@ public class DashboardMBean implements Serializable
 		column1.addWidget("duelics");
 		column1.addWidget("duemaints");
         column1.addWidget("recentexpenses");
+        column1.addWidget("bookings");
         
         model.addColumn(column1);
         
@@ -106,12 +121,95 @@ public class DashboardMBean implements Serializable
         centerCoor = defaultCenterCoor;
         
         expsBack = expsBackTypes[0];
+        
+        theme = "aristo";
+        headercolor = "header_main";
 	}
+	
+	@SuppressWarnings("unchecked")
+	public void updateTheme()
+	{
+		PartnerUserSetting sett = new PartnerUserSetting();
+		
+		GeneralDAO gDAO = new GeneralDAO();
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("user", getUser());
+		Object setObj = gDAO.search("PartnerUserSetting", params);
+		if(setObj != null)
+		{
+			Vector<PartnerUserSetting> setList = (Vector<PartnerUserSetting>)setObj;
+			for(PartnerUserSetting e : setList)
+				sett = e;
+		}
+		
+		sett.setUser(getUser());
+		sett.setTheme(getTheme());
+		sett.setHeadercolor(getHeadercolor());
+		gDAO.startTransaction();
+		boolean ret = false;
+		if(sett.getId() != null)
+			ret = gDAO.update(sett);
+		else
+			ret = gDAO.save(sett);
+		if(ret)
+		{
+			gDAO.commit();
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "UI Setting change successful.");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		else
+		{
+			gDAO.rollback();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "UI Setting change failed. " + gDAO.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		gDAO.destroy();
+	}
+	
+	/**
+	  * 
+	  * @param url
+	  */
+	 public void redirector(String url)
+	 {
+	        FacesContext fc = FacesContext.getCurrentInstance();
+	        ExternalContext ec = fc.getExternalContext();
+	        try 
+	        {
+	            ec.redirect(url);
+	        } 
+	        catch (IOException ex)
+	        {
+	            //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
+	        }
+	    }
+
+	 /*
+	  * 
+	  */
+	 public void forwarder(String url) 
+	 {
+		 FacesContext fc = FacesContext.getCurrentInstance();
+		 try
+		 {
+			 fc.getExternalContext().dispatch(url);
+		 } 
+		 catch (Exception ex) 
+		 {
+			 //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
+		 }
+	 }
 
 	public String gotoPage(String page, boolean subFunction)
 	{
 		if(!subFunction)
 			function_page = page;
+		
+		//HttpServletRequest hs = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+		//FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
+		//String gotoPage = hs.getContextPath() + "/faces/" + page + ".xhtml";
+		//redirector(gotoPage);
+		
 		return page;
 	}
 	
@@ -141,6 +239,57 @@ public class DashboardMBean implements Serializable
 				}
 			}
 		}
+		return ret;
+	}
+	
+	public String changeInitPassword()
+	{
+		String ret = "index";
+		if(getNewpassword() != null && getOldpassword() != null && getCpassword() != null)
+		{
+			if(getNewpassword().equals(getCpassword()))
+			{
+				if(Hasher.getHashValue(getOldpassword()).equals(getUser().getPassword()))
+				{
+					getUser().setPassword(Hasher.getHashValue(getNewpassword()));
+					getUser().setActivated(true);
+					GeneralDAO gDAO = new GeneralDAO();
+					gDAO.startTransaction();
+					boolean retb = gDAO.update(getUser());
+					if(retb)
+					{
+						gDAO.commit();
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Password change successful.");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						
+						ret = "dashboard";
+					}
+					else
+					{
+						gDAO.rollback();
+						getUser().setActivated(false);
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Password change failed. " + gDAO.getMessage());
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+				}
+				else
+				{
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Authentication failed.");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "New password fields are not the same.");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "All fields with the '*' are required.");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		
 		return ret;
 	}
 	
@@ -220,6 +369,14 @@ public class DashboardMBean implements Serializable
 		this.rolesFunctions = rolesFunctions;
 	}
 	
+	public Vector<MRoleReport> getRolesReports() {
+		return rolesReports;
+	}
+
+	public void setRolesReports(Vector<MRoleReport> rolesReports) {
+		this.rolesReports = rolesReports;
+	}
+
 	public String getModuleDisplayName(String mdule)
 	{
 		String display_nm = "";
@@ -268,6 +425,48 @@ public class DashboardMBean implements Serializable
 		else
 			return null;
 	}
+	
+	private List<String> modulesKeys;
+	private List<String> otherModulesKeys;
+	
+	@SuppressWarnings("unchecked")
+	public List<String> getModulesKeys()
+	{
+		if(modulesKeys == null || modulesKeys.size() == 0)
+		{
+			modulesKeys = new ArrayList<String>();
+		
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			Query q = gDAO.createQuery("Select e from Module e where e.name IN :nameList order by e.displayIndex, e.name");
+			q.setParameter("nameList", getUserModulesFunctions().keySet());
+			Object mObjs = gDAO.search(q, 0);
+			if(mObjs != null)
+			{
+				Vector<Module> mList = (Vector<Module>)mObjs;
+				for(Module m : mList)
+				{
+					if(modulesKeys.size() == 8) // maximum 8 main modules, so add to other modules
+					{
+						if(otherModulesKeys == null)
+							otherModulesKeys = new ArrayList<String>();
+						otherModulesKeys.add(m.getName());
+					}
+					else
+					{
+						modulesKeys.add(m.getName());
+					}
+				}
+			}
+		}
+		return modulesKeys;
+	}
+
+	public List<String> getOtherModulesKeys() {
+		if(otherModulesKeys == null)
+			getModulesKeys();
+		return otherModulesKeys;
+	}
 
 	public Hashtable<String, Vector<MFunction>> getUserModulesFunctions() {
 		if(userModulesFunctions == null)
@@ -297,6 +496,69 @@ public class DashboardMBean implements Serializable
 	public void setUserModulesFunctions(
 			Hashtable<String, Vector<MFunction>> userModulesFunctions) {
 		this.userModulesFunctions = userModulesFunctions;
+	}
+
+	public String[] getReportsModules() {
+		if(reportsModules == null)
+		{
+			if(getRolesReports() != null && getRolesReports().size() > 0)
+			{
+				Vector<String> rm = new Vector<String>();
+				for(MRoleReport mrr : getRolesReports())
+				{
+					if(!rm.contains(mrr.getReport().getModule()))
+					{
+						rm.add(mrr.getReport().getModule());
+					}
+				}
+				reportsModules = new String[rm.size()];
+				for(int i=0; i<reportsModules.length; i++)
+					reportsModules[i] = rm.get(i);
+			}
+		}
+		return reportsModules;
+	}
+
+	public void setReportsModules(String[] reportsModules) {
+		this.reportsModules = reportsModules;
+	}
+
+	public Vector<Report> getModuleReports(String modulename) {
+		try
+		{
+			return getModuleReports().get(modulename);
+		}
+		catch(Exception ex)
+		{
+			return null;
+		}
+	}
+
+	public Hashtable<String, Vector<Report>> getModuleReports() {
+		if(moduleReports == null)
+		{
+			moduleReports = new Hashtable<String, Vector<Report>>();
+			if(getReportsModules() != null)
+			{
+				for(String e : getReportsModules())
+				{
+					Vector<Report> v = new Vector<Report>();
+					for(MRoleReport mrr : getRolesReports())
+					{
+						if(e.equals(mrr.getReport().getModule()))
+						{
+							v.add(mrr.getReport());
+						}
+					}
+					moduleReports.put(e, v);
+				}
+			}
+		}
+		return moduleReports;
+	}
+
+	public void setModuleReports(Hashtable<String, Vector<Report>> moduleReports) {
+		this.moduleReports = moduleReports;
 	}
 
 	public String getOldpassword() {
@@ -331,6 +593,22 @@ public class DashboardMBean implements Serializable
 		this.function_page = function_page;
 	}
 	
+	public String getTheme() {
+		return theme;
+	}
+
+	public void setTheme(String theme) {
+		this.theme = theme;
+	}
+
+	public String getHeadercolor() {
+		return headercolor;
+	}
+
+	public void setHeadercolor(String headercolor) {
+		this.headercolor = headercolor;
+	}
+
 	public DashboardModel getModel() {
 		return model;
 	}
@@ -542,7 +820,9 @@ public class DashboardMBean implements Serializable
 
 	public Vector<Expense> getExps() {
 		if(exps == null)
-		{}
+		{
+			
+		}
 		return exps;
 	}
 
@@ -634,10 +914,17 @@ public class DashboardMBean implements Serializable
 						Query q = null;
 						if(index == 0)
 						{
-							q = gDAO.createQuery("Select e from Expense e where e.partner=:partner and e.type=:type and e.expense_dt = :dt and e.createdBy=:createdBy");
+							Calendar can2 = Calendar.getInstance();
+							can2.setTime(can.getTime());
+							can2.set(Calendar.HOUR_OF_DAY, can2.getMaximum(Calendar.HOUR_OF_DAY));
+							can2.set(Calendar.MINUTE, can2.getMaximum(Calendar.MINUTE));
+							can2.set(Calendar.SECOND, can2.getMaximum(Calendar.SECOND));
+							
+							q = gDAO.createQuery("Select e from Expense e where e.partner=:partner and e.type=:type and (e.expense_dt between :dt and :dt2) and e.createdBy=:createdBy");
 							q.setParameter("partner", getUser().getPartner());
 							q.setParameter("type", et);
 							q.setParameter("dt", can.getTime());
+							q.setParameter("dt2", can2.getTime());
 							q.setParameter("createdBy", getUser());
 						}
 						else if(index == 1)
@@ -734,9 +1021,10 @@ public class DashboardMBean implements Serializable
 			Calendar c2 = Calendar.getInstance();
 			c.add(Calendar.DAY_OF_MONTH, -30);
 			
-			Query q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			Query q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
 			q.setParameter("expired", true);
+			q.setParameter("active", true);
 			q.setParameter("start_dt", c.getTime());
 			q.setParameter("end_date", c2.getTime());
 			
@@ -761,9 +1049,10 @@ public class DashboardMBean implements Serializable
 			c2 = Calendar.getInstance();
 			c2.add(Calendar.DAY_OF_MONTH, 30);
 			
-			q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
 			q.setParameter("expired", false);
+			q.setParameter("active", true);
 			q.setParameter("start_dt", c.getTime());
 			q.setParameter("end_date", c2.getTime());
 			
@@ -788,9 +1077,10 @@ public class DashboardMBean implements Serializable
 			c2 = Calendar.getInstance();
 			c.add(Calendar.DAY_OF_MONTH, -30);
 			
-			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
 			q.setParameter("expired", true);
+			q.setParameter("active", true);
 			q.setParameter("start_dt", c.getTime());
 			q.setParameter("end_date", c2.getTime());
 			
@@ -815,9 +1105,10 @@ public class DashboardMBean implements Serializable
 			c2 = Calendar.getInstance();
 			c2.add(Calendar.DAY_OF_MONTH, 30);
 			
-			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
 			q.setParameter("expired", false);
+			q.setParameter("active", true);
 			q.setParameter("start_dt", c.getTime());
 			q.setParameter("end_date", c2.getTime());
 			

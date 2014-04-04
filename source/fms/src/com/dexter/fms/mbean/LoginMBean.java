@@ -1,6 +1,8 @@
 package com.dexter.fms.mbean;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Vector;
 import java.util.logging.Logger;
@@ -9,15 +11,20 @@ import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
+import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
+import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.model.Audit;
 import com.dexter.fms.model.MRoleFunction;
+import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
+import com.dexter.fms.model.PartnerUserSetting;
 
 @ManagedBean(name = "loginBean")
 @RequestScoped
@@ -41,6 +48,56 @@ public class LoginMBean implements Serializable
 	
 	public LoginMBean()
 	{}
+	
+	private void saveAudit(String narration)
+	{
+		Audit audit = new Audit();
+		audit.setAction_dt(new Date());
+		audit.setUser(dashBean.getUser());
+		audit.setNarration(narration);
+		
+		GeneralDAO gDAO = new GeneralDAO();
+		gDAO.startTransaction();
+		if(gDAO.save(audit))
+			gDAO.commit();
+		else
+			gDAO.rollback();
+		gDAO.destroy();
+	}
+	
+	/**
+	  * 
+	  * @param url
+	  */
+	 public void redirector(String url)
+	 {
+	        FacesContext fc = FacesContext.getCurrentInstance();
+	        ExternalContext ec = fc.getExternalContext();
+	        try 
+	        {
+	            ec.redirect(url);
+	        } 
+	        catch (IOException ex)
+	        {
+	            //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
+	        }
+	    }
+
+	 /*
+	  * 
+	  */
+	 public void forwarder(String url) 
+	 {
+		 FacesContext fc = FacesContext.getCurrentInstance();
+		 try
+		 {
+			 fc.getExternalContext().dispatch(url);
+		 } 
+		 catch (Exception ex) 
+		 {
+			 //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
+		 }
+	 }
 	
 	public String logout()
 	{
@@ -78,6 +135,7 @@ public class LoginMBean implements Serializable
 					boolean r = appBean.addLoggedInUser(foundUser);
 					if(!r)
 					{
+						saveAudit("LOGIN: Duplicate login detected for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName());
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful! However, you are already logged in on a different instance.");
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
@@ -96,8 +154,20 @@ public class LoginMBean implements Serializable
 							Object foundSubs = gDAO.search("PartnerSubscription", params);
 							if(foundSubs != null)
 							{
-								PartnerSubscription sub = ((Vector<PartnerSubscription>)foundSubs).get(0);
-								dashBean.setSubscription(sub);
+								Vector<PartnerSubscription> subs = (Vector<PartnerSubscription>)foundSubs;
+								if(subs.size() > 0)
+								{
+									for(PartnerSubscription sub : subs)
+									{
+										dashBean.setSubscription(sub);
+									}
+								}
+								else
+								{
+									proceed = false;
+									msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Authentication successful but no active subscription!");
+									FacesContext.getCurrentInstance().addMessage(null, msg);
+								}
 							}
 							else
 							{
@@ -116,9 +186,11 @@ public class LoginMBean implements Serializable
 							
 							for(PartnerUserRole pur : dashBean.getUserRoles())
 							{
-								Hashtable<String, Object> params3 = new Hashtable<String, Object>();
-								params3.put("role", pur.getRole());
-								Object foundRoleFunctions = new GeneralDAO().search("MRoleFunction", params3);
+								Query q = gDAO.createQuery("Select e from MRoleFunction e where e.role = :role order by e.function.displayIndex, e.function.name");
+								q.setParameter("role", pur.getRole());
+								//Hashtable<String, Object> params3 = new Hashtable<String, Object>();
+								//params3.put("role", pur.getRole());
+								Object foundRoleFunctions = gDAO.search(q, 0); //new GeneralDAO().search("MRoleFunction", params3);
 								if(foundRoleFunctions != null)
 								{
 									Vector<MRoleFunction> rflist = (Vector<MRoleFunction>)foundRoleFunctions;
@@ -127,31 +199,71 @@ public class LoginMBean implements Serializable
 									else
 										dashBean.getRolesFunctions().addAll(rflist);
 								}
+								
+								Hashtable<String, Object> params3 = new Hashtable<String, Object>();
+								params3.put("role", pur.getRole());
+								Object foundRoleReports = gDAO.search("MRoleReport", params3);
+								if(foundRoleReports != null)
+								{
+									Vector<MRoleReport> rflist = (Vector<MRoleReport>)foundRoleReports;
+									if(dashBean.getRolesReports() == null)
+										dashBean.setRolesReports(rflist);
+									else
+										dashBean.getRolesReports().addAll(rflist);
+								}
+							}
+							
+							Hashtable<String, Object> paramsSetting = new Hashtable<String, Object>();
+							paramsSetting.put("user", foundUser);
+							Object foundSetting = gDAO.search("PartnerUserSetting", paramsSetting);
+							if(foundSetting != null)
+							{
+								Vector<PartnerUserSetting> uslist = (Vector<PartnerUserSetting>)foundSetting;
+								for(PartnerUserSetting e : uslist)
+								{
+									dashBean.setTheme(e.getTheme());
+									dashBean.setHeadercolor(e.getHeadercolor());
+								}
 							}
 							
 							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful!");
 							FacesContext.getCurrentInstance().addMessage(null, msg);
+							saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName());
 						}
-						ret = "dashboard";
+						if(foundUser.isActivated())
+						{
+							ret = "dashboard";
+						}
+						else
+						{
+							ret = "index";
+							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful! However you need to reset your initial password before you can continue.");
+							FacesContext.getCurrentInstance().addMessage(null, msg);
+							saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName() + ". But needs to activate account.");
+						}
 					}
 				}
 				else
 				{
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Authentication failed!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
+					saveAudit("LOGIN: Authentication failed for user: " + getUsername());
 				}
 			}
 			else
 			{
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "User does not exist. No record found.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				saveAudit("LOGIN: User does not exist: " + getUsername());
 			}
 		}
 		else
 		{
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "User does not exist.");
 			FacesContext.getCurrentInstance().addMessage(null, msg);
+			saveAudit("LOGIN: User does not exist: " + getUsername());
 		}
+		gDAO.destroy();
 		
 		return ret;
 	}

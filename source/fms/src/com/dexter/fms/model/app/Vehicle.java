@@ -2,6 +2,7 @@ package com.dexter.fms.model.app;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Vector;
 
@@ -33,7 +34,6 @@ public class Vehicle implements Serializable
 	@ManyToOne
 	private VehicleModel model;
 	
-	@Column(unique=true)
 	private int zonControlId;
 	@Column(unique=true)
 	private String registrationNo;
@@ -69,6 +69,17 @@ public class Vehicle implements Serializable
 	private Vector<VehicleTrackerData> trackerData;
 	@Transient
 	private boolean selected;
+	@Transient
+	private int age; // age in years, this should be purchased date - current date or should it be model year - cur year
+	
+	@Transient
+	private VehicleLicense last_lic;
+	@Transient
+	private VehicleLicense last_insur;
+	@Transient
+	private BigDecimal maint_odometer;
+	@Transient
+	private VehicleRoutineMaintenance last_rout_maint;
 	
 	public Vehicle()
 	{}
@@ -231,6 +242,52 @@ public class Vehicle implements Serializable
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	public int getAge() {
+		if(getPurchaseDate() != null)
+		{
+			Calendar c = Calendar.getInstance(), cNow = Calendar.getInstance();
+			c.setTime(getPurchaseDate());
+			age = cNow.get(Calendar.YEAR) - c.get(Calendar.YEAR);
+		}
+		return age;
+	}
+
+	public void setAge(int age) {
+		this.age = age;
+	}
+
+	public VehicleLicense getLast_lic() {
+		return last_lic;
+	}
+
+	public void setLast_lic(VehicleLicense last_lic) {
+		this.last_lic = last_lic;
+	}
+
+	public VehicleLicense getLast_insur() {
+		return last_insur;
+	}
+
+	public void setLast_insur(VehicleLicense last_insur) {
+		this.last_insur = last_insur;
+	}
+
+	public VehicleRoutineMaintenance getLast_rout_maint() {
+		return last_rout_maint;
+	}
+
+	public void setLast_rout_maint(VehicleRoutineMaintenance last_rout_maint) {
+		this.last_rout_maint = last_rout_maint;
+	}
+
+	public BigDecimal getMaint_odometer() {
+		return maint_odometer;
+	}
+
+	public void setMaint_odometer(BigDecimal maint_odometer) {
+		this.maint_odometer = maint_odometer;
 	}
 	
 }

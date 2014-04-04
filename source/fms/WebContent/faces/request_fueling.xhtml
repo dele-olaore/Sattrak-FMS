@@ -1,0 +1,159 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Request Fueling</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Request Fueling" action="#{dashboardBean.gotoPage('request_fueling', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update=":form:tabs:fuelingDataPanel2,:form:tabs:flt2,:form:tabs:vch2,:form:tabs:apvu2" />
+			  		</p:selectOneMenu>
+		  		</p:panelGrid>
+			
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="bthreqexp" title="Request Fueling - Batch">
+						<p:panel id="milreqsPanel">
+							<p:dataTable id="myExpsTable" var="obj" value="#{fleetBean.myFuelingRequests}"
+								paginator="true" rows="50"
+								paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+								rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+								binding="#{table}">
+								<f:facet name="header">
+									Added fueling request(s) [#{fleetBean.myFuelingRequests.size()}]
+								</f:facet>
+								
+								<p:column id="col1" sortBy="#{obj.fueling_dt}" headerText="Fuel date" filterBy="#{obj.fueling_dt}" filterMatchMode="contains">
+									<h:outputText value="#{obj.fueling_dt}" />
+								</p:column>
+								<p:column id="col2" sortBy="#{obj.amt}" headerText="Cost">
+									<h:outputText value="#{obj.amt}" />
+								</p:column>
+								<p:column id="col3" sortBy="#{obj.litres}" headerText="Litres">
+									<h:outputText value="#{obj.litres}" />
+								</p:column>
+								<p:column id="col4" headerText="">
+									<p:commandButton update="myExpsTable,:messages3" ajax="true" action="#{fleetBean.removeFuelingRequestFromBatch(table.rowIndex)}" icon="ui-icon-close" style="margin:0" />
+								</p:column>
+							</p:dataTable>
+							<f:facet name="footer">
+					  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveBatchFuelingRequest}" value="Submit Request(s)" icon="ui-icon-disk" style="margin:0"/>
+					  		</f:facet>
+						</p:panel>
+						<p:panelGrid columns="1">
+							<p:panelGrid columns="5">
+								<h:outputLabel for="flt2" value="Fleet: *" />
+								<p:selectOneMenu id="flt2" value="#{fleetBean.fleet_id}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+						  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="vch2" />
+						  		</p:selectOneMenu>
+						  		<h:outputText value="" />
+						  		<h:outputText value="" />
+						  		<h:outputText value="" />
+						  		
+						  		<h:outputLabel for="vch2" value="Vehicle: *" />
+								<p:selectOneMenu id="vch2" value="#{fleetBean.vehicle_id}">
+									<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+									<f:selectItems value="#{ddBean.getVehicles(fleetBean.partner_id, fleetBean.fleet_id, fleetBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+								</p:selectOneMenu>
+								<h:outputText value=" OR " />
+								<h:outputLabel for="vchregn2" value="Registration No.: " />
+								<h:inputText id="vchregn2" value="#{fleetBean.regNo}">
+									<p:ajax update="vch2" />
+								</h:inputText>
+							</p:panelGrid>
+							<p:outputPanel id="fuelingDataPanel2">
+							<h:outputText value="Manual fueling capture not support by partner's account setup!" rendered="#{fleetBean.partner != null and (fleetBean.partner.fuelingType == 'Automated')}" />
+							<p:panelGrid columns="2">
+								<h:outputLabel for="fueldt2" value="Fuel date: *" />
+								<p:calendar id="fueldt2" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.fuelingRequest.fueling_dt}" navigator="true" />
+								
+								<h:outputLabel for="fuelcost2" value="Cost: *" />
+						  		<p:inputText id="fuelcost2" value="#{fleetBean.fuelingRequest.amt}" />
+						  		
+						  		<h:outputLabel for="fuellitres2" value="Litres: *" />
+						  		<p:inputText id="fuellitres2" value="#{fleetBean.fuelingRequest.litres}" />
+						  		
+						  		<h:outputLabel for="apvu2" value="Approval User: *" />
+								<p:selectOneMenu id="apvu2" value="#{fleetBean.approvalUser_id}">
+						  			<f:selectItems value="#{ddBean.getUsersWithFunction(fleetBean.partner.id, 'approve_fueling')}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+						  		</p:selectOneMenu>
+							</p:panelGrid>
+							</p:outputPanel>
+							<f:facet name="footer">
+					  			<p:commandButton ajax="true" update=":form:tabs:milreqsPanel,:messages3" onclick="return confirm('Are you sure?');" action="#{fleetBean.addFuelingRequestToBatch}" value="Add" icon="ui-icon-disk" style="margin:0"/>
+					  		</f:facet>
+						</p:panelGrid>
+					</p:tab>
+					<p:tab id="myexps" title="Your Fueling Requests">
+						<p:panel id="myreqsPanel">
+						<p:dataTable id="mySubExpsTable" var="obj" value="#{fleetBean.mySubFuelingRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+							binding="#{table2}">
+							<f:facet name="header">
+								My fueling request(s) [#{fleetBean.mySubFuelingRequests.size()}]
+							</f:facet>
+							
+							<p:column id="col1" headerText="Date">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column id="col2" sortBy="#{obj.fueling_dt}" headerText="Fuel date" filterBy="#{obj.fueling_dt}" filterMatchMode="contains">
+								<h:outputText value="#{obj.fueling_dt}" />
+							</p:column>
+							<p:column id="col3" sortBy="#{obj.amt}" headerText="Cost">
+								<h:outputText value="#{obj.amt}" />
+							</p:column>
+							<p:column id="col4" sortBy="#{obj.litres}" headerText="Litres">
+								<h:outputText value="#{obj.litres}" />
+							</p:column>
+							<p:column id="col5" headerText="Approval User">
+								<h:outputText value="#{obj.approvalUser.personel.firstname} #{obj.approvalUser.personel.lastname}" rendered="#{obj.approvalUser != null}" />
+								<h:outputText value="N/A" rendered="#{obj.approvalUser == null}" />
+							</p:column>
+							<p:column id="col6" headerText="Approval Date">
+								<h:outputText value="#{obj.approval_dt}" />
+							</p:column>
+							<p:column id="col7" headerText="Approval Status" sortBy="#{obj.approvalStatus}" filterBy="#{obj.approvalStatus}" filterMatchMode="contains">
+								<h:outputText value="#{obj.approvalStatus}" />
+							</p:column>
+							<p:column id="col8" headerText="Approval Comment">
+								<h:outputText value="#{obj.approvalComment}" />
+							</p:column>
+						</p:dataTable>
+						</p:panel>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

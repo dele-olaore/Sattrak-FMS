@@ -1,0 +1,148 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Capture, view and update various drivers license registration/renewal information for your drivers.</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="License" action="#{dashboardBean.gotoPage('manage_drvlicense', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		<td align="right">
+			
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel" style="width:100%;">
+			<p:tabView id="tabs" dynamic="true" cache="false">
+				<p:tab id="srt" title="Insert Drivers License">
+					<p:panelGrid columns="1">
+						<p:panelGrid columns="2">
+							<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+							<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="drv1" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="drv1" value="Driver: *" />
+							<p:selectOneMenu id="drv1" value="#{fleetBean.driver_id}">
+								<f:selectItems value="#{fleetBean.partnerDrivers}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+							</p:selectOneMenu>
+						</p:panelGrid>
+						<p:panelGrid columns="2">
+							<h:outputLabel for="licttype" value="Transaction type: *" />
+							<p:selectOneMenu id="licttype" value="#{fleetBean.transactionType_id}">
+								<f:selectItems value="#{ddBean.transactionTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							</p:selectOneMenu>
+							
+							<h:outputLabel for="lictdt" value="Transaction date: *" />
+							<p:calendar id="lictdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.driverLicense.tran_dt}" navigator="true" />
+							
+							<h:outputLabel for="licnumber" value="License No.: *" />
+					  		<p:inputText id="licnumber" value="#{fleetBean.driverLicense.drvLicenseNo}" />
+							
+							<h:outputLabel for="licstdt" value="License issue date: *" />
+							<p:calendar id="licstdt" showOn="both" mode="popup" value="#{fleetBean.driverLicense.lic_start_dt}" navigator="true" />
+							
+							<h:outputLabel for="liccost" value="Cost: *" />
+					  		<p:inputText id="liccost" value="#{fleetBean.driverLicense.tranAmt}" />
+					  		
+					  		<h:outputLabel for="licdoc" value="Document: " />
+					  		<p:fileUpload id="licdoc" value="#{fleetBean.driverLicenseDocument}" mode="simple" />
+					  		
+					  		<h:outputLabel for="licvendor" value="Vendor: " />
+							<p:selectOneMenu id="licvendor" value="#{fleetBean.vendor_id}">
+								<f:selectItem itemLabel="-- None --" itemValue="0" />
+								<f:selectItems value="#{fleetBean.vlicensesVendors}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							</p:selectOneMenu>
+						</p:panelGrid>
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveDrvLicense}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="complt" title="Manage Drivers Licenses">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn2" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn2" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+					
+						<h:outputLabel for="fuelstdt" value="Start date: *" />
+						<p:calendar id="fuelstdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.stdt}" navigator="true" />
+						
+						<h:outputLabel for="fueleddt" value="End date: *" />
+						<p:calendar id="fueleddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.eddt}" navigator="true" />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.resetDrvLicenses}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="licensesTable" var="obj" value="#{fleetBean.driverLicenses}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Found driver license(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver" filterBy="#{obj.driver.personel.firstname}" filterMatchMode="contains">
+							<h:outputText value="#{obj.driver.personel.firstname} {obj.driver.personel.lastname}" />
+						</p:column>
+						
+						<p:column sortBy="#{obj.tran_dt}" headerText="Transaction date">
+							<h:outputText value="#{obj.tran_dt}" />
+						</p:column>
+						<p:column sortBy="#{obj.tranType.name}" headerText="Transaction type" filterBy="#{obj.tranType.name}" filterMatchMode="contains">
+							<h:outputText value="#{obj.tranType.name}" rendered="#{obj.tranType != null}" />
+						</p:column>
+						<p:column sortBy="#{obj.drvLicenseNo}" headerText="License No.">
+							<h:outputText value="#{obj.drvLicenseNo}" />
+						</p:column>
+						<p:column sortBy="#{obj.lic_start_dt}" headerText="Issue date">
+							<h:outputText value="#{obj.lic_start_dt}" />
+						</p:column>
+						<p:column sortBy="#{obj.lic_end_dt}" headerText="Expiry date">
+							<h:outputText value="#{obj.lic_end_dt}" />
+						</p:column>
+						<p:column sortBy="#{obj.amt}" headerText="Cost">
+							<h:outputText value="#{obj.tranAmt}" />
+						</p:column>
+						<p:column headerText="Document">
+							<p:commandLink value="Download" rendered="#{obj.document != null}" />
+						</p:column>
+						<p:column sortBy="#{obj.vendor.name}" headerText="Vendor">
+							<h:outputText value="#{obj.vendor.name}" rendered="#{obj.vendor != null}" />
+							<h:outputText value="None" rendered="#{obj.vendor == null}" />
+						</p:column>
+						<p:column headerText="Created">
+							On: <h:outputText value="#{obj.crt_dt}" /><br/>
+							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+						</p:column>
+						<p:column headerText="">
+							<p:commandLink value="Update" onclick="return false;" />
+						</p:column>
+					</p:dataTable>
+				</p:tab>
+			</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

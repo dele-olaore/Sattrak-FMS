@@ -12,6 +12,11 @@
 		<param-value>/WEB-INF/classes/faces-config.xml</param-value>
 	</context-param>
 	
+	<context-param>
+	    <param-name>primefaces.THEME</param-name>
+	    <param-value>#{dashboardBean.theme}</param-value>
+	</context-param>
+	
 	<!-- below are to deploy on jboss. Tested on 7.1 -->
 	<context-param>
 	    <param-name>resteasy.scan</param-name>
