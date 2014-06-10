@@ -4,7 +4,7 @@
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/layout/other_layout.xhtml">
-<ui:define name="title">Update Application Type</ui:define>
+<ui:define name="title">Update Application Type Version</ui:define>
 <ui:define name="content">
 	<br/><br/>
 	<h:form id="form">
@@ -15,7 +15,7 @@
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Application Types" action="#{dashboardBean.gotoPage('manage_app_types', false)}" ajax="false" />
-    			<p:menuitem value="Update Application Type" action="#{dashboardBean.gotoPage('edit_apptype', true)}" ajax="false" />
+    			<p:menuitem value="Update Application Type Version" action="#{dashboardBean.gotoPage('edit_apptype', true)}" ajax="false" />
     		</p:breadCrumb>
 		</td>
 		<td align="right">
@@ -29,10 +29,10 @@
 					<f:facet name="header"></f:facet>
 					
 			  		<h:outputLabel value="Name: *" />
-			  		<h:outputText value="#{appTypeBean.appType.name}" />
+			  		<h:outputText value="#{appTypeBean.appTypeVersion.versionName}" />
 			  		
 			  		<h:outputLabel value="Description: " />
-			  		<h:outputText value="#{appTypeBean.appType.description}" />
+			  		<h:outputText value="#{appTypeBean.appTypeVersion.description}" />
 			  		
 			  		<h:outputLabel for="aptmodules" value="Modules: " />
 			  		<p:dataTable id="aptmodules" var="obj" value="#{appTypeBean.modules}"

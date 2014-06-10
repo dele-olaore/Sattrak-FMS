@@ -7,7 +7,7 @@
 <ui:define name="title">Manage Vehicles</ui:define>
 <ui:define name="content">
 	<br/><br/>
-	<h:form id="form">
+	<h:form id="form" enctype="multipart/form-data">
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
@@ -87,9 +87,18 @@
 					<p:commandButton update=":form:vparamsPanel" oncomplete="vparamsdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
+					<br/><br/>
+					<p:commandButton update=":form:vparamsPanel2" oncomplete="vparamsdlg2.show();" icon="ui-icon-document" value="New Parameter" title="New Vehicle Parameters">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
 				</p:column>
 				<p:column headerText="Details" style="width: 3%">
 					<p:commandButton update=":form:vdetPanel" oncomplete="vdetdlg.show();" icon="ui-icon-search" title="View">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
+				<p:column headerText="Documents" style="width: 3%">
+					<p:commandButton update=":form:vdocsPanel" oncomplete="vdocsdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
@@ -128,6 +137,113 @@
 		<br/><br/><br/>
 	</div>
 	
+	<p:dialog id="viewVDocsDialog" header="Vehicle Documents" widgetVar="vdocsdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vdocsPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header">Documents for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+		
+			<p:dataTable id="docsTable" var="doc" value="#{fleetBean.selectedVehicleDocuments}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Vehicle document(s)
+				</f:facet>
+				
+				<p:column sortBy="#{doc.documentType.name}" headerText="Doc. Type" filterBy="#{doc.documentType.name}" filterMatchMode="contains">
+					<h:outputText value="#{doc.documentType.name}" rendered="#{doc.documentType != null}" />
+					<h:outputText value="N/A" rendered="#{doc.documentType == null}" />
+				</p:column>
+				<p:column sortBy="#{doc.documentNumber}" headerText="Doc. Number" filterBy="#{doc.documentNumber}" filterMatchMode="contains">
+					<h:outputText value="#{doc.documentNumber}" rendered="#{doc.documentNumber != null}" />
+					<h:outputText value="N/A" rendered="#{doc.documentNumber == null}" />
+				</p:column>
+				<p:column headerText="Download">
+					<p:commandButton value="Download" />
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{doc.crt_dt}" /><br/>
+					By: <h:outputText value="#{doc.createdBy.personel.firstname} #{doc.createdBy.personel.lastname}" />
+				</p:column>
+			</p:dataTable>
+			
+			<p:panelGrid id="addDocPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header">Add document for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+			
+			<h:outputLabel for="docType" value="Document Type: *" />
+			<p:selectOneMenu id="docType" value="#{fleetBean.documentType_id}">
+				<f:selectItems value="#{fleetBean.documentTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="docNumber" value="Document Number: *" />
+	  		<p:inputText id="docNumber" value="#{fleetBean.vehicleDocument.documentNumber}" />
+	  		
+	  		
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="true" update=":form:vdocsPanel, :form:addDocPanel" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveVehicleDocument}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+			
+			</p:panelGrid>
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newVParamsDialog" header="New Vehicle Parameters" widgetVar="vparamsdlg2" modal="true" dynamic="true">
+		<p:panelGrid id="vparamsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">New Parameters for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+			
+			<h:outputLabel for="vparamphoto" value="Photo: " />
+	  		<p:fileUpload id="vparamphoto" value="#{fleetBean.vehiclePhoto}" mode="simple" />
+	  		
+	  		<h:outputLabel for="vparamdept" value="Department: " />
+			<p:selectOneMenu id="vparamdept" value="#{fleetBean.department_id}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				<f:selectItems value="#{fleetBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="vparamregion" value="Region: " />
+			<p:selectOneMenu id="vparamregion" value="#{fleetBean.region_id}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				<f:selectItems value="#{fleetBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="vparamftype" value="Fuel type: " />
+			<p:selectOneMenu id="vparamftype" value="#{fleetBean.fuelType_id}">
+				<f:selectItems value="#{fleetBean.fuelTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="vparamts" value="Tyre size: " />
+			<p:inputText id="vparamts" value="#{fleetBean.vehicleParam.tyresize}" />
+	  		
+	  		<h:outputLabel for="vparamtankc" value="Tank Capacity: " />
+			<p:inputText id="vparamtankc" value="#{fleetBean.vehicleParam.tankcapacity}" />
+			
+			<h:outputLabel for="vparamkml" value="Fuel Consumption(KM/L): " />
+			<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelCompKML}" />
+			
+			<h:outputLabel for="vparam100kml" value="Fuel Consumption(100KM/L): " />
+			<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
+			
+			<h:outputLabel for="vparamtankc2" value="Calibrated Capacity: " />
+			<p:inputText id="vparamtankc2" value="#{fleetBean.vehicleParam.calibratedcapacity}" />
+			
+			<h:outputLabel for="vparamclor" value="Color: " />
+			<p:inputText id="vparamclor" value="#{fleetBean.vehicleParam.color}" />
+			
+			<h:outputLabel for="vparamsimno" value="SIM No: " />
+			<p:inputText id="vparamsimno" value="#{fleetBean.vehicleParam.simno}" />
+			
+			<h:outputLabel for="vparamunitm" value="Unit of measurement: " />
+			<p:inputText id="vparamunitm" value="#{fleetBean.vehicleParam.unitofmeasure}" />
+			
+			<h:outputLabel for="vparamcardno" value="Card No: " />
+			<p:inputText id="vparamcardno" value="#{fleetBean.vehicleParam.cardno}" />
+			
+			<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.newVehicleParameter}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
 	<p:dialog id="viewVParamsDialog" header="Vehicle Parameters History" widgetVar="vparamsdlg" modal="true" dynamic="true">
 		<p:panelGrid id="vparamsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">Parameters history for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
@@ -163,6 +279,12 @@
 				</p:column>
 				<p:column sortBy="#{vpr.calibratedcapacity}" headerText="Calibrated capacity">
 					<h:outputText value="#{vpr.calibratedcapacity}" />
+				</p:column>
+				<p:column sortBy="#{vpr.fuelCompKML}" headerText="Fuel Consumption(KM/L)">
+					<h:outputText value="#{vpr.fuelCompKML}" />
+				</p:column>
+				<p:column sortBy="#{vpr.fuelComp100KML}" headerText="Fuel Consumption(100KM/L)">
+					<h:outputText value="#{vpr.fuelComp100KML}" />
 				</p:column>
 				<p:column sortBy="#{vpr.color}" headerText="Color">
 					<h:outputText value="#{vpr.color}" />

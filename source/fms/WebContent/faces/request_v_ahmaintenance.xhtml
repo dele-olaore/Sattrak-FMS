@@ -80,7 +80,7 @@
 		  		</p:panelGrid>
 				
 				<h:outputLabel for="rdate" value="Maintenance date: *" />
-				<p:calendar id="rdate" value="#{fleetBean.adhocRequest.maintenance_dt}" showOn="button" />
+				<p:calendar id="rdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.adhocRequest.maintenance_dt}" showOn="button" />
 				
 				<h:outputLabel for="rchbattery" value="Change battery?: " />
 				<p:selectBooleanCheckbox id="rchbattery" value="#{fleetBean.adhocRequest.battery}" />

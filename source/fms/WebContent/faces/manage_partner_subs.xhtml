@@ -18,7 +18,7 @@
     		</p:breadCrumb>
 		</td>
 		<td align="right">
-			<p:commandLink value="New Subscription" onclick="dlg.show();" />
+			<p:commandLink value="New Subscription" onclick="dlg.show();" /> | <p:commandLink value="Add License" onclick="addlicdlg.show();" />
 		</td>
 		</tr>
 		<tr>
@@ -46,6 +46,10 @@
 				<h:outputText value="Yes" rendered="#{obj.sattrak}" />
 				<h:outputText value="No" rendered="#{not obj.sattrak}" />
 			</p:column>
+			<p:column headerText="License">
+				<h:outputText value="#{obj.license.finalLicenseCount} license(s)" rendered="#{obj.license != null}" />
+				<h:outputText value="N/A" rendered="#{obj.license == null}" />
+			</p:column>
 			<p:column headerText="Address">
 				<h:outputText value="#{obj.addr1}, #{obj.addr2}" />
 			</p:column>
@@ -70,8 +74,11 @@
 					<p:ajax event="rowEdit" listener="#{partnerBean.onEdit}" update=":messages3" />
         			<p:ajax event="rowEditCancel" listener="#{partnerBean.onCancel}" update=":messages3" />
         			
-					<p:column sortBy="#{obj2.subPackage.name}" headerText="Name" filterBy="#{obj2.subPackage.name}" filterMatchMode="contains">
-						<h:outputText value="#{obj2.subPackage.name}" />
+					<p:column sortBy="#{obj2.appTypeVersion.appType.name}" headerText="Application Type" filterBy="#{obj2.appTypeVersion.appType.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj2.appTypeVersion.appType.name}" />
+					</p:column>
+					<p:column sortBy="#{obj2.appTypeVersion.name}" headerText="Version" filterBy="#{obj2.appTypeVersion.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj2.appTypeVersion.versionName}" />
 					</p:column>
 					<p:column headerText="Start date" sortBy="#{obj2.start_dt}">
 						<p:cellEditor>
@@ -79,7 +86,7 @@
 								<h:outputText value="#{obj2.start_dt}" />
 							</f:facet>
 							<f:facet name="input">
-								<p:calendar value="#{obj2.start_dt}" showOn="button" />
+								<p:calendar pattern="dd/MM/yyyy HH:mm:ss" value="#{obj2.start_dt}" showOn="button" />
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
@@ -89,7 +96,7 @@
 								<h:outputText value="#{obj2.end_dt}" />
 							</f:facet>
 							<f:facet name="input">
-								<p:calendar value="#{obj2.end_dt}" showOn="button" />
+								<p:calendar pattern="dd/MM/yyyy HH:mm:ss" value="#{obj2.end_dt}" showOn="button" />
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
@@ -100,12 +107,6 @@
 					<p:column headerText="Expired" sortBy="#{obj2.expired}">
 						<h:outputText value="Yes" rendered="#{obj2.expired}" />
 						<h:outputText value="No" rendered="#{not obj2.expired}" />
-					</p:column>
-					<p:column headerText="Document" style="width: 10%">
-						
-					</p:column>
-					<p:column headerText="Modules" style="width: 10%">
-						
 					</p:column>
 					<p:column headerText="" style="width: 10%">
 						<p:rowEditor />
@@ -122,8 +123,34 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	</h:form>
+	
+	<p:dialog id="addLicDialog" header="Add License" widgetVar="addlicdlg" modal="true" dynamic="true">
+		<h:form id="form2">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="subptn2" value="Partner: *" />
+		<p:selectOneMenu id="subptn2" value="#{partnerBean.partner_id}">
+  			<f:selectItems value="#{ddBean.partnersWithoutSattrak}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="licpur" value="License Purchased: *" />
+  		<p:inputText id="licpur" value="#{partnerBean.partnerLicense.purchasedLicenseCount}" />
+  		
+  		<h:outputLabel for="licuprice" value="Unit Price: *" />
+  		<p:inputText id="licuprice" value="#{partnerBean.partnerLicense.unitLicensePrice}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.savePartnerLicense}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  		</h:form>
+  	</p:dialog>
 	
 	<p:dialog id="newSubDialog" header="New Subscription" widgetVar="dlg" modal="true" dynamic="true">
+		<h:form id="form3">
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
@@ -132,24 +159,29 @@
   			<f:selectItems value="#{ddBean.partnersWithoutSattrak}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
   		</p:selectOneMenu>
   		
-  		<h:outputLabel for="subsub" value="Package: *" />
-		<p:selectOneMenu id="subsub" value="#{partnerBean.package_id}">
-  			<f:selectItems value="#{ddBean.allPackages}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		<h:outputLabel for="atvid" value="Application Type Version: *" />
+		<p:selectOneMenu id="atvid" value="#{partnerBean.appTypeVersion_id}">
+  			<f:selectItems value="#{appTypeBean.allAppTypeVersions}" var="it" itemLabel="#{it.appType.name} - #{it.versionName}" itemValue="#{it.id}" />
   		</p:selectOneMenu>
   		
   		<h:outputLabel for="substdt" value="Start date: *" />
-  		<p:calendar id="substdt" value="#{partnerBean.subStdt}" showOn="button" />
+  		<p:calendar id="substdt" pattern="dd/MM/yyyy HH:mm:ss" value="#{partnerBean.subStdt}" showOn="button" />
   		
-  		<h:outputLabel for="subdoc" value="Document: " />
-  		<p:fileUpload id="subdoc" value="#{partnerBean.subDocument}" mode="simple" />
+  		<h:outputLabel for="demo" value="Is Demo?: *" />
+  		<p:selectBooleanCheckbox id="demo" value="#{partnerBean.subscription.demo}" />
+  		
+  		<h:outputLabel for="demodays" value="Demo Days: *" />
+  		<p:inputText id="demodays" value="#{partnerBean.subscription.days}" />
+		
+		<h:outputLabel for="subfee" value="Subscription Fee: *" />
+  		<p:inputText id="subfee" value="#{partnerBean.subscription.subscriptionFee}" />
 		
 		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.saveSubscription}" value="Save" icon="ui-icon-disk" style="margin:0"/>
   		</f:facet>
 		
 		</p:panelGrid>
+		</h:form>
 	</p:dialog>
-	
-	</h:form>
 </ui:define>
 </ui:composition>

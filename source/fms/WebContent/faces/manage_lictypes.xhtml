@@ -27,16 +27,25 @@
 				<p:dataTable id="licTypesTable" var="obj" value="#{fleetBean.licTypes}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true" editable="true">
 					<f:facet name="header">
 						Available license type(s)
 					</f:facet>
+					<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
 					
 					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-						<h:outputText value="#{obj.name}" />
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
 					<p:column headerText="" style="width: 10%">
-						<p:commandLink value="Update" />
+						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

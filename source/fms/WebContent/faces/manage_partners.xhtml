@@ -54,6 +54,10 @@
 			<p:column headerText="Fueling">
 				<h:outputText value="#{obj.fuelingType}" />
 			</p:column>
+			<p:column headerText="License">
+				<h:outputText value="#{obj.license.finalLicenseCount} license(s)" rendered="#{obj.license != null}" />
+				<h:outputText value="N/A" rendered="#{obj.license == null}" />
+			</p:column>
 			<p:column headerText="Address">
 				<p:cellEditor>
 					<f:facet name="output">

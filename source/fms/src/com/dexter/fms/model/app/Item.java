@@ -31,6 +31,9 @@ public class Item implements Serializable
 	private String description;
 	private byte[] photo;
 	private long stockLevel;
+	private double itemUnitPrice;
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date lastUpdatedDate;
 	
 	@ManyToOne
 	private Partner partner;
@@ -90,6 +93,22 @@ public class Item implements Serializable
 
 	public void setStockLevel(long stockLevel) {
 		this.stockLevel = stockLevel;
+	}
+
+	public double getItemUnitPrice() {
+		return itemUnitPrice;
+	}
+
+	public void setItemUnitPrice(double itemUnitPrice) {
+		this.itemUnitPrice = itemUnitPrice;
+	}
+
+	public Date getLastUpdatedDate() {
+		return lastUpdatedDate;
+	}
+
+	public void setLastUpdatedDate(Date lastUpdatedDate) {
+		this.lastUpdatedDate = lastUpdatedDate;
 	}
 
 	public Partner getPartner() {

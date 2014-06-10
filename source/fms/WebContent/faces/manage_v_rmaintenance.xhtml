@@ -79,7 +79,7 @@
 						<p:inputText id="odom" value="#{fleetBean.routine.odometer}" />
 						
 						<h:outputLabel for="rotstdt" value="Start date: *" />
-						<p:calendar id="rotstdt" value="#{fleetBean.routine.start_dt}" showOn="button" />
+						<p:calendar id="rotstdt" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.routine.start_dt}" showOn="button" />
 						
 						<h:outputLabel for="rotdesc" value="Description: *" />
 						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -165,7 +165,7 @@
 		<h:outputText value="#{fleetBean.routine.description}" />
 		
 		<h:outputLabel for="roteddt" value="Finished date: *" />
-		<p:calendar id="roteddt" value="#{fleetBean.routine.close_dt}" showOn="button" />
+		<p:calendar id="roteddt" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.routine.close_dt}" showOn="button" />
 		
 		<h:outputLabel for="rotfcost" value="Finished Cost: *" />
 		<p:inputText id="rotfcost" value="#{fleetBean.routine.closed_amount}" />

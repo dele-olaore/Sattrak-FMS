@@ -18,7 +18,7 @@
     		</p:breadCrumb>
 		</td>
 		<td align="right">
-			<p:commandLink value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" /><!-- onclick="dlg.show();" -->
+			<p:commandLink value="New Application Type" onclick="apptdlg.show();"/><!-- <p:commandLink value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" /> onclick="dlg.show();" -->
 		</td>
 		</tr>
 		<tr>
@@ -61,14 +61,9 @@
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
-			<p:column headerText="Modules" style="width: 10%">
-				<p:rowToggler /> 
-				<p:commandLink ajax="false" value="#{obj.modules.size()} module(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
-					<f:setPropertyActionListener value="#{obj}" target="#{appTypeBean.appType}" />
-				</p:commandLink>
-			</p:column>
-			<p:column headerText="Reports" style="width: 10%">
-				<p:commandLink ajax="false" value="#{obj.reports.size()} report(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
+			<p:column headerText="Versions" style="width: 10%">
+				<p:rowToggler /> <h:outputText value=" | #{obj.versions.size()} version(s) " />
+				<p:commandLink ajax="true" value="Add New Version" update=":form:newatvpanel" onclick="dlg.show();">
 					<f:setPropertyActionListener value="#{obj}" target="#{appTypeBean.appType}" />
 				</p:commandLink>
 			</p:column>
@@ -77,141 +72,46 @@
 			</p:column>
 			
 			<p:rowExpansion>
-				<p:dataTable var="obj2" value="#{obj.modules}">
-					<p:column headerText="Module">
-						<h:outputText value="#{obj2.name} : #{obj2.functions.size()} function(s)" /> 
+				<p:dataTable var="obj4" value="#{obj.versions}" resizableColumns="true" editable="true">
+					<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
+					<p:column sortBy="#{obj4.name}" headerText="Name" filterBy="#{obj4.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj4.versionName}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj4.versionName}" />
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
-					<p:column headerText="Function(s)">
-						<p:dataGrid var="obj3" value="#{obj2.functions}" columns="1">
-							<h:outputText value="#{obj3.name}" />  
-						</p:dataGrid>
+					<p:column headerText="Description" filterBy="#{obj4.description}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj4.description}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+						  		<p:inputTextarea value="#{obj4.description}" rows="3" cols="30" counter="counter4" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+						  		<h:outputText id="counter4" />
+						  		</p:panelGrid>
+							</f:facet>
+						</p:cellEditor>
 					</p:column>
-				</p:dataTable>
-				<p:dataTable var="obj3" value="#{obj.reports}">
-					<p:column headerText="Report">
-						<h:outputText value="#{obj3.title}" /> 
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj4.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj4.createdBy.personel.firstname} #{obj4.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="Modules and Reports" style="width: 10%">
+						<p:commandLink ajax="false" value="#{obj4.modules.size()} module(s) and #{obj4.reports.size()} report(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
+							<f:setPropertyActionListener value="#{obj4}" target="#{appTypeBean.appTypeVersion}" />
+						</p:commandLink>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
 			</p:rowExpansion>
-		</p:dataTable>
-		</p:panel>
-		</td>
-		</tr>
-		<tr>
-		<td align="left">
-			<h:outputText value="Manage Subscription Types" />
-		</td>
-		<td align="right">
-			<p:commandLink value="New Subscription Type" onclick="dlg2.show();"/>
-		</td>
-		</tr>
-		<tr>
-		<td colspan="2">
-		<p:panel id="appSubsPanel" style="width:100%;">
-		<p:dataTable id="appSubsTable" var="obj" value="#{appTypeBean.subTypes}"
-			paginator="true" rows="10"
-			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
-			<f:facet name="header">
-				Available subscription types
-			</f:facet>
-			<p:ajax event="rowEdit" listener="#{appTypeBean.onEdit}" update=":messages3" />
-        	<p:ajax event="rowEditCancel" listener="#{appTypeBean.onCancel}" update=":messages3" />
-			
-			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<p:cellEditor>
-					<f:facet name="output">
-						<h:outputText value="#{obj.name}" />
-					</f:facet>
-					<f:facet name="input">
-						<p:inputText value="#{obj.name}" />
-					</f:facet>
-				</p:cellEditor>
-			</p:column>
-			<p:column headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
-				<p:cellEditor>
-					<f:facet name="output">
-						<h:outputText value="#{obj.description}" />
-					</f:facet>
-					<f:facet name="input">
-						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter3" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
-				  		<h:outputText id="counter3" />
-				  		</p:panelGrid>
-					</f:facet>
-				</p:cellEditor>
-			</p:column>
-			<p:column headerText="Type">
-				<p:cellEditor>
-					<f:facet name="output">
-						<h:outputText value="Demo" rendered="#{obj.demo}" />
-						<h:outputText value="Full" rendered="#{not obj.demo}" />
-					</f:facet>
-					<f:facet name="input">
-						<p:selectBooleanCheckbox value="#{obj.demo}" />
-					</f:facet>
-				</p:cellEditor>
-			</p:column>
-			<p:column headerText="Duration">
-				<p:cellEditor>
-					<f:facet name="output">
-						<h:outputText value="#{obj.days} day(s)" rendered="#{obj.demo}" />
-						<h:outputText value="1 Year" rendered="#{not obj.demo}" />
-					</f:facet>
-					<f:facet name="input">
-						<p:inputText value="#{obj.days}" />
-					</f:facet>
-				</p:cellEditor>
-			</p:column>
-			<p:column headerText="Created">
-				On: <h:outputText value="#{obj.crt_dt}" /><br/>
-				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
-			</p:column>
-			<p:column headerText="" style="width: 6%">
-				<p:rowEditor />
-			</p:column>
-		</p:dataTable>
-		</p:panel>
-		</td>
-		</tr>
-		<tr>
-		<td align="left">
-			<h:outputText value="Manage Packages" />
-		</td>
-		<td align="right">
-			<p:commandLink value="New Package" onclick="dlg3.show();" />
-		</td>
-		</tr>
-		<tr>
-		<td colspan="2">
-		<p:panel id="paksPanel" style="width:100%;">
-		<p:dataTable id="paksTable" var="obj" value="#{appTypeBean.subPackages}"
-			paginator="true" rows="10"
-			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
-			<f:facet name="header">
-				Available packages
-			</f:facet>
-			
-			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.name}" />
-			</p:column>
-			<p:column headerText="Application Type">
-				<h:outputText value="#{obj.appType.name}" />
-			</p:column>
-			<p:column headerText="Subscription Type">
-				<h:outputText value="#{obj.subType.name}" />
-			</p:column>
-			<p:column headerText="Created">
-				On: <h:outputText value="#{obj.crt_dt}" /><br/>
-				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
-			</p:column>
-			<p:column headerText="Modules" style="width: 10%">
-				<p:commandLink value="#{obj.modules.size()} module(s) [Edit]" />
-			</p:column>
-			<p:column headerText="Reports" style="width: 10%">
-				<p:commandLink value="#{obj.reports.size()} report(s) [Edit]" />
-			</p:column>
 		</p:dataTable>
 		</p:panel>
 		</td>
@@ -220,7 +120,7 @@
 		<br/><br/><br/>
 	</div>
 	
-	<p:dialog id="newAppTypeDialog" header="New Application Type" widgetVar="dlg" modal="true" dynamic="true">
+	<p:dialog id="newAppTypeDialog" header="New Application Type" widgetVar="apptdlg" modal="true" dynamic="true">
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
@@ -231,6 +131,25 @@
   		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
   		<p:inputTextarea id="aptdesc" value="#{appTypeBean.appType.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
   		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	<p:dialog id="newAppTypeVersionDialog" header="New Application Type Version" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid id="newatvpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">New Version for ${appTypeBean.appType.name}</f:facet>
+		
+  		<h:outputLabel for="aptvname" value="Version Name: *" />
+  		<p:inputText id="aptvname" value="#{appTypeBean.appTypeVersion.versionName}" />
+  		
+  		<h:outputLabel for="aptvdesc" value="Description: " />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="aptvdesc" value="#{appTypeBean.appTypeVersion.description}" rows="3" cols="30" counter="counter3" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter3" />
   		</p:panelGrid>
   		
   		<h:outputLabel for="aptmodules" value="Modules: " />
@@ -263,93 +182,11 @@
   		</p:dataGrid>
   		
   		<f:facet name="footer">
-  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppTypeVersion}" value="Save" icon="ui-icon-disk" style="margin:0"/>
   		</f:facet>
   		
   		</p:panelGrid>
   	</p:dialog>
-  	
-  	<p:dialog id="newSubTypeDialog" header="New Subscription Type" widgetVar="dlg2" modal="true" dynamic="true">
-  		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-		<f:facet name="header"></f:facet>
-		
-  		<h:outputLabel for="apsname" value="Name: *" />
-  		<p:inputText id="apsname" value="#{appTypeBean.subType.name}" />
-  		
-  		<h:outputLabel for="apsdesc" value="Description: " />
-  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-  		<p:inputTextarea id="apsdesc" value="#{appTypeBean.subType.description}" rows="3" cols="30" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
-  		<h:outputText id="counter2" />
-  		</p:panelGrid>
-  		
-  		<h:outputLabel for="apsdemo" value="Demo: " />
-  		<p:selectBooleanCheckbox id="apsdemo" value="#{appTypeBean.subType.demo}" />
-  		
-  		<h:outputLabel for="apsdemodays" value="Demo Duration (Days): " />
-  		<p:inputText id="apsdemodays" value="#{appTypeBean.subType.days}" />
-  		
-  		<f:facet name="footer">
-  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveSubType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
-  		</f:facet>
-  		
-  		</p:panelGrid>
-  	</p:dialog>
-  	
-  	<p:dialog id="newPackageDialog" header="New Package" widgetVar="dlg3" modal="true" dynamic="true">
-  		<p:panelGrid columns="2" cellpadding="5" cellspacing="5" style="margin-bottom:10px;">
-		<f:facet name="header"></f:facet>
-		
-		<h:outputLabel for="pkapt" value="Application Type: *" />
-  		<p:selectOneMenu id="pkapt" value="#{appTypeBean.appType_id}">
-  			<f:selectItem itemLabel="" itemValue="0" />
-  			<f:selectItems value="#{ddBean.allAppTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-  			<p:ajax update="pkmodules, pkreports" />
-  		</p:selectOneMenu>
-  		
-  		<h:outputLabel for="pksbt" value="Subscription Type: *" />
-  		<p:selectOneMenu id="pksbt" value="#{appTypeBean.subType_id}">
-  			<f:selectItems value="#{ddBean.allSubTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-  		</p:selectOneMenu>
-  		
-  		<h:outputLabel for="pkmodules" value="Modules: " />
-  		<p:dataGrid id="pkmodules" var="mdule" value="#{appTypeBean.appTypeModules}" columns="2"
-  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
-  			rowsPerPageTemplate="20,40,60">
-  			<f:facet name="header">
-  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllModules(true)}" value="Select All" update="pkmodules" style="margin:0" />
-  				|
-  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllModules(false)}" value="De-select All" update="pkmodules" style="margin:0" />
-  			</f:facet>
-  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-  				<p:selectBooleanCheckbox value="#{mdule.selected}" />
-  				<h:outputText value="#{mdule.module.name}(#{mdule.module.display_name})" />  
-        	</p:panelGrid>
-  			
-  		</p:dataGrid>
-  		
-  		<h:outputLabel for="pkreports" value="Reports: " />
-  		<p:dataGrid id="pkreports" var="rpt" value="#{appTypeBean.appTypeReports}" columns="2"
-  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
-  			rowsPerPageTemplate="20,40,60">
-  			<f:facet name="header">
-  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllReports(true)}" value="Select All" update="pkreports" style="margin:0" />
-  				|
-  				<p:commandButton ajax="true" onclick="return confirm('Are you sure?');" action="#{appTypeBean.selectAllReports(false)}" value="De-select All" update="pkreports" style="margin:0" />
-  			</f:facet>
-  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-  				<p:selectBooleanCheckbox value="#{rpt.selected}" />
-  				<h:outputText value="#{rpt.report.title}" />
-        	</p:panelGrid>
-  			
-  		</p:dataGrid>
-		
-		<f:facet name="footer">
-  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.savePackage}" value="Save" icon="ui-icon-disk" style="margin:0"/>
-  		</f:facet>
-		
-		</p:panelGrid>
-	</p:dialog>
-  	
   	</h:form>
 </ui:define>
 </ui:composition>

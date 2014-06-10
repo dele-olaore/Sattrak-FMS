@@ -43,6 +43,8 @@ public class Partner implements Serializable
 	private Vector<PartnerUser> users;
 	@Transient
 	private Vector<PartnerSubscription> subscriptions;
+	@Transient
+	private PartnerLicense license;
 	
 	public Partner()
 	{}
@@ -149,6 +151,14 @@ public class Partner implements Serializable
 
 	public void setSubscriptions(Vector<PartnerSubscription> subscriptions) {
 		this.subscriptions = subscriptions;
+	}
+
+	public PartnerLicense getLicense() {
+		return license;
+	}
+
+	public void setLicense(PartnerLicense license) {
+		this.license = license;
 	}
 	
 }

@@ -15,18 +15,15 @@ import javax.faces.context.FacesContext;
 import org.primefaces.event.RowEditEvent;
 
 import com.dexter.fms.dao.GeneralDAO;
-import com.dexter.fms.model.ApplicationSubscriptionModule;
-import com.dexter.fms.model.ApplicationSubscriptionReport;
 import com.dexter.fms.model.ApplicationType;
 import com.dexter.fms.model.ApplicationTypeFunction;
 import com.dexter.fms.model.ApplicationTypeModule;
 import com.dexter.fms.model.ApplicationTypeReport;
+import com.dexter.fms.model.ApplicationTypeVersion;
 import com.dexter.fms.model.Audit;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.Module;
 import com.dexter.fms.model.Report;
-import com.dexter.fms.model.SubscriptionPackage;
-import com.dexter.fms.model.SubscriptionType;
 
 @ManagedBean(name = "appTypeBean")
 @SessionScoped
@@ -39,12 +36,11 @@ public class AppTypesMBean implements Serializable
 	private FacesMessage msg = null;
 	
 	private ApplicationType appType;
+	private ApplicationTypeVersion appTypeVersion;
 	private ApplicationTypeModule appTypeModule;
 	
-	private SubscriptionType subType;
-	
 	private Vector<ApplicationType> appTypes;
-	private Vector<SubscriptionType> subTypes;
+	private Vector<ApplicationTypeVersion> allAppTypeVersions;
 	
 	private Long module_id;
 	private Module module;
@@ -57,8 +53,6 @@ public class AppTypesMBean implements Serializable
 	private Long subType_id;
 	private Vector<ApplicationTypeModule> appTypeModules;
 	private Vector<ApplicationTypeReport> appTypeReports;
-	private SubscriptionPackage subPackage;
-	private Vector<SubscriptionPackage> subPackages;
 	
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
@@ -154,13 +148,13 @@ public class AppTypesMBean implements Serializable
 	
 	public String initAppTypeEdit()
 	{
-		if(getAppType().getId() != null)
+		if(getAppTypeVersion().getId() != null)
 		{
 			for(Module m : getModules())
 			{
 				boolean exist = false;
 				Module aptm = null;
-				for(Module atm : getAppType().getModules())
+				for(Module atm : getAppTypeVersion().getModules())
 				{
 					if(atm.getId().longValue() == m.getId().longValue())
 					{
@@ -189,7 +183,7 @@ public class AppTypesMBean implements Serializable
 			
 			for(Report r : getReports())
 			{
-				for(Report aptr : getAppType().getReports())
+				for(Report aptr : getAppTypeVersion().getReports())
 				{
 					if(aptr.getId().longValue() == r.getId().longValue())
 					{
@@ -302,15 +296,18 @@ public class AppTypesMBean implements Serializable
 		}
 	}
 	
-	public String saveAppType()
+	public String saveAppTypeVersion()
 	{
-		if(getAppType().getName() != null)
+		if(getAppType().getId() != null && getAppType().getName() != null && getAppType().getName().trim().length() > 0 &&
+				getAppTypeVersion().getVersionName() != null && getAppTypeVersion().getVersionName().trim().length() > 0)
 		{
-			getAppType().setCrt_dt(new Date());
-			getAppType().setCreatedBy(dashBean.getUser());
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
-			boolean ret = gDAO.save(getAppType());
+			
+			getAppTypeVersion().setAppType(getAppType());
+			getAppTypeVersion().setCreatedBy(dashBean.getUser());
+			getAppTypeVersion().setCrt_dt(new Date());
+			boolean ret = gDAO.save(getAppTypeVersion());
 			if(ret)
 			{
 				for(Module m : getModules())
@@ -318,7 +315,7 @@ public class AppTypesMBean implements Serializable
 					if(m.isSelected())
 					{
 						ApplicationTypeModule atm = new ApplicationTypeModule();
-						atm.setAppType(getAppType());
+						atm.setAppTypeVersion(getAppTypeVersion());
 						atm.setModule(m);
 						atm.setCrt_dt(new Date());
 						atm.setCreatedBy(dashBean.getUser());
@@ -327,15 +324,15 @@ public class AppTypesMBean implements Serializable
 						
 						for(MFunction f : m.getFunctions())
 						{
-							if(f.isSelected())
-							{
+							//if(f.isSelected())
+							//{
 								ApplicationTypeFunction atf = new ApplicationTypeFunction();
 								atf.setAppTypeModule(atm);
 								atf.setCreatedBy(dashBean.getUser());
 								atf.setCrt_dt(new Date());
 								atf.setFunction(f);
 								gDAO.save(atf);
-							}
+							//}
 						}
 					}
 				}
@@ -345,7 +342,7 @@ public class AppTypesMBean implements Serializable
 					if(r.isSelected())
 					{
 						ApplicationTypeReport atr = new ApplicationTypeReport();
-						atr.setAppType(getAppType());
+						atr.setAppTypeVersion(getAppTypeVersion());
 						atr.setReport(r);
 						atr.setCrt_dt(new Date());
 						atr.setCreatedBy(dashBean.getUser());
@@ -354,13 +351,17 @@ public class AppTypesMBean implements Serializable
 					}
 				}
 				
-				setModules(null);
-				setAppType(null);
-				setAppTypes(null);
 				gDAO.commit();
 				
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Application type created successfully!.");
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Application type version created successfully!.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReports(null);
+				setModules(null);
+				setAppType(null);
+				setAppTypeVersion(null);
+				setAppTypes(null);
+				setAllAppTypeVersions(null);
 			}
 			else
 			{
@@ -368,28 +369,100 @@ public class AppTypesMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with '*' sign are required!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
 		}
 		
 		return "manage_app_types";
 	}
 	
-	public String saveSubType()
+	public String saveAppType()
 	{
-		if(getSubType().getName() != null)
+		if(getAppType().getName() != null && getAppType().getName().trim().length() > 0)
 		{
-			getSubType().setCrt_dt(new Date());
-			getSubType().setCreatedBy(dashBean.getUser());
+			getAppType().setCrt_dt(new Date());
+			getAppType().setCreatedBy(dashBean.getUser());
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
-			boolean ret = gDAO.save(getSubType());
+			boolean ret = gDAO.save(getAppType());
 			if(ret)
 			{
-				setSubType(null);
-				setSubTypes(null);
 				gDAO.commit();
-				
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Subscription type created successfully!.");
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Application type created successfully!.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReports(null);
+				setModules(null);
+				setAppType(null);
+				setAppTypeVersion(null);
+				setAppTypes(null);
+				setAllAppTypeVersions(null);
+				/*getAppTypeVersion().setAppType(getAppType());
+				getAppTypeVersion().setCreatedBy(dashBean.getUser());
+				getAppTypeVersion().setCrt_dt(new Date());
+				ret = gDAO.save(getAppTypeVersion());
+				if(ret)
+				{
+					for(Module m : getModules())
+					{
+						if(m.isSelected())
+						{
+							ApplicationTypeModule atm = new ApplicationTypeModule();
+							atm.setAppTypeVersion(getAppTypeVersion());
+							atm.setModule(m);
+							atm.setCrt_dt(new Date());
+							atm.setCreatedBy(dashBean.getUser());
+							
+							gDAO.save(atm);
+							
+							for(MFunction f : m.getFunctions())
+							{
+								if(f.isSelected())
+								{
+									ApplicationTypeFunction atf = new ApplicationTypeFunction();
+									atf.setAppTypeModule(atm);
+									atf.setCreatedBy(dashBean.getUser());
+									atf.setCrt_dt(new Date());
+									atf.setFunction(f);
+									gDAO.save(atf);
+								}
+							}
+						}
+					}
+					
+					for(Report r : getReports())
+					{
+						if(r.isSelected())
+						{
+							ApplicationTypeReport atr = new ApplicationTypeReport();
+							atr.setAppTypeVersion(getAppTypeVersion());
+							atr.setReport(r);
+							atr.setCrt_dt(new Date());
+							atr.setCreatedBy(dashBean.getUser());
+							
+							gDAO.save(atr);
+						}
+					}
+					
+					gDAO.commit();
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Application type created successfully!.");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					
+					setReports(null);
+					setModules(null);
+					setAppType(null);
+					setAppTypeVersion(null);
+					setAppTypes(null);
+				}
+				else
+				{
+					gDAO.rollback();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}*/
 			}
 			else
 			{
@@ -397,72 +470,15 @@ public class AppTypesMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
 		}
-		return "manage_app_types";
-	}
-	
-	public void savePackage()
-	{
-		if(getAppType_id() != null && getSubType_id() != null)
+		else
 		{
-			SubscriptionPackage subPackage = new SubscriptionPackage();
-			
-			GeneralDAO gDAO = new GeneralDAO();
-			Object atObj = gDAO.find(ApplicationType.class, getAppType_id());
-			Object sbObj = gDAO.find(SubscriptionType.class, getSubType_id());
-			if(atObj != null && sbObj != null)
-			{
-				subPackage.setAppType((ApplicationType)atObj);
-				subPackage.setSubType((SubscriptionType)sbObj);
-				
-				subPackage.setCreatedBy(dashBean.getUser());
-				subPackage.setCrt_dt(new Date());
-				subPackage.setName(subPackage.getAppType().getName() + "-" + subPackage.getSubType().getName());
-				
-				gDAO.startTransaction();
-				
-				boolean ret = gDAO.save(subPackage);
-				if(ret)
-				{
-					for(ApplicationTypeModule atm : appTypeModules)
-					{
-						if(atm.isSelected())
-						{
-							ApplicationSubscriptionModule sub = new ApplicationSubscriptionModule();
-							sub.setAppTypeModule(atm);
-							sub.setCrt_dt(new Date());
-							sub.setSubType(subPackage.getSubType());
-							
-							ret = gDAO.save(sub);
-							if(!ret)
-								break;
-						}
-					}
-					
-					if(!ret)
-					{
-						gDAO.rollback();
-						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed for package: " + gDAO.getMessage());
-						FacesContext.getCurrentInstance().addMessage(null, msg);
-					}
-					else
-					{
-						gDAO.commit();
-						setSubPackages(null);
-						setAppType_id(null);
-						setSubType_id(null);
-						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Package created successfully.");
-						FacesContext.getCurrentInstance().addMessage(null, msg);
-					}
-				}
-				else
-				{
-					gDAO.rollback();
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed for package: " + gDAO.getMessage());
-					FacesContext.getCurrentInstance().addMessage(null, msg);
-				}
-			}
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with '*' sign are required!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
 		}
+		
+		return "manage_app_types";
 	}
 
 	public ApplicationType getAppType() {
@@ -475,6 +491,16 @@ public class AppTypesMBean implements Serializable
 		this.appType = appType;
 	}
 
+	public ApplicationTypeVersion getAppTypeVersion() {
+		if(appTypeVersion == null)
+			appTypeVersion = new ApplicationTypeVersion();
+		return appTypeVersion;
+	}
+
+	public void setAppTypeVersion(ApplicationTypeVersion appTypeVersion) {
+		this.appTypeVersion = appTypeVersion;
+	}
+
 	public ApplicationTypeModule getAppTypeModule() {
 		if(appTypeModule == null)
 			appTypeModule = new ApplicationTypeModule();
@@ -483,16 +509,6 @@ public class AppTypesMBean implements Serializable
 
 	public void setAppTypeModule(ApplicationTypeModule appTypeModule) {
 		this.appTypeModule = appTypeModule;
-	}
-
-	public SubscriptionType getSubType() {
-		if(subType == null)
-			subType = new SubscriptionType();
-		return subType;
-	}
-
-	public void setSubType(SubscriptionType subType) {
-		this.subType = subType;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -511,42 +527,56 @@ public class AppTypesMBean implements Serializable
 				{
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
 					params.put("appType", e);
-					Object mobj = gDAO.search("ApplicationTypeModule", params);
-					if(mobj != null)
+					Object appvobj = gDAO.search("ApplicationTypeVersion", params);
+					if(appvobj != null)
 					{
-						Vector<ApplicationTypeModule> atmlist = (Vector<ApplicationTypeModule>) mobj;
-						Vector<Module> eModules = new Vector<Module>();
-						for(ApplicationTypeModule atm : atmlist)
+						Vector<ApplicationTypeVersion> appvList = (Vector<ApplicationTypeVersion>)appvobj;
+						e.setVersions(appvList);
+					}
+					if(e.getVersions() != null && e.getVersions().size() > 0)
+					{
+						for(ApplicationTypeVersion atv : e.getVersions())
 						{
-							Module mdule = atm.getModule();
+							params = new Hashtable<String, Object>();
+							params.put("appTypeVersion", atv);
+							Object mobj = gDAO.search("ApplicationTypeModule", params);
+							if(mobj != null)
+							{
+								Vector<ApplicationTypeModule> atmlist = (Vector<ApplicationTypeModule>) mobj;
+								Vector<Module> eModules = new Vector<Module>();
+								for(ApplicationTypeModule atm : atmlist)
+								{
+									Module mdule = atm.getModule();
+									
+									params = new Hashtable<String, Object>();
+									params.put("appTypeModule", atm);
+									Object fobj = gDAO.search("ApplicationTypeFunction", params);
+									if(fobj != null)
+									{
+										Vector<MFunction> mfunctions = new Vector<MFunction>();
+										Vector<ApplicationTypeFunction> atflist = (Vector<ApplicationTypeFunction>) fobj;
+										for(ApplicationTypeFunction atf : atflist)
+										{
+											mfunctions.add(atf.getFunction());
+										}
+										mdule.setFunctions(mfunctions);
+									}
+									eModules.add(mdule);
+								}
+								atv.setModules(eModules);
+							}
 							
 							params = new Hashtable<String, Object>();
-							params.put("appTypeModule", atm);
-							Object fobj = gDAO.search("ApplicationTypeFunction", params);
-							if(fobj != null)
+							params.put("appTypeVersion", atv);
+							Object robj = gDAO.search("ApplicationTypeReport", params);
+							if(robj != null)
 							{
-								Vector<MFunction> mfunctions = new Vector<MFunction>();
-								Vector<ApplicationTypeFunction> atflist = (Vector<ApplicationTypeFunction>) fobj;
-								for(ApplicationTypeFunction atf : atflist)
+								Vector<ApplicationTypeReport> atrList = (Vector<ApplicationTypeReport>)robj;
+								for(ApplicationTypeReport atr : atrList)
 								{
-									mfunctions.add(atf.getFunction());
+									atv.getReports().add(atr.getReport());
 								}
-								mdule.setFunctions(mfunctions);
 							}
-							eModules.add(mdule);
-						}
-						e.setModules(eModules);
-					}
-					
-					params = new Hashtable<String, Object>();
-					params.put("appType", e);
-					Object robj = gDAO.search("ApplicationTypeReport", params);
-					if(robj != null)
-					{
-						Vector<ApplicationTypeReport> atrList = (Vector<ApplicationTypeReport>)robj;
-						for(ApplicationTypeReport atr : atrList)
-						{
-							e.getReports().add(atr.getReport());
 						}
 					}
 				}
@@ -557,6 +587,27 @@ public class AppTypesMBean implements Serializable
 
 	public void setAppTypes(Vector<ApplicationType> appTypes) {
 		this.appTypes = appTypes;
+	}
+
+	public Vector<ApplicationTypeVersion> getAllAppTypeVersions() {
+		if(allAppTypeVersions == null)
+		{
+			Vector<ApplicationType> appTypes = getAppTypes();
+			if(appTypes != null && appTypes.size() > 0)
+			{
+				allAppTypeVersions = new Vector<ApplicationTypeVersion>();
+				for(ApplicationType e : appTypes)
+				{
+					allAppTypeVersions.addAll(e.getVersions());
+				}
+			}
+		}
+		return allAppTypeVersions;
+	}
+
+	public void setAllAppTypeVersions(
+			Vector<ApplicationTypeVersion> allAppTypeVersions) {
+		this.allAppTypeVersions = allAppTypeVersions;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -615,23 +666,6 @@ public class AppTypesMBean implements Serializable
 
 	public void setAppTypeReports(Vector<ApplicationTypeReport> appTypeReports) {
 		this.appTypeReports = appTypeReports;
-	}
-
-	@SuppressWarnings("unchecked")
-	public Vector<SubscriptionType> getSubTypes() {
-		if(subTypes == null)
-		{
-			Object obj = new GeneralDAO().findAll("SubscriptionType");
-			if(obj != null)
-			{
-				subTypes = (Vector<SubscriptionType>)obj;
-			}
-		}
-		return subTypes;
-	}
-
-	public void setSubTypes(Vector<SubscriptionType> subTypes) {
-		this.subTypes = subTypes;
 	}
 
 	public Long getModule_id() {
@@ -727,56 +761,4 @@ public class AppTypesMBean implements Serializable
 	public void setSubType_id(Long subType_id) {
 		this.subType_id = subType_id;
 	}
-
-	public SubscriptionPackage getSubPackage() {
-		if(subPackage == null)
-			subPackage = new SubscriptionPackage();
-		return subPackage;
-	}
-
-	public void setSubPackage(SubscriptionPackage subPackage) {
-		this.subPackage = subPackage;
-	}
-
-	@SuppressWarnings("unchecked")
-	public Vector<SubscriptionPackage> getSubPackages() {
-		if(subPackages == null)
-		{
-			GeneralDAO gDAO = new GeneralDAO();
-			Object obj = gDAO.findAll("SubscriptionPackage");
-			if(obj != null)
-			{
-				subPackages = (Vector<SubscriptionPackage>)obj;
-			}
-			if(subPackages != null)
-			{
-				for(SubscriptionPackage p : subPackages)
-				{
-					Hashtable<String, Object> params = new Hashtable<String, Object>();
-					params.put("subType", p.getSubType());
-					params.put("appTypeModule.appType", p.getAppType());
-					Object asmobj = gDAO.search("ApplicationSubscriptionModule", params);
-					if(asmobj != null)
-					{
-						p.setModules((Vector<ApplicationSubscriptionModule>)asmobj);
-					}
-					
-					params = new Hashtable<String, Object>();
-					params.put("subType", p.getSubType());
-					params.put("appTypeReport.appType", p.getAppType());
-					Object asrobj = gDAO.search("ApplicationSubscriptionReport", params);
-					if(asrobj != null)
-					{
-						p.setReports((Vector<ApplicationSubscriptionReport>)asrobj);
-					}
-				}
-			}
-		}
-		return subPackages;
-	}
-
-	public void setSubPackages(Vector<SubscriptionPackage> subPackages) {
-		this.subPackages = subPackages;
-	}
-	
 }

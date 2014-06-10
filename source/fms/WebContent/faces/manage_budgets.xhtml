@@ -63,10 +63,10 @@
 					<br/><br/>
 					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 						<h:outputLabel for="stdt" value="Begin date: *" />
-						<p:calendar id="stdt" value="#{expenseBean.budget.start_dt}" showOn="button" />
+						<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" value="#{expenseBean.budget.start_dt}" showOn="button" />
 						
 						<h:outputLabel for="eddt" value="End date: *" />
-						<p:calendar id="eddt" value="#{expenseBean.budget.end_dt}" showOn="button" />
+						<p:calendar id="eddt" pattern="dd/MM/yyyy HH:mm:ss" value="#{expenseBean.budget.end_dt}" showOn="button" />
 						
 						<h:outputLabel for="desc" value="Remarks: " />
 						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -112,7 +112,7 @@
 									<h:outputText value="#{obj.start_dt}" />
 								</f:facet>
 								<f:facet name="input">
-									<p:calendar value="#{obj.start_dt}" showOn="button" />
+									<p:calendar pattern="dd/MM/yyyy HH:mm:ss" value="#{obj.start_dt}" showOn="button" />
 								</f:facet>
 							</p:cellEditor>
 						</p:column>
@@ -122,7 +122,7 @@
 									<h:outputText value="#{obj.end_dt}" />
 								</f:facet>
 								<f:facet name="input">
-									<p:calendar value="#{obj.end_dt}" showOn="button" />
+									<p:calendar pattern="dd/MM/yyyy HH:mm:ss" value="#{obj.end_dt}" showOn="button" />
 								</f:facet>
 							</p:cellEditor>
 						</p:column>

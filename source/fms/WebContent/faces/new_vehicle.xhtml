@@ -75,7 +75,7 @@
 				<p:inputText id="vchasno" value="#{fleetBean.vehicle.chasisNo}" />
 				
 				<h:outputLabel for="vpurdate" value="Purchased Date: " />
-				<p:calendar id="vpurdate" value="#{fleetBean.vehicle.purchaseDate}" showOn="button" />
+				<p:calendar id="vpurdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.vehicle.purchaseDate}" showOn="button" />
 				
 				<h:outputLabel for="vpuramt" value="Purchased Amount: " />
 				<p:inputText id="vpuramt" value="#{fleetBean.vehicle.purchaseAmt}" />
@@ -115,6 +115,12 @@
 		  		
 		  		<h:outputLabel for="vparamtankc" value="Tank Capacity: " />
 				<p:inputText id="vparamtankc" value="#{fleetBean.vehicleParam.tankcapacity}" />
+				
+				<h:outputLabel for="vparamkml" value="Fuel Consumption(KM/L): " />
+				<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelCompKML}" />
+				
+				<h:outputLabel for="vparam100kml" value="Fuel Consumption(100KM/L): " />
+				<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
 				
 				<h:outputLabel for="vparamtankc2" value="Calibrated Capacity: " />
 				<p:inputText id="vparamtankc2" value="#{fleetBean.vehicleParam.calibratedcapacity}" />

@@ -208,6 +208,11 @@
 				<p:ajax update="vch1" />
 			</h:inputText>
 		</p:panelGrid>
+		
+		<h:outputLabel for="tdriver" value="Trip Driver: *" />
+		<p:selectOneMenu id="tdriver" value="#{ctripBean.driver_id}">
+			<f:selectItems value="#{ddBean.getPartnerDrivers(dashBean.user.partner.id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+		</p:selectOneMenu>
   		
   		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{ctripBean.attendToTrip}" value="Save" icon="ui-icon-disk" style="margin:0"/>

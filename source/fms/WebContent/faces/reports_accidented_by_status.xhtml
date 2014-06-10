@@ -1,0 +1,144 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Accidented By Status" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2">
+					<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="sta" value="Status: " />
+					<p:selectOneMenu id="sta" value="#{reportsBean.accidentStatus}">
+			  			<f:selectItem itemLabel="PENDING" itemValue="PENDING" />
+			  			<f:selectItem itemLabel="APPROVED" itemValue="APPROVED" />
+			  			<f:selectItem itemLabel="DENIED" itemValue="DENIED" />
+			  			<f:selectItem itemLabel="CANCELED" itemValue="CANCELED" />
+			  			<f:selectItem itemLabel="DONE" itemValue="DONE" />
+			  		</p:selectOneMenu>
+			  		
+					<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchAccidentsByStatus}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+			  	</p:panelGrid>
+			  	<h:panelGrid columns="3" rendered="#{reportsBean.statusAccidents != null and reportsBean.statusAccidents.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(3, 'accident_by_status_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="accident_by_status_report" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(3, 'accident_by_status_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(3, 'accident_by_status_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="accident_by_status_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="accident_by_status_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="accident_by_status_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="accident_by_status_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="accident_by_status_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.statusAccidents}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.statusAccidents != null and reportsBean.statusAccidents.size() > 0}">
+					<f:facet name="header">
+						Found accident(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.vehicle.registrationNo}" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.registrationNo}" />
+					</p:column>
+					<p:column sortBy="#{obj.accident_dt}">
+						<f:facet name="header">
+							 <h:outputText value="Accident Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.accident_dt}" />
+					</p:column>
+					<p:column filterBy="#{obj.accidentDescription}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Description" />  
+						</f:facet>
+						<h:outputText value="#{obj.accidentDescription}" />
+					</p:column>
+					<p:column filterBy="#{obj.driver_name}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Driver" />  
+						</f:facet>
+						<h:outputText value="#{obj.driver_name}" />
+					</p:column>
+					<p:column filterBy="#{obj.driverComment}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Driver Comment" />  
+						</f:facet>
+						<h:outputText value="#{obj.driverComment}" />
+					</p:column>
+					<p:column filterBy="#{obj.policeOfficer}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Police Officer" />  
+						</f:facet>
+						<h:outputText value="#{obj.policeOfficer}" />
+					</p:column>
+					<p:column filterBy="#{obj.policeStation}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Police Station" />  
+						</f:facet>
+						<h:outputText value="#{obj.policeStation}" />
+					</p:column>
+					<p:column filterBy="#{obj.policeComment}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Police Comment" />  
+						</f:facet>
+						<h:outputText value="#{obj.policeComment}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

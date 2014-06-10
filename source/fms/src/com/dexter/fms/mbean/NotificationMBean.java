@@ -6,7 +6,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 import java.util.logging.Logger;
 
-import javax.faces.application.FacesMessage;
+//import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.SessionScoped;
@@ -22,7 +22,7 @@ public class NotificationMBean implements Serializable
 	
 	final Logger logger = Logger.getLogger("fms-FleetMBean");
 	
-	private FacesMessage msg = null;
+	//private FacesMessage msg = null;
 	
 	private Calendar lastUpdated;
 	private Vector<Notification> notifications;

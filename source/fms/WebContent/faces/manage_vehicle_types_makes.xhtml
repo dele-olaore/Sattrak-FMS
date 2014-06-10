@@ -28,6 +28,21 @@
 		</tr>
 		<tr>
 		<td colspan="2">
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
 		<p:outputPanel id="OPanel" style="width:100%;">
 			<p:dataTable id="typesTable" var="obj" value="#{fleetBean.vehicleTypes}"
 				paginator="true" rows="20"

@@ -98,8 +98,21 @@
 									</f:facet>
 								</p:cellEditor>
 							</p:column>
+							<p:column headerText="Unit Price">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{obj.itemUnitPrice}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{obj.itemUnitPrice}" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
 							<p:column sortBy="#{obj.stockLevel}" headerText="Stock Level">
 								<h:outputText value="#{obj.stockLevel}" />
+							</p:column>
+							<p:column headerText="Last Updated">
+								<h:outputText value="#{obj.lastUpdatedDate}" />
 							</p:column>
 							<p:column headerText="" style="width: 5%">
 								<p:rowEditor />
@@ -213,6 +226,9 @@
   		
   		<h:outputLabel for="itmdesc" value="Description: " />
   		<p:inputText id="itmdesc" value="#{assetBean.item.description}" />
+  		
+  		<h:outputLabel for="itmunitp" value="Unit Price: " />
+  		<p:inputText id="itmunitp" value="#{assetBean.item.itemUnitPrice}" />
   		
   		<h:outputLabel for="itmstklvl" value="Stock Level: " />
   		<p:inputText id="itmstklvl" value="#{assetBean.item.stockLevel}" />

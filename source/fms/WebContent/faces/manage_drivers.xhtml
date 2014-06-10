@@ -145,7 +145,7 @@
   		<h:outputText id="dvrName" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
   		
   		<h:outputLabel for="overtimedate" value="Date: *" />
-		<p:calendar id="overtimedate" value="#{userBean.overtime.tranDate}" showOn="button" />
+		<p:calendar id="overtimedate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.overtime.tranDate}" showOn="button" />
   		
   		<h:outputLabel for="overtimehours" value="Overtime Hours: *" />
   		<p:inputText id="overtimehours" value="#{userBean.overtime.overtimehours}">
@@ -230,7 +230,7 @@
   		<h:outputText id="dvrName3" value="#{userBean.driver.personel.firstname} #{userBean.driver.personel.lastname}" />
   		
   		<h:outputLabel for="querydate" value="Date: *" />
-		<p:calendar id="querydate" value="#{userBean.dvrQuery.tranDate}" showOn="button" />
+		<p:calendar id="querydate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.dvrQuery.tranDate}" showOn="button" />
   		
   		<h:outputLabel for="querygrade" value="Grade: *" />
   		<p:selectOneMenu id="querygrade" value="#{userBean.dvrQuery.queryGrade}">

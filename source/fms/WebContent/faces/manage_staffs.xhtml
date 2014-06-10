@@ -20,7 +20,7 @@
 		<td align="right">
 			<p:commandLink value="New Personel" action="#{dashboardBean.gotoPage('new_staff', true)}" ajax="false" />
 			<h:outputText value=" | " />
-			<p:commandLink value="Batch Load Personels" action="#{dashboardBean.gotoPage('batchload_personel', true)}" ajax="false" />
+			<p:commandLink value="Batch Load Personel" action="#{dashboardBean.gotoPage('batchload_personel', true)}" ajax="false" />
 		</td>
 		</tr>
 		<tr>
@@ -161,7 +161,7 @@
 		<p:inputText id="stdrvlicno" value="#{userBean.drvLicenseNo}" />
 		
 		<h:outputLabel for="stdrvliceddt" value="Driver's license expiry date: " />
-		<p:calendar id="stdrvliceddt" value="#{userBean.drvLicenseExpiryDate}" showOn="button" />
+		<p:calendar id="stdrvliceddt" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.drvLicenseExpiryDate}" showOn="button" />
 		
 		<h:outputLabel for="stdrvlicphoto" value="Driver's license photo: " />
 		<p:fileUpload id="stdrvlicphoto" value="#{userBean.driverslicPhoto}" mode="simple" />

@@ -42,6 +42,16 @@
 				  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 				  		</p:selectOneMenu>
 				  		
+				  		<h:outputLabel for="expst" value="For Staff:" />
+						<p:selectOneMenu id="expst" value="#{expenseBean.staff_id}">
+				  			<f:selectItem itemLabel="No staff" itemValue="0" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="expv" value="For Vehicle:" />
+						<p:selectOneMenu id="expv" value="#{expenseBean.vehicle_id}">
+				  			<f:selectItem itemLabel="No vehicle" itemValue="0" />
+				  		</p:selectOneMenu>
+				  		
 				  		<h:outputLabel for="stdt" value="Date: *" />
 						<p:calendar id="stdt" value="#{expenseBean.exp.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
 						

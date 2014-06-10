@@ -87,7 +87,7 @@
 			<p:inputText id="staffposition" value="#{userBean.personel.position}" />
 			
 			<h:outputLabel for="staffhdate" value="Hired date: " />
-			<p:calendar id="staffhdate" value="#{userBean.personel.hiredDate}" showOn="button" />
+			<p:calendar id="staffhdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.personel.hiredDate}" showOn="button" />
 			
 			<h:outputLabel for="staffnok" value="Next of Kin: " />
 			<p:panelGrid id="staffnok" columns="2" cellpadding="5" >
@@ -131,7 +131,7 @@
 	  			<p:inputText id="stdrvlicno" value="#{userBean.drvLicenseNo}" rendered="#{userBean.personel.hasDriver}" />
 	  			
 	  			<h:outputLabel for="stdrvliceddt" value="Driver's license expiry date: " rendered="#{userBean.personel.hasDriver}" />
-	  			<p:calendar id="stdrvliceddt" value="#{userBean.drvLicenseExpiryDate}" rendered="#{userBean.personel.hasDriver}" showOn="button" />
+	  			<p:calendar id="stdrvliceddt" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.drvLicenseExpiryDate}" rendered="#{userBean.personel.hasDriver}" showOn="button" />
 	  			
 	  			<h:outputLabel for="stdrvlicphoto" value="Driver's license photo: " rendered="#{userBean.personel.hasDriver}" />
 				<p:fileUpload id="stdrvlicphoto" value="#{userBean.driverslicPhoto}" mode="simple" rendered="#{userBean.personel.hasDriver}" />

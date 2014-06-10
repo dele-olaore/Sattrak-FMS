@@ -14,6 +14,7 @@ import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
+import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.Vehicle;
 
@@ -30,6 +31,8 @@ public class VehicleModel implements Serializable
 	
 	private String name;
 	private String year;
+	@ManyToOne
+	private Partner partner;
 	
 	@ManyToOne(cascade = {CascadeType.PERSIST})
 	private VehicleMake maker;
@@ -70,6 +73,14 @@ public class VehicleModel implements Serializable
 
 	public void setYear(String year) {
 		this.year = year;
+	}
+
+	public Partner getPartner() {
+		return partner;
+	}
+
+	public void setPartner(Partner partner) {
+		this.partner = partner;
 	}
 
 	public VehicleMake getMaker() {

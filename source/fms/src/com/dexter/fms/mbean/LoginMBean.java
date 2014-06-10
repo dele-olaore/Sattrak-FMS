@@ -21,6 +21,7 @@ import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Audit;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
+import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
@@ -129,6 +130,7 @@ public class LoginMBean implements Serializable
 			if(list.size()>0)
 			{
 				PartnerUser foundUser = list.get(0);
+				System.out.println("Found password: " + foundUser.getPassword() + ", Entered password: " + Hasher.getHashValue(getPassword()));
 				if(foundUser.getPassword().equals(Hasher.getHashValue(getPassword())))
 				{
 					foundUser.setSession(((HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest()).getSession());
@@ -164,6 +166,7 @@ public class LoginMBean implements Serializable
 								}
 								else
 								{
+									dashBean.setUser(null);
 									proceed = false;
 									msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Authentication successful but no active subscription!");
 									FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -171,6 +174,7 @@ public class LoginMBean implements Serializable
 							}
 							else
 							{
+								dashBean.setUser(null);
 								proceed = false;
 								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Authentication successful but no active subscription!");
 								FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -226,20 +230,31 @@ public class LoginMBean implements Serializable
 								}
 							}
 							
+							params2 = new Hashtable<String, Object>();
+							params2.put("partner", foundUser.getPartner());
+							Object foundLics = gDAO.search("PartnerLicense", params2);
+							if(foundLics != null)
+							{
+								Vector<PartnerLicense> lics = (Vector<PartnerLicense>)foundLics;
+								for(PartnerLicense e : lics)
+									dashBean.setPartnerLicense(e);
+							}
+							
 							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful!");
 							FacesContext.getCurrentInstance().addMessage(null, msg);
 							saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName());
-						}
-						if(foundUser.isActivated())
-						{
-							ret = "dashboard";
-						}
-						else
-						{
-							ret = "index";
-							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful! However you need to reset your initial password before you can continue.");
-							FacesContext.getCurrentInstance().addMessage(null, msg);
-							saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName() + ". But needs to activate account.");
+						
+							if(foundUser.isActivated())
+							{
+								ret = "dashboard";
+							}
+							else
+							{
+								ret = "index";
+								msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful! However you need to reset your initial password before you can continue.");
+								FacesContext.getCurrentInstance().addMessage(null, msg);
+								saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName() + ". But needs to activate account.");
+							}
 						}
 					}
 				}

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
@@ -30,6 +31,7 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.CorporateTrip;
@@ -39,11 +41,13 @@ import com.dexter.fms.model.app.Fleet;
 import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.app.VehicleAccident;
 import com.dexter.fms.model.app.VehicleAdHocMaintenance;
+import com.dexter.fms.model.app.VehicleDriver;
 import com.dexter.fms.model.app.VehicleFueling;
 import com.dexter.fms.model.app.VehicleLicense;
 import com.dexter.fms.model.app.VehicleRoutineMaintenance;
 import com.dexter.fms.model.ref.Department;
 import com.dexter.fms.model.ref.Region;
+import com.dexter.fms.model.ref.VehicleModel;
 import com.itextpdf.text.Chunk;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
@@ -86,9 +90,15 @@ public class ReportsMBean implements Serializable
 	private Long vehicle_id;
 	private String regNo;
 	
+	private Long driver_id;
+	private String accidentStatus;
+	private Long vehicleModel_id;
+	private int minYears;
+	private int searchType;
+	
 	private Vector<PartnerUser> allUsers;
 	private Vector<DriverLicense> dueDriversLic;
-	private Vector<VehicleAccident> vehicleAccidents;
+	private Vector<VehicleAccident> vehicleAccidents, driverAccidents, statusAccidents, brandAccidents;
 	private Vector<Vehicle> vehiclesByBrand;
 	private Vector<VehicleRoutineMaintenance> rmaints;
 	private Vector<VehicleAdHocMaintenance> adhocmaints;
@@ -102,6 +112,10 @@ public class ReportsMBean implements Serializable
 	
 	private Vector<VehicleFueling> fuelings;
 	
+	// latest report based on Banjo's document
+	private Vector<PartnerDriver> driversByYears, driversByRegion;
+	private Vector<Fleet> partnerFleets;
+	
 	private String report_title;
 	private String report_start_dt;
 	private String report_end_dt;
@@ -112,6 +126,166 @@ public class ReportsMBean implements Serializable
 	
 	public ReportsMBean()
 	{}
+	
+	@SuppressWarnings("unchecked")
+	public void searchFleetCosts()
+	{
+		resetReportInfo();
+		
+		if(getPartner() != null)
+		{
+			setPartnerFleets(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from Fleet e where e.partner=:partner";
+			Query q = gDAO.createQuery(str);
+			q.setParameter("partner", getPartner());
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				Vector<Fleet> flts = (Vector<Fleet>)drvs;
+				for(Fleet f : flts)
+				{
+					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params.put("fleet", f);
+					params.put("active", true);
+					Object vObj = gDAO.search("Vehicle", params);
+					if(vObj != null)
+					{
+						f.setVehicles((Vector<Vehicle>)vObj);
+						BigDecimal sum = new BigDecimal(0);
+						for(Vehicle v : f.getVehicles())
+						{
+							if(v.getPurchaseAmt() != null)
+								sum = sum.add(v.getPurchaseAmt());
+						}
+						f.setFleetCost(sum);
+					}
+				}
+				setPartnerFleets(flts);
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getPartnerFleets().size() + " fleet(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Fleet Cost Analysis Report");
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No fleet found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+			gDAO.destroy();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void searchDriversByRegion()
+	{
+		resetReportInfo();
+		
+		if(getPartner() != null && getRegion_id() != null)
+		{
+			setDriversByRegion(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from PartnerDriver e where e.partner=:partner and e.personel.region.id=:region_id";
+			
+			Query q = gDAO.createQuery(str);
+			q.setParameter("partner", getPartner());
+			q.setParameter("region_id", getRegion_id());
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				setDriversByRegion((Vector<PartnerDriver>)drvs);
+				for(PartnerDriver pd : getDriversByRegion())
+				{
+					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params.put("driver", pd);
+					params.put("active", true);
+					Object pdvObj = gDAO.search("VehicleDriver", params);
+					if(pdvObj != null)
+					{
+						Vector<VehicleDriver> vdList = (Vector<VehicleDriver>)pdvObj;
+						for(VehicleDriver vd : vdList)
+						{
+							pd.setVehicle(vd.getVehicle());
+						}
+					}
+				}
+				
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getDriversByRegion().size() + " driver(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Drivers by Region Report");
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No driver found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+			gDAO.destroy();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void searchDriversByYears()
+	{
+		resetReportInfo();
+		
+		if(getPartner() != null)
+		{
+			setDriversByYears(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from PartnerDriver e where e.partner=:partner order by e.personel.hiredDate";
+			
+			Query q = gDAO.createQuery(str);
+			q.setParameter("partner", getPartner());
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				Vector<PartnerDriver> partnerDrivers = (Vector<PartnerDriver>)drvs;
+				setDriversByYears(new Vector<PartnerDriver>());
+				Calendar c = Calendar.getInstance();
+				for(PartnerDriver pd : partnerDrivers)
+				{
+					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params.put("driver", pd);
+					params.put("active", true);
+					Object pdvObj = gDAO.search("VehicleDriver", params);
+					if(pdvObj != null)
+					{
+						Vector<VehicleDriver> vdList = (Vector<VehicleDriver>)pdvObj;
+						for(VehicleDriver vd : vdList)
+						{
+							pd.setVehicle(vd.getVehicle());
+						}
+					}
+					
+					if(pd.getPersonel().getHiredDate() != null)
+					{
+						Calendar pdc = Calendar.getInstance();
+						pdc.setTime(pd.getPersonel().getHiredDate());
+						pd.setYearsOfService(c.get(Calendar.YEAR)-pdc.get(Calendar.YEAR));
+					}
+					getDriversByYears().add(pd);
+				}
+				
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getDriversByYears().size() + " driver(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Drivers by Years of Service Report");
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No driver found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+			gDAO.destroy();
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
 	public void search()
@@ -219,6 +393,146 @@ public class ReportsMBean implements Serializable
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void searchAccidentsByBrand()
+	{
+		resetReportInfo();
+		
+		if(getStart_dt() != null && getEnd_dt() != null && getPartner() != null && getVehicleModel_id() != null)
+		{
+			setBrandAccidents(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from VehicleAccident e where (e.accident_dt between :start_dt and :end_dt) and e.vehicle.partner=:partner";
+			
+			VehicleModel vm = null;
+			Object vmObj = gDAO.find(VehicleModel.class, getVehicleModel_id());
+			if(vmObj != null)
+				vm = (VehicleModel)vmObj;
+			
+			if(getVehicleModel_id() != null)
+				str += " and e.vehicle.model.id = :model_id";
+			
+			Query q = gDAO.createQuery(str);
+			q.setParameter("start_dt", getStart_dt());
+			q.setParameter("end_dt", getEnd_dt());
+			q.setParameter("partner", getPartner());
+			if(getVehicleModel_id() != null)
+				q.setParameter("model_id", getVehicleModel_id());
+			
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				setBrandAccidents((Vector<VehicleAccident>)drvs);
+				
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getBrandAccidents().size() + " accident(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Accident Report by Brand: " + ((vm != null) ? vm.getName() : "N/A"));
+				setReport_start_dt(getStart_dt().toLocaleString());
+				setReport_end_dt(getEnd_dt().toLocaleString());
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No accident found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "deprecation" })
+	public void searchAccidentsByStatus()
+	{
+		resetReportInfo();
+		
+		if(getStart_dt() != null && getEnd_dt() != null && getPartner() != null && getAccidentStatus() != null)
+		{
+			setStatusAccidents(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from VehicleAccident e where (e.accident_dt between :start_dt and :end_dt) and e.vehicle.partner=:partner";
+			
+			if(getAccidentStatus() != null && getAccidentStatus().trim().length() > 0)
+				str += " and e.repairApprovedDesc = :repairApprovedDesc";
+			
+			Query q = gDAO.createQuery(str);
+			q.setParameter("start_dt", getStart_dt());
+			q.setParameter("end_dt", getEnd_dt());
+			q.setParameter("partner", getPartner());
+			if(getAccidentStatus() != null && getAccidentStatus().trim().length() > 0)
+				q.setParameter("repairApprovedDesc", getAccidentStatus());
+			
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				setStatusAccidents((Vector<VehicleAccident>)drvs);
+				
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getStatusAccidents().size() + " accident(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Accident Report by Status: " + getAccidentStatus());
+				setReport_start_dt(getStart_dt().toLocaleString());
+				setReport_end_dt(getEnd_dt().toLocaleString());
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No accident found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "deprecation" })
+	public void searchAccidentsByDriver()
+	{
+		resetReportInfo();
+		
+		if(getStart_dt() != null && getEnd_dt() != null && getPartner() != null && getDriver_id() != null)
+		{
+			setDriverAccidents(null);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			String str = "Select e from VehicleAccident e where (e.accident_dt between :start_dt and :end_dt) and e.vehicle.partner=:partner";
+			PartnerDriver d = null;
+			try
+			{
+				d = (PartnerDriver)gDAO.find(PartnerDriver.class, getDriver_id());
+			}
+			catch(Exception ex){}
+			
+			if(getDriver_id() != null && getDriver_id() > 0)
+				str += " and e.assignedDriver = :assignedDriver";
+			
+			Query q = gDAO.createQuery(str);
+			q.setParameter("start_dt", getStart_dt());
+			q.setParameter("end_dt", getEnd_dt());
+			q.setParameter("partner", getPartner());
+			if(getDriver_id() != null && getDriver_id() > 0)
+				q.setParameter("assignedDriver", d);
+			
+			Object drvs = gDAO.search(q, 0);
+			if(drvs != null)
+			{
+				setDriverAccidents((Vector<VehicleAccident>)drvs);
+				
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getDriverAccidents().size() + " accident(s) found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setReport_title("Accident Report by Driver: " + ((d != null) ? d.getPersonel().getFirstname() + " " + d.getPersonel().getLastname() : "N/A"));
+				setReport_start_dt(getStart_dt().toLocaleString());
+				setReport_end_dt(getEnd_dt().toLocaleString());
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No accident found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
 		}
 	}
 	
@@ -1973,6 +2287,46 @@ public class ReportsMBean implements Serializable
 		this.regNo = regNo;
 	}
 
+	public Long getDriver_id() {
+		return driver_id;
+	}
+
+	public void setDriver_id(Long driver_id) {
+		this.driver_id = driver_id;
+	}
+
+	public String getAccidentStatus() {
+		return accidentStatus;
+	}
+
+	public void setAccidentStatus(String accidentStatus) {
+		this.accidentStatus = accidentStatus;
+	}
+
+	public Long getVehicleModel_id() {
+		return vehicleModel_id;
+	}
+
+	public void setVehicleModel_id(Long vehicleModel_id) {
+		this.vehicleModel_id = vehicleModel_id;
+	}
+
+	public int getMinYears() {
+		return minYears;
+	}
+
+	public void setMinYears(int minYears) {
+		this.minYears = minYears;
+	}
+
+	public int getSearchType() {
+		return searchType;
+	}
+
+	public void setSearchType(int searchType) {
+		this.searchType = searchType;
+	}
+
 	public Long getVehicle_id() {
 		return vehicle_id;
 	}
@@ -2003,6 +2357,30 @@ public class ReportsMBean implements Serializable
 
 	public void setVehicleAccidents(Vector<VehicleAccident> vehicleAccidents) {
 		this.vehicleAccidents = vehicleAccidents;
+	}
+
+	public Vector<VehicleAccident> getDriverAccidents() {
+		return driverAccidents;
+	}
+
+	public void setDriverAccidents(Vector<VehicleAccident> driverAccidents) {
+		this.driverAccidents = driverAccidents;
+	}
+
+	public Vector<VehicleAccident> getStatusAccidents() {
+		return statusAccidents;
+	}
+
+	public void setStatusAccidents(Vector<VehicleAccident> statusAccidents) {
+		this.statusAccidents = statusAccidents;
+	}
+
+	public Vector<VehicleAccident> getBrandAccidents() {
+		return brandAccidents;
+	}
+
+	public void setBrandAccidents(Vector<VehicleAccident> brandAccidents) {
+		this.brandAccidents = brandAccidents;
 	}
 
 	public Vector<Vehicle> getVehiclesByBrand() {
@@ -2059,6 +2437,30 @@ public class ReportsMBean implements Serializable
 
 	public void setVehiclesAges(Vector<Vehicle> vehiclesAges) {
 		this.vehiclesAges = vehiclesAges;
+	}
+
+	public Vector<PartnerDriver> getDriversByYears() {
+		return driversByYears;
+	}
+
+	public void setDriversByYears(Vector<PartnerDriver> driversByYears) {
+		this.driversByYears = driversByYears;
+	}
+
+	public Vector<PartnerDriver> getDriversByRegion() {
+		return driversByRegion;
+	}
+
+	public void setDriversByRegion(Vector<PartnerDriver> driversByRegion) {
+		this.driversByRegion = driversByRegion;
+	}
+
+	public Vector<Fleet> getPartnerFleets() {
+		return partnerFleets;
+	}
+
+	public void setPartnerFleets(Vector<Fleet> partnerFleets) {
+		this.partnerFleets = partnerFleets;
 	}
 
 	public Vector<CorporateTrip> getCorTrips() {

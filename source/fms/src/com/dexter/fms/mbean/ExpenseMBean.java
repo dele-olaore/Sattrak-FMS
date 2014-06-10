@@ -25,11 +25,13 @@ import com.dexter.common.util.Emailer;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Notification;
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.Budget;
 import com.dexter.fms.model.app.Expense;
 import com.dexter.fms.model.app.ExpenseRequest;
 import com.dexter.fms.model.app.ExpenseType;
+import com.dexter.fms.model.app.Vehicle;
 
 @ManagedBean(name = "expenseBean")
 @SessionScoped
@@ -49,6 +51,9 @@ public class ExpenseMBean implements Serializable
 	
 	private Budget budget;
 	private Vector<Budget> setupbudgets, budgets;
+	
+	private Long vehicle_id;
+	private Long staff_id;
 	
 	private Long expType_id;
 	private Expense exp;
@@ -249,6 +254,20 @@ public class ExpenseMBean implements Serializable
 						if(approvalUObj != null)
 						{
 							PartnerUser approveUser = (PartnerUser)approvalUObj;
+							Vehicle vehicle = null;
+							if(getVehicle_id() != null)
+							{
+								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
+								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+							}
+							PartnerPersonel staff = null;
+							if(getStaff_id() != null)
+							{
+								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
+								if(staffObj != null) staff = (PartnerPersonel)staffObj;
+							}
+							getExpRequest().setVehicle(vehicle);
+							getExpRequest().setPersonel(staff);
 							getExpRequest().setType(et);
 							getExpRequest().setCreatedBy(dashBean.getUser());
 							getExpRequest().setCrt_dt(new Date());
@@ -334,6 +353,21 @@ public class ExpenseMBean implements Serializable
 						if(approvalUObj != null)
 						{
 							PartnerUser approveUser = (PartnerUser)approvalUObj;
+							
+							Vehicle vehicle = null;
+							if(getVehicle_id() != null)
+							{
+								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
+								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+							}
+							PartnerPersonel staff = null;
+							if(getStaff_id() != null)
+							{
+								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
+								if(staffObj != null) staff = (PartnerPersonel)staffObj;
+							}
+							getExpRequest().setPersonel(staff);
+							getExpRequest().setVehicle(vehicle);
 							getExpRequest().setType(et);
 							getExpRequest().setCreatedBy(dashBean.getUser());
 							getExpRequest().setCrt_dt(new Date());
@@ -504,6 +538,20 @@ public class ExpenseMBean implements Serializable
 						ExpenseType et = (ExpenseType)expType;
 						if(!et.isSystemObj())
 						{
+							Vehicle vehicle = null;
+							if(getVehicle_id() != null)
+							{
+								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
+								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+							}
+							PartnerPersonel staff = null;
+							if(getStaff_id() != null)
+							{
+								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
+								if(staffObj != null) staff = (PartnerPersonel)staffObj;
+							}
+							getExp().setVehicle(vehicle);
+							getExp().setPersonel(staff);
 							getExp().setType(et);
 							getExp().setCreatedBy(dashBean.getUser());
 							getExp().setCrt_dt(new Date());
@@ -863,6 +911,22 @@ public class ExpenseMBean implements Serializable
 
 	public void setBudgets(Vector<Budget> budgets) {
 		this.budgets = budgets;
+	}
+
+	public Long getVehicle_id() {
+		return vehicle_id;
+	}
+
+	public void setVehicle_id(Long vehicle_id) {
+		this.vehicle_id = vehicle_id;
+	}
+
+	public Long getStaff_id() {
+		return staff_id;
+	}
+
+	public void setStaff_id(Long staff_id) {
+		this.staff_id = staff_id;
 	}
 
 	public Long getExpType_id() {

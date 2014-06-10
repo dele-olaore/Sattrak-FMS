@@ -23,23 +23,24 @@ public class PartnerSubscription implements Serializable
 	@ManyToOne
 	private Partner partner;
 	@ManyToOne
-	private SubscriptionPackage subPackage;
+	private ApplicationTypeVersion appTypeVersion;
+	private double subscriptionFee;
 	
+	private boolean demo; // indicates if this subscription is a demo. If it is, then the duration is the amount of days specified in the days varable
+	private int days;
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date start_dt;
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date end_dt;
+	private boolean expired;
 	
 	private boolean active;
-	private boolean expired;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	
 	@ManyToOne
 	private PartnerUser createdBy;
-	
-	private byte[] invoice;
 	
 	public PartnerSubscription()
 	{}
@@ -60,6 +61,38 @@ public class PartnerSubscription implements Serializable
 		this.partner = partner;
 	}
 
+	public ApplicationTypeVersion getAppTypeVersion() {
+		return appTypeVersion;
+	}
+
+	public void setAppTypeVersion(ApplicationTypeVersion appTypeVersion) {
+		this.appTypeVersion = appTypeVersion;
+	}
+
+	public double getSubscriptionFee() {
+		return subscriptionFee;
+	}
+
+	public void setSubscriptionFee(double subscriptionFee) {
+		this.subscriptionFee = subscriptionFee;
+	}
+
+	public boolean isDemo() {
+		return demo;
+	}
+
+	public void setDemo(boolean demo) {
+		this.demo = demo;
+	}
+
+	public int getDays() {
+		return days;
+	}
+
+	public void setDays(int days) {
+		this.days = days;
+	}
+
 	public Date getStart_dt() {
 		return start_dt;
 	}
@@ -76,20 +109,20 @@ public class PartnerSubscription implements Serializable
 		this.end_dt = end_dt;
 	}
 
-	public boolean isActive() {
-		return active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
-	}
-
 	public boolean isExpired() {
 		return expired;
 	}
 
 	public void setExpired(boolean expired) {
 		this.expired = expired;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 	public Date getCrt_dt() {
@@ -106,22 +139,6 @@ public class PartnerSubscription implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
-	}
-
-	public SubscriptionPackage getSubPackage() {
-		return subPackage;
-	}
-
-	public void setSubPackage(SubscriptionPackage subPackage) {
-		this.subPackage = subPackage;
-	}
-
-	public byte[] getInvoice() {
-		return invoice;
-	}
-
-	public void setInvoice(byte[] invoice) {
-		this.invoice = invoice;
 	}
 	
 }

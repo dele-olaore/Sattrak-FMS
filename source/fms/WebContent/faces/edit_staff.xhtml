@@ -87,7 +87,7 @@
 			<p:inputText id="staffposition" value="#{userBean.personel.position}" />
 			
 			<h:outputLabel for="staffhdate" value="Hired date: " />
-			<p:calendar id="staffhdate" value="#{userBean.personel.hiredDate}" showOn="button" />
+			<p:calendar id="staffhdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.personel.hiredDate}" showOn="button" />
 			
 			<h:outputLabel for="staffnok" value="Next of Kin: " />
 			<p:panelGrid id="staffnok" columns="2" cellpadding="5" >

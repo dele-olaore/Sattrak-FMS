@@ -1,6 +1,7 @@
 package com.dexter.fms.model.app;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,6 +51,8 @@ public class Fleet implements Serializable
 	
 	@Transient
 	private List<Vehicle> vehicles;
+	@Transient
+	private BigDecimal fleetCost;
 	
 	public Fleet()
 	{}
@@ -134,6 +137,14 @@ public class Fleet implements Serializable
 
 	public void setVehicles(List<Vehicle> vehicles) {
 		this.vehicles = vehicles;
+	}
+
+	public BigDecimal getFleetCost() {
+		return fleetCost;
+	}
+
+	public void setFleetCost(BigDecimal fleetCost) {
+		this.fleetCost = fleetCost;
 	}
 	
 }

@@ -13,6 +13,7 @@ import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
 
 @Entity
@@ -43,6 +44,11 @@ public class ExpenseRequest implements Serializable
 	private String approvalComment; // comment for approval status
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date approval_dt;
+	
+	@ManyToOne
+	private Vehicle vehicle;
+	@ManyToOne
+	private PartnerPersonel personel;
 	
 	@ManyToOne
 	private Expense expense; // the expense created if this request was approved
@@ -145,6 +151,22 @@ public class ExpenseRequest implements Serializable
 
 	public void setApproval_dt(Date approval_dt) {
 		this.approval_dt = approval_dt;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public PartnerPersonel getPersonel() {
+		return personel;
+	}
+
+	public void setPersonel(PartnerPersonel personel) {
+		this.personel = personel;
 	}
 
 	public Expense getExpense() {

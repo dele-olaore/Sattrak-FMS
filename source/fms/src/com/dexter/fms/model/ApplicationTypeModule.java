@@ -22,7 +22,7 @@ public class ApplicationTypeModule implements Serializable
     @GeneratedValue
 	private Long id;
 	@ManyToOne
-	private ApplicationType appType;
+	private ApplicationTypeVersion appTypeVersion;
 	@ManyToOne
 	private Module module;
 	
@@ -46,12 +46,12 @@ public class ApplicationTypeModule implements Serializable
 		this.id = id;
 	}
 
-	public ApplicationType getAppType() {
-		return appType;
+	public ApplicationTypeVersion getAppTypeVersion() {
+		return appTypeVersion;
 	}
 
-	public void setAppType(ApplicationType appType) {
-		this.appType = appType;
+	public void setAppTypeVersion(ApplicationTypeVersion appTypeVersion) {
+		this.appTypeVersion = appTypeVersion;
 	}
 
 	public Module getModule() {

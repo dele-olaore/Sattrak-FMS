@@ -31,8 +31,8 @@ import org.primefaces.model.UploadedFile;
 
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
-import com.dexter.fms.model.ApplicationSubscriptionModule;
-import com.dexter.fms.model.ApplicationSubscriptionReport;
+import com.dexter.fms.model.ApplicationTypeFunction;
+import com.dexter.fms.model.ApplicationTypeReport;
 import com.dexter.fms.model.Audit;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRole;
@@ -1012,7 +1012,7 @@ public class UserMBean implements Serializable
 						
 						if(getPersonel().isHasUser())
 						{
-							if(getUser().getUsername() != null && getUser().getPassword() != null)
+							if(getUser().getUsername() != null && getUser().getPassword() != null && getPersonel().getEmail() != null && getPersonel().getEmail().trim().length() > 0)
 							{
 								if(getUser().getPassword().equals(getCpassword()))
 								{
@@ -2035,22 +2035,14 @@ public class UserMBean implements Serializable
 				{
 					// this is a subscription based loading of the functions
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
-					params.put("appTypeModule.appType", getSub().getSubPackage().getAppType());
-					params.put("subType", getSub().getSubPackage().getSubType());
-					Object mdsObj = gDAO.search("ApplicationSubscriptionModule", params);
+					params.put("appTypeModule.appTypeVersion", getSub().getAppTypeVersion());
+					Object mdsObj = gDAO.search("ApplicationTypeFunction", params);
 					if(mdsObj != null)
 					{
-						Vector<ApplicationSubscriptionModule> mdsList = (Vector<ApplicationSubscriptionModule>)mdsObj;
-						for(ApplicationSubscriptionModule e : mdsList)
+						Vector<ApplicationTypeFunction> mdsList = (Vector<ApplicationTypeFunction>)mdsObj;
+						for(ApplicationTypeFunction e : mdsList)
 						{
-							params = new Hashtable<String, Object>();
-							params.put("module", e.getAppTypeModule().getModule());
-							Object fsObj = gDAO.search("MFunction", params);
-							if(fsObj != null)
-							{
-								Vector<MFunction> fsList = (Vector<MFunction>)fsObj;
-								partnerFunctions.addAll(fsList);
-							}
+							partnerFunctions.add(e.getFunction());
 						}
 					}
 				}
@@ -2088,15 +2080,14 @@ public class UserMBean implements Serializable
 				{
 					// this is a subscription based loading of the functions
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
-					params.put("appTypeReport.appType", getSub().getSubPackage().getAppType());
-					params.put("subType", getSub().getSubPackage().getSubType());
-					Object mdsObj = gDAO.search("ApplicationSubscriptionReport", params);
+					params.put("appTypeVersion", getSub().getAppTypeVersion());
+					Object mdsObj = gDAO.search("ApplicationTypeReport", params);
 					if(mdsObj != null)
 					{
-						Vector<ApplicationSubscriptionReport> mdsList = (Vector<ApplicationSubscriptionReport>)mdsObj;
-						for(ApplicationSubscriptionReport e : mdsList)
+						Vector<ApplicationTypeReport> mdsList = (Vector<ApplicationTypeReport>)mdsObj;
+						for(ApplicationTypeReport e : mdsList)
 						{
-							partnerReports.add(e.getAppTypeReport().getReport());
+							partnerReports.add(e.getReport());
 						}
 					}
 				}

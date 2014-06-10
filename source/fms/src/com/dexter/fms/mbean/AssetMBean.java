@@ -67,6 +67,13 @@ public class AssetMBean implements Serializable
 		boolean ret = false;
 		Object eventSource = event.getObject();
 		
+		if(eventSource instanceof Item)
+		{
+			Item itm = (Item)eventSource;
+			itm.setLastUpdatedDate(new Date());
+			eventSource = itm;
+		}
+		
 		gDAO.startTransaction();
 		ret = gDAO.update(eventSource);
 		
@@ -207,6 +214,7 @@ public class AssetMBean implements Serializable
 			getItem().setCreatedBy(dashBean.getUser());
 			getItem().setCrt_dt(new Date());
 			getItem().setPartner(getPartner());
+			getItem().setLastUpdatedDate(new Date());
 			
 			GeneralDAO gDAO = new GeneralDAO();
 			Object itype = gDAO.find(ItemType.class, getItemType_id());

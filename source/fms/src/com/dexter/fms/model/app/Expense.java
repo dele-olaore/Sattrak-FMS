@@ -12,6 +12,7 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
 
 @Entity
@@ -33,6 +34,10 @@ public class Expense implements Serializable
 	
 	@ManyToOne
 	private Partner partner;
+	@ManyToOne
+	private Vehicle vehicle;
+	@ManyToOne
+	private PartnerPersonel personel;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -89,6 +94,22 @@ public class Expense implements Serializable
 
 	public void setPartner(Partner partner) {
 		this.partner = partner;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public PartnerPersonel getPersonel() {
+		return personel;
+	}
+
+	public void setPersonel(PartnerPersonel personel) {
+		this.personel = personel;
 	}
 
 	public Date getCrt_dt() {

@@ -48,7 +48,7 @@ public class CorporateTripMBean implements Serializable
 	private Vector<CorporateTrip> pendingTrips, ongoingTrips, completedTrips, myOngoingTrips, myAwaitingTrips, completionTripRequests;
 	
 	private Long fleet_id;
-	private Long vehicle_id;
+	private Long vehicle_id, driver_id;
 	private String regNo;
 	private Vector<Fleet> fleets;
 	
@@ -321,33 +321,21 @@ public class CorporateTripMBean implements Serializable
 							body.append("<p>Resources for your trip: -</p>");
 							body.append("<p>Vehicle: ").append(v.getRegistrationNo()).append("<br/>");
 							
-							Hashtable<String, Object> params = new Hashtable<String, Object>();
-							params.put("vehicle", v);
-							params.put("active", true);
-							Object vdsObj = gDAO.search("VehicleDriver", params);
-							if(vdsObj != null)
+							PartnerDriver pd = null;
+							Object dObj = gDAO.find(PartnerDriver.class, getDriver_id());
+							if(dObj != null)
+								pd = (PartnerDriver)dObj;
+							
+							if(pd != null)
 							{
-								Vector<VehicleDriver> vdsList = (Vector<VehicleDriver>)vdsObj;
-								if(vdsList.size() > 0)
-								{
-									PartnerDriver pd = vdsList.get(0).getDriver();
-									getTrip().setDriver(pd);
-									body.append("Driver: ").append(getTrip().getDriver().getPersonel().getFirstname()).append(" ").append(getTrip().getDriver().getPersonel().getLastname()).append("</p>");
-									valid = true;
-								}
-								else
-								{
-									// 
-									valid = false;
-									msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "The selected vehicle is not assigned to a driver. Only assigned vehicles can be used for trips!");
-									FacesContext.getCurrentInstance().addMessage(null, msg);
-								}
+								getTrip().setDriver(pd);
+								body.append("Driver: ").append(getTrip().getDriver().getPersonel().getFirstname()).append(" ").append(getTrip().getDriver().getPersonel().getLastname()).append("</p>");
+								valid = true;
 							}
 							else
 							{
-								// 
 								valid = false;
-								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "The selected vehicle is not assigned to a driver. Only assigned vehicles can be used for trips!");
+								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please select a valid driver for the trip!");
 								FacesContext.getCurrentInstance().addMessage(null, msg);
 							}
 						}
@@ -852,6 +840,14 @@ public class CorporateTripMBean implements Serializable
 
 	public void setVehicle_id(Long vehicle_id) {
 		this.vehicle_id = vehicle_id;
+	}
+
+	public Long getDriver_id() {
+		return driver_id;
+	}
+
+	public void setDriver_id(Long driver_id) {
+		this.driver_id = driver_id;
 	}
 
 	public String getRegNo() {

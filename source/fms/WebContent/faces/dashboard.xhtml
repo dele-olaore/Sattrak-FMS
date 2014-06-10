@@ -28,7 +28,12 @@
 				<br/>
 				<h:outputText value="#{dashboardBean.user.personel.firstname} #{dashboardBean.user.personel.lastname}" />
 				<br/>
-				<h:outputText value="#{dashboardBean.user.partner.name}" />
+				<h:outputText value="#{dashboardBean.user.partner.name}" /> <h:outputText value=" #{dashboardBean.partnerLicense.finalLicenseCount} license(s)" rendered="#{dashboardBean.partnerLicense != null}" /><h:outputText value="No license" rendered="#{dashboardBean.partnerLicense == null}" />
+				<br/>
+				<br/>
+				<p:commandLink value="Password" onclick="chgpassdlg.show();" rendered="#{dashboardBean.user != null}" />
+				<br/>
+				<p:commandLink ajax="false" action="#{loginBean.logout}" value="Logout" rendered="#{dashboardBean.user != null}" />
 			</td>
 			<td>
 				<p:dashboard id="board" model="#{dashboardBean.model}">
@@ -151,16 +156,16 @@
 							</f:facet>
 						
 							<p:column headerText="Type">
-								<h:outputText value="#{lic[0]}" />
+								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[0]}" /></font>
 							</p:column>
 							<p:column headerText="Owner">
-								<h:outputText value="#{lic[1]}" />
+								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[1]}" /></font>
 							</p:column>
 							<p:column headerText="Description">
-								<h:outputText value="#{lic[2]}" />
+								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[2]}" /></font>
 							</p:column>
 							<p:column headerText="Expiry Date">
-								<h:outputText value="#{lic[3]}" />
+								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[3]}" /></font>
 							</p:column>
 							<p:column headerText="Status">
 								<font color="#{(lic[4] == 'Soon to Expire') ? 'yellow' : 'red'}"><h:outputText value="#{lic[4]}" /></font>

@@ -36,6 +36,7 @@ import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Module;
+import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
@@ -62,6 +63,7 @@ public class DashboardMBean implements Serializable
 	private FacesMessage msg = null;
 	
 	private PartnerSubscription subscription;
+	private PartnerLicense partnerLicense;
 	private PartnerUser user;
 	private Vector<PartnerUserRole> userRoles;
 	private Vector<MRoleFunction> rolesFunctions;
@@ -343,6 +345,14 @@ public class DashboardMBean implements Serializable
 
 	public void setSubscription(PartnerSubscription subscription) {
 		this.subscription = subscription;
+	}
+
+	public PartnerLicense getPartnerLicense() {
+		return partnerLicense;
+	}
+
+	public void setPartnerLicense(PartnerLicense partnerLicense) {
+		this.partnerLicense = partnerLicense;
 	}
 
 	public PartnerUser getUser() {

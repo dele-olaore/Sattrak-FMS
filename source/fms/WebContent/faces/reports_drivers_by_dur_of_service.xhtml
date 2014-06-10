@@ -1,0 +1,125 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Drivers By Duration of Service" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchDriversByYears}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				<h:panelGrid columns="3" rendered="#{reportsBean.driversByYears != null and reportsBean.driversByYears.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'drivers_by_yearsofservice_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'drivers_by_yearsofservice_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(1, 'drivers_by_yearsofservice_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="drivers_by_yearsofservice_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.driversByYears}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Found drivers(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.personel.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Full name" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.firstname} #{obj.personel.lastname}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Years of Services" />  
+						</f:facet>
+						<h:outputText value="#{obj.yearsOfService}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Dept." />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.department.name}" rendered="#{obj.personel.department != null}" />
+						<h:outputText value="N/A" rendered="#{obj.personel.department == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Region" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.region.name}" rendered="#{obj.personel.region != null}" />
+						<h:outputText value="N/A" rendered="#{obj.personel.region == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Phone" />  
+						</f:facet>
+						<h:outputText value="#{obj.personel.phone}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Vehicle" />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

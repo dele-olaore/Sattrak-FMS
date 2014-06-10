@@ -270,7 +270,7 @@
 		<f:facet name="header">Repair action for: <h:outputText value="#{fleetBean.selectedAccident.vehicle.registrationNo}" /></f:facet>
 		
 		<h:outputLabel for="rdt" value="Repair date: *" />
-		<p:calendar id="rdt" showOn="both" mode="popup" value="#{fleetBean.repair.repairDate}" navigator="true" />
+		<p:calendar id="rdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.repair.repairDate}" navigator="true" />
 		
 		<h:outputLabel for="rtype" value="Repair type: *" />
   		<p:selectOneMenu id="rtype" value="#{fleetBean.repair.repairType}">

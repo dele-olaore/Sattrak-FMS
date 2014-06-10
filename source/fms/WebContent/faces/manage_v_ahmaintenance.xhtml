@@ -130,7 +130,7 @@
 		<f:facet name="header">Complete ad-hoc maintenance details for: #{fleetBean.adhocMain.vehicle.registrationNo}</f:facet>
 		
 		<h:outputLabel for="adheddt" value="Completion date: *" />
-		<p:calendar id="adheddt" value="#{fleetBean.adhocMain.close_dt}" showOn="button" />
+		<p:calendar id="adheddt" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.adhocMain.close_dt}" showOn="button" />
 		
 		<h:outputLabel for="adhcost2" value="Completion Cost: *" />
 		<p:inputText id="adhcost2" value="#{fleetBean.adhocMain.closed_cost}" />
@@ -152,7 +152,7 @@
   		</p:panelGrid>
 		
 		<h:outputLabel for="adhstdt" value="Start date: *" />
-		<p:calendar id="adhstdt" value="#{fleetBean.adhocMain.start_dt}" showOn="button" />
+		<p:calendar id="adhstdt" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.adhocMain.start_dt}" showOn="button" />
 		
 		<h:outputLabel for="adhcost" value="Start Cost: *" />
 		<p:inputText id="adhcost" value="#{fleetBean.adhocMain.initial_cost}" />

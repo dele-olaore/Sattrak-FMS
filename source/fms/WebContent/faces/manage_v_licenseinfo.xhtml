@@ -74,7 +74,7 @@
 						<p:calendar id="lictdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.license.tran_dt}" navigator="true" />
 						
 						<h:outputLabel for="licstdt" value="License issue date: *" />
-						<p:calendar id="licstdt" showOn="both" mode="popup" value="#{fleetBean.license.lic_start_dt}" navigator="true" />
+						<p:calendar id="licstdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.license.lic_start_dt}" navigator="true" />
 						
 						<h:outputLabel for="liccost" value="Cost: *" />
 				  		<p:inputText id="liccost" value="#{fleetBean.license.tranAmt}" />

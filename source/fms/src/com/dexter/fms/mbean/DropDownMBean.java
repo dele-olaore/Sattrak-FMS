@@ -13,12 +13,12 @@ import javax.persistence.Query;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationType;
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerUser;
-import com.dexter.fms.model.SubscriptionPackage;
-import com.dexter.fms.model.SubscriptionType;
 import com.dexter.fms.model.app.Fleet;
 import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.app.VehicleStatusEnum;
+import com.dexter.fms.model.ref.DocumentType;
 import com.dexter.fms.model.ref.DriverGrade;
 import com.dexter.fms.model.ref.LicenseType;
 import com.dexter.fms.model.ref.TransactionType;
@@ -37,6 +37,39 @@ public class DropDownMBean implements Serializable
 	
 	public DropDownMBean()
 	{}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<DocumentType> getDocumentTypes()
+	{
+		//TODO This should be per partner
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Object obj = gDAO.findAll("DocumentType");
+		gDAO.destroy();
+		if(obj != null)
+		{
+			return (Vector<DocumentType>)obj;
+		}
+		else
+			return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriver> getPartnerDrivers(Long partner_id)
+	{
+		//TODO This should be per partner
+		GeneralDAO gDAO = new GeneralDAO();
+		String qstr = "Select e from PartnerDriver e where e.partner.id=:partner_id";
+		Query q = gDAO.createQuery(qstr);
+		q.setParameter("partner_id", partner_id);
+		
+		Object retObj = gDAO.search(q, 0);
+		gDAO.destroy();
+		if(retObj != null)
+			return (Vector<PartnerDriver>)retObj;
+		else
+			return null;
+	}
 	
 	@SuppressWarnings("unchecked")
 	public Vector<VehicleWarning> getVehicleWarnings()
@@ -65,6 +98,7 @@ public class DropDownMBean implements Serializable
 		q.setParameter("partner_id", partner_id);
 		
 		Object retObj = gDAO.search(q, 0);
+		gDAO.destroy();
 		if(retObj != null)
 			return (Vector<PartnerUser>)retObj;
 		else
@@ -219,20 +253,6 @@ public class DropDownMBean implements Serializable
 	}
 	
 	@SuppressWarnings("unchecked")
-	public Vector<SubscriptionPackage> getAllPackages()
-	{
-		GeneralDAO gDAO = new GeneralDAO();
-		Object obj = gDAO.findAll("SubscriptionPackage");
-		gDAO.destroy();
-		if(obj != null)
-		{
-			return (Vector<SubscriptionPackage>)obj;
-		}
-		else
-			return null;
-	}
-	
-	@SuppressWarnings("unchecked")
 	public Vector<ApplicationType> getAllAppTypes()
 	{
 		GeneralDAO gDAO = new GeneralDAO();
@@ -241,20 +261,6 @@ public class DropDownMBean implements Serializable
 		if(obj != null)
 		{
 			return (Vector<ApplicationType>)obj;
-		}
-		else
-			return null;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Vector<SubscriptionType> getAllSubTypes()
-	{
-		GeneralDAO gDAO = new GeneralDAO();
-		Object obj = gDAO.findAll("SubscriptionType");
-		gDAO.destroy();
-		if(obj != null)
-		{
-			return (Vector<SubscriptionType>)obj;
 		}
 		else
 			return null;

@@ -32,6 +32,8 @@ public class VehicleParameters implements Serializable
 	private String tyresize;
 	private String tankcapacity;
 	private String calibratedcapacity;
+	private double fuelCompKML;
+	private double fuelComp100KML;
 	private String color;
 	private byte[] photo;
 	private FuelType fuelType;
@@ -92,6 +94,22 @@ public class VehicleParameters implements Serializable
 
 	public void setCalibratedcapacity(String calibratedcapacity) {
 		this.calibratedcapacity = calibratedcapacity;
+	}
+
+	public double getFuelCompKML() {
+		return fuelCompKML;
+	}
+
+	public void setFuelCompKML(double fuelCompKML) {
+		this.fuelCompKML = fuelCompKML;
+	}
+
+	public double getFuelComp100KML() {
+		return fuelComp100KML;
+	}
+
+	public void setFuelComp100KML(double fuelComp100KML) {
+		this.fuelComp100KML = fuelComp100KML;
 	}
 
 	public String getColor() {

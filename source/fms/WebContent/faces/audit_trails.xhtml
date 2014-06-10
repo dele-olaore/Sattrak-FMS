@@ -42,6 +42,19 @@
 			  		</f:facet>
 				</p:panelGrid>
 			
+				<p:panel header="Export All Data" rendered="#{userBean.audits != null and userBean.audits.size() > 0}">
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/excel.png" />
+						<p:dataExporter type="xls" target=":form:auditsTable"
+							fileName="audit_trail_report" />
+					</p:commandLink>
+					
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/csv.png" />
+						<p:dataExporter type="csv" target=":form:auditsTable"
+							fileName="audit_trail_report" />
+					</p:commandLink>
+				</p:panel>
 				<p:dataTable id="auditsTable" var="obj" value="#{userBean.audits}"
 					paginator="true" rows="100"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"

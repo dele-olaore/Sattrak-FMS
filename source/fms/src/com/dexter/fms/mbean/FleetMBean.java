@@ -39,6 +39,7 @@ import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Notification;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerDriver;
+import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.DashboardVehicle;
 import com.dexter.fms.model.app.DriverLicense;
@@ -51,6 +52,7 @@ import com.dexter.fms.model.app.VehicleAccidentRepair;
 import com.dexter.fms.model.app.VehicleAdHocMaintenance;
 import com.dexter.fms.model.app.VehicleAdHocMaintenanceRequest;
 import com.dexter.fms.model.app.VehicleBehaviour;
+import com.dexter.fms.model.app.VehicleDocument;
 import com.dexter.fms.model.app.VehicleDriver;
 import com.dexter.fms.model.app.VehicleFuelData;
 import com.dexter.fms.model.app.VehicleFueling;
@@ -64,6 +66,7 @@ import com.dexter.fms.model.app.VehicleRoutineMaintenanceSetup;
 import com.dexter.fms.model.app.VehicleStatusEnum;
 import com.dexter.fms.model.app.VehicleTrackerData;
 import com.dexter.fms.model.ref.Department;
+import com.dexter.fms.model.ref.DocumentType;
 import com.dexter.fms.model.ref.FuelType;
 import com.dexter.fms.model.ref.LicenseType;
 import com.dexter.fms.model.ref.Region;
@@ -122,6 +125,12 @@ public class FleetMBean implements Serializable
 	private VehicleParameters vehicleParam;
 	private Vector<Vehicle> vehicles, tvehicles, tvehicles2;
 	
+	// for various documents that comes along with a vehicle
+	private Long documentType_id;
+	private UploadedFile documentContent;
+	private VehicleDocument vehicleDocument;
+	private Vector<VehicleDocument> vehicleDocuments, selectedVehicleDocuments;
+	
 	private Long driver_id;
 	private Vector<PartnerDriver> partnerDrivers;
 	
@@ -170,6 +179,9 @@ public class FleetMBean implements Serializable
 	private LicenseType licType;
 	private Vector<LicenseType> licTypes;
 	
+	private DocumentType docType;
+	private Vector<DocumentType> docTypes;
+	
 	private UploadedFile licenseDocument;
 	private VehicleLicense license;
 	private Vector<VehicleLicense> licenses;
@@ -202,6 +214,130 @@ public class FleetMBean implements Serializable
         
         InputStream stream3 = ((ServletContext)FacesContext.getCurrentInstance().getExternalContext().getContext()).getResourceAsStream("/resources/templates/fms_batchload_fueling.xls");  
         fuelingExcelTemplate = new DefaultStreamedContent(stream3, "application/vnd.ms-excel", "fms_batchload_fueling.xls");
+	}
+	
+	public void commitDocumentBatch()
+	{
+		if(getVehicleDocuments() != null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			gDAO.startTransaction();
+			boolean ret = false;
+			for(VehicleDocument vd : getVehicleDocuments())
+			{
+				ret = gDAO.save(vd);
+				if(!ret)
+					break;
+			}
+			if(ret)
+			{
+				gDAO.commit();
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Documents saved successfully.");
+				
+				setVehicleDocuments(null);
+			}
+			else
+			{
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Save failed. Message: " + gDAO.getMessage());
+			}
+			gDAO.destroy();
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Nothing to commit!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void saveVehicleDocument()
+	{
+		if(getDocumentType_id() != null && getDocumentContent() != null && getSelectedVehicle() != null)
+		{
+			if(getDocumentContent().getContentType() != null && getDocumentContent().getContentType().toLowerCase().indexOf("pdf") >= 0)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Object dtObj = gDAO.find(DocumentType.class, getDocumentType_id());
+				if(dtObj != null)
+				{
+					DocumentType dt = (DocumentType)dtObj;
+					getVehicleDocument().setDocumentType(dt);
+					getVehicleDocument().setCreatedBy(dashBean.getUser());
+					getVehicleDocument().setCrt_dt(new Date());
+					getVehicleDocument().setDocumentData(getDocumentContent().getContents());
+					getVehicleDocument().setVehicle(getSelectedVehicle());
+					
+					gDAO.startTransaction();
+					boolean ret = gDAO.save(getVehicleDocument());
+					if(ret)
+					{
+						gDAO.commit();
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Document saved successfully.");
+						
+						setVehicleDocument(null);
+						setSelectedVehicleDocuments(null);
+					}
+					else
+					{
+						gDAO.rollback();
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Save failed. Message: " + gDAO.getMessage());
+					}
+				}
+				else
+				{
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid document type selected!");
+				}
+				gDAO.destroy();
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid document file uploaded!");
+			}
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void addVehicleDocument()
+	{
+		if(getDocumentType_id() != null && getDocumentContent() != null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			Object dtObj = gDAO.find(DocumentType.class, getDocumentType_id());
+			if(dtObj != null)
+			{
+				DocumentType dt = (DocumentType)dtObj;
+				getVehicleDocument().setDocumentType(dt);
+				getVehicleDocument().setCreatedBy(dashBean.getUser());
+				getVehicleDocument().setCrt_dt(new Date());
+				getVehicleDocument().setDocumentData(getDocumentContent().getContents());
+				getVehicleDocument().setVehicle(getSelectedVehicle());
+				
+				if(getVehicleDocuments() == null)
+					setVehicleDocuments(new Vector<VehicleDocument>());
+				
+				getVehicleDocuments().add(getVehicleDocument());
+				setVehicleDocument(null);
+				setDocumentContent(null);
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Document added to batch successfully!");
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid document type selected!");
+			}
+			gDAO.destroy();
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -315,6 +451,41 @@ public class FleetMBean implements Serializable
 	{
 		msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Update canceled!");
 		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void saveDocType()
+	{
+		if(getDocType().getName() != null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			boolean ret = false;
+			if(getDocType().getId() != null)
+				ret = gDAO.update(getDocType());
+			else
+				ret = gDAO.save(getDocType());
+			if(ret)
+			{
+				gDAO.commit();
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Document type saved successfully!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				setDocType(null);
+				setDocTypes(null);
+			}
+			else
+			{
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+			gDAO.destroy();
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Document type name is required!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
 	}
 	
 	public void saveLicType()
@@ -1873,6 +2044,77 @@ public class FleetMBean implements Serializable
 		this.tvehicles2 = tvehicles2;
 	}
 
+	public Long getDocumentType_id() {
+		return documentType_id;
+	}
+
+	public void setDocumentType_id(Long documentType_id) {
+		this.documentType_id = documentType_id;
+	}
+
+	public UploadedFile getDocumentContent() {
+		return documentContent;
+	}
+
+	public void setDocumentContent(UploadedFile documentContent) {
+		this.documentContent = documentContent;
+	}
+
+	public VehicleDocument getVehicleDocument() {
+		if(vehicleDocument == null)
+			vehicleDocument = new VehicleDocument();
+		return vehicleDocument;
+	}
+
+	public void setVehicleDocument(VehicleDocument vehicleDocument) {
+		this.vehicleDocument = vehicleDocument;
+	}
+
+	public Vector<VehicleDocument> getVehicleDocuments() {
+		return vehicleDocuments;
+	}
+
+	public void setVehicleDocuments(Vector<VehicleDocument> vehicleDocuments) {
+		this.vehicleDocuments = vehicleDocuments;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleDocument> getSelectedVehicleDocuments() {
+		boolean research = true;
+		if(selectedVehicleDocuments == null || selectedVehicleDocuments.size() == 0)
+			research = true;
+		else if(selectedVehicleDocuments.size() > 0)
+		{
+			if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null)
+			{
+				if(selectedVehicleDocuments.get(0).getVehicle().getId() == getSelectedVehicle().getId())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			selectedVehicleDocuments = null;
+			if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null)
+			{
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("vehicle", getSelectedVehicle());
+				
+				GeneralDAO gDAO = new GeneralDAO();
+				Object sObj = gDAO.search("VehicleDocument", params);
+				if(sObj != null)
+				{
+					selectedVehicleDocuments = (Vector<VehicleDocument>)sObj;
+				}
+			}
+		}
+		return selectedVehicleDocuments;
+	}
+
+	public void setSelectedVehicleDocuments(
+			Vector<VehicleDocument> selectedVehicleDocuments) {
+		this.selectedVehicleDocuments = selectedVehicleDocuments;
+	}
+
 	@SuppressWarnings("unchecked")
 	public void addVehicleTrack()
 	{
@@ -2025,6 +2267,13 @@ public class FleetMBean implements Serializable
 				boolean ret = false;
 				while(rowIterator.hasNext())
 				{
+					if(!isLicenseAvailable())
+					{
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "You have used up your license. Please purchase more license to add more vehicles!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						break;
+					}
+					
 					Row row = rowIterator.next();
 					String fleet_nm = "", vehicleType = "", vehicleMaker = "", vehicleModel="", modelYr="", trackerID="", regNo="", engineNo="", chassisNo="";
 					String department="", region="";
@@ -2499,11 +2748,76 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	public void newVehicleParameter()
+	{
+		if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			getVehicleParam().setCreatedBy(dashBean.getUser());
+			getVehicleParam().setCrt_dt(new Date());
+			getVehicleParam().setVehicle(getSelectedVehicle());
+			
+			if(getDepartment_id() != null)
+			{
+				Object dpt = gDAO.find(Department.class, getDepartment_id());
+				if(dpt != null)
+					getVehicleParam().setDept((Department)dpt);
+			}
+			if(getRegion_id() != null)
+			{
+				Object rg = gDAO.find(Region.class, getRegion_id());
+				if(rg != null)
+					getVehicleParam().setRegion((Region)rg);
+			}
+			if(getFuelType_id() != null)
+			{
+				Object rg = gDAO.find(FuelType.class, getFuelType_id());
+				if(rg != null)
+					getVehicleParam().setFuelType((FuelType)rg);
+			}
+			if(getVehiclePhoto() != null)
+			{
+				getVehicleParam().setPhoto(getVehiclePhoto().getContents());
+			}
+			
+			gDAO.startTransaction();
+			if(gDAO.save(getVehicleParam()))
+			{
+				gDAO.commit();
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle created successfully.");
+				
+				setVehicleParam(null);
+				setSelectedVehicle(null);
+				setVehicles(null);
+			}
+			else
+			{
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create new vehicle parameter. " + gDAO.getMessage());
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+			gDAO.destroy();
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
 	public void saveVehicle()
 	{
 		if(getVehicle().getRegistrationNo() != null
 				&& getVehicleModel_id() != null && getFleet_id() != null)
 		{
+			if(!isLicenseAvailable())
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "You have used up your license. Please purchase more license to add more vehicles!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				return;
+			}
+			
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object modelObj = gDAO.find(VehicleModel.class, getVehicleModel_id());
@@ -2783,8 +3097,9 @@ public class FleetMBean implements Serializable
 		{
 			case 1: // vehicle type
 			{
-				if(getVehicleType().getName() != null)
+				if(getVehicleType().getName() != null && getPartner() != null)
 				{
+					getVehicleType().setPartner(getPartner());
 					getVehicleType().setCreatedBy(dashBean.getUser());
 					getVehicleType().setCrt_dt(new Date());
 					gDAO.startTransaction();
@@ -2800,8 +3115,9 @@ public class FleetMBean implements Serializable
 			}
 			case 2: // vehicle make
 			{
-				if(getVehicleMake().getName() != null)
+				if(getVehicleMake().getName() != null && getPartner() != null)
 				{
+					getVehicleMake().setPartner(getPartner());
 					getVehicleMake().setCreatedBy(dashBean.getUser());
 					getVehicleMake().setCrt_dt(new Date());
 					gDAO.startTransaction();
@@ -2817,8 +3133,9 @@ public class FleetMBean implements Serializable
 			}
 			case 3: // vehicle models
 			{
-				if(getVmodel().getName() != null && getVehicleType_id() != null && getVehicleMake_id() != null)
+				if(getVmodel().getName() != null && getVehicleType_id() != null && getVehicleMake_id() != null && getPartner() != null)
 				{
+					getVmodel().setPartner(getPartner());
 					getVmodel().setCreatedBy(dashBean.getUser());
 					getVmodel().setCrt_dt(new Date());
 					
@@ -2980,17 +3297,28 @@ public class FleetMBean implements Serializable
 
 	@SuppressWarnings("unchecked")
 	public Vector<VehicleType> getVehicleTypes() {
-		if(vehicleTypes == null)
+		boolean research = true;
+		if(vehicleTypes == null || vehicleTypes.size() == 0)
+			research = true;
+		else if(vehicleTypes.size() > 0)
 		{
+			if(vehicleTypes.get(0).getPartner().getId() == getPartner().getId())
+				research = false;
+		}
+		if(research && getPartner() != null)
+		{
+			vehicleTypes = null;
 			GeneralDAO gDAO = new GeneralDAO();
 			
-			Object dpsObj = gDAO.findAll("VehicleType");
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", getPartner());
+			Object dpsObj = gDAO.search("VehicleType", params);
 			if(dpsObj != null)
 			{
 				vehicleTypes = (Vector<VehicleType>)dpsObj;
 				for(VehicleType e : vehicleTypes)
 				{
-					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params = new Hashtable<String, Object>();
 					params.put("model.type", e);
 					Object objs = gDAO.search("Vehicle", params);
 					if(objs != null)
@@ -3017,17 +3345,27 @@ public class FleetMBean implements Serializable
 
 	@SuppressWarnings("unchecked")
 	public Vector<VehicleMake> getVehicleMakes() {
-		if(vehicleMakes == null)
+		boolean research = true;
+		if(vehicleMakes == null || vehicleMakes.size() == 0)
+			research = true;
+		else if(vehicleMakes.size() > 0)
 		{
+			if(vehicleMakes.get(0).getPartner().getId() == getPartner().getId())
+				research = false;
+		}
+		if(research && getPartner() != null)
+		{
+			vehicleMakes = null;
 			GeneralDAO gDAO = new GeneralDAO();
-			
-			Object dpsObj = gDAO.findAll("VehicleMake");
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", getPartner());
+			Object dpsObj = gDAO.search("VehicleMake", params);
 			if(dpsObj != null)
 			{
 				vehicleMakes = (Vector<VehicleMake>)dpsObj;
 				for(VehicleMake e : vehicleMakes)
 				{
-					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params = new Hashtable<String, Object>();
 					params.put("model.maker", e);
 					Object objs = gDAO.search("Vehicle", params);
 					if(objs != null)
@@ -3062,7 +3400,7 @@ public class FleetMBean implements Serializable
 			if(vmodels.get(0).getMaker().getId() == getVehicleMake_id() && vmodels.get(0).getType().getId() == getVehicleType_id())
 				research = false;
 		}
-		if(research)
+		if(research && getPartner() != null)
 		{
 			GeneralDAO gDAO = new GeneralDAO();
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
@@ -3078,6 +3416,7 @@ public class FleetMBean implements Serializable
 				if(obj != null)
 					params.put("type", (VehicleType)obj);
 			}
+			params.put("partner", getPartner());
 			Object foundObjs = gDAO.search("VehicleModel", params);
 			if(foundObjs != null)
 			{
@@ -4709,6 +5048,33 @@ public class FleetMBean implements Serializable
 		this.licTypes = licTypes;
 	}
 
+	public DocumentType getDocType() {
+		if(docType == null)
+			docType = new DocumentType();
+		return docType;
+	}
+
+	public void setDocType(DocumentType docType) {
+		this.docType = docType;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<DocumentType> getDocTypes() {
+		if(docTypes == null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			Object licTypesObj = gDAO.findAll("DocumentType");
+			if(licTypesObj != null)
+				docTypes = (Vector<DocumentType>)licTypesObj;
+			gDAO.destroy();
+		}
+		return docTypes;
+	}
+
+	public void setDocTypes(Vector<DocumentType> docTypes) {
+		this.docTypes = docTypes;
+	}
+
 	public UploadedFile getLicenseDocument() {
 		return licenseDocument;
 	}
@@ -4730,6 +5096,51 @@ public class FleetMBean implements Serializable
 	public void resetLicenses()
 	{
 		setLicenses(null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private boolean isLicenseAvailable()
+	{
+		boolean ret = true;
+		
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("partner", getPartner());
+		Object vehObj = gDAO.search("Vehicle", params);
+		if(vehObj != null)
+		{
+			Vector<Vehicle> vehicles = (Vector<Vehicle>)vehObj;
+			params = new Hashtable<String, Object>();
+			params.put("partner", getPartner());
+			Object plicsObj = gDAO.search("PartnerLicense", params);
+			if(plicsObj != null)
+			{
+				PartnerLicense lic = null;
+				Vector<PartnerLicense> plics = (Vector<PartnerLicense>)plicsObj;
+				for(PartnerLicense e : plics)
+					lic = e;
+				
+				if(lic != null)
+				{
+					if(vehicles.size() < lic.getFinalLicenseCount())
+					{
+						ret = true;
+					}
+					else
+					{
+						ret = false;
+					}
+				}
+				else if(!getPartner().isSattrak())
+				{
+					ret = false;
+				}
+			}
+		}
+		gDAO.destroy();
+		
+		return ret;
 	}
 	
 	@SuppressWarnings("unchecked")

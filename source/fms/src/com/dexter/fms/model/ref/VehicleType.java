@@ -14,6 +14,7 @@ import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
+import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.Vehicle;
 
@@ -29,6 +30,8 @@ public class VehicleType implements Serializable
 	
 	@Column(unique=true)
 	private String name;
+	@ManyToOne
+	private Partner partner;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -56,6 +59,14 @@ public class VehicleType implements Serializable
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Partner getPartner() {
+		return partner;
+	}
+
+	public void setPartner(Partner partner) {
+		this.partner = partner;
 	}
 
 	public Date getCrt_dt() {
