@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="libs/commons-codec-1.1.jar"/>
+	<classpathentry kind="lib" path="libs/eclipselink.jar"/>
+	<classpathentry kind="lib" path="libs/javax.persistence_2.1.0.v201304241213.jar"/>
+	<classpathentry kind="lib" path="libs/log4j-1.2.14.jar"/>
+	<classpathentry kind="lib" path="libs/mail.jar"/>
+	<classpathentry kind="lib" path="libs/mysql-connector-java-5.1.22-bin.jar"/>
+	<classpathentry kind="lib" path="libs/org.eclipse.persistence.jpa.jpql_2.5.0.v20130507-3faac2b.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
