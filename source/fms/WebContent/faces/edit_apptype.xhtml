@@ -11,15 +11,14 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Application Types" action="#{dashboardBean.gotoPage('manage_app_types', false)}" ajax="false" />
     			<p:menuitem value="Update Application Type Version" action="#{dashboardBean.gotoPage('edit_apptype', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -79,8 +78,20 @@
 			        	</p:panelGrid>
 			  		</p:dataGrid>
 			  		
+			  		<h:outputLabel for="aptdashs" value="Dashs: " />
+			  		<p:dataGrid id="aptdashs" var="dash" value="#{appTypeBean.dashs}" columns="2"
+			  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+			  			rowsPerPageTemplate="20,40,60">
+			  			<f:facet name="header">
+			  			</f:facet>
+			  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+			  				<p:selectBooleanCheckbox value="#{dash.selected}" />
+			  				<h:outputText value="#{dash.name} (#{dash.description})" />  
+			        	</p:panelGrid>
+			  		</p:dataGrid>
+			  		
 			  		<f:facet name="footer">
-			  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+			  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppTypeVersionEdit}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 			  		</f:facet>
 		  		</p:panelGrid>
 			</p:outputPanel>

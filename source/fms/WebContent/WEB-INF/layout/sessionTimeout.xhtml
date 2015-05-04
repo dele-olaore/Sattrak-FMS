@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:p="http://primefaces.org/ui">
+<ui:composition>
+	<h:form prependId="false">
+		<p:idleMonitor timeout="#{session.maxInactiveInterval * 1000 - 125000}"
+			onidle="startIdleMonitor()"
+			onactive="timeoutDialog.hide()" />
+			
+		<p:dialog id="timeoutSession" header="Session Expire"
+			widgetVar="timeoutDialog" showEffect="fade" hideEffect="fade" modal="true"
+			width="400" height="110" closable="false" draggable="false" resizable="false"
+			appendTo="@(body)" onHide="stopCount()" onShow="doTimer()">
+       		<br />
+       		<p>
+       		<span class="ui-icon ui-icon-alert" style="float: left; margin: 8px 8px 0;"/>
+       		<p:panel>
+       			Your session will expire in 
+       			<span id="dialog-countdown" style="font-weight: bold"></span>
+       			seconds!!!
+			</p:panel>
+			</p>
+			<br />
+			<p style="font-weight: bold;">Move the cursor to keep your session alive!</p>
+		</p:dialog>
+		<p:remoteCommand name="keepAlive" actionListener="#{dashboardBean.keepSessionAlive}" />
+	</h:form>
+	<script type="text/javascript">
+		var TIME = 120; // in seconds
+		var countTimer = TIME;
+		var processTimer;
+		var timer_is_on = 0;
+		var redirectPage = "#{request.contextPath}/faces/timeout.xhtml";
+		
+		var countDownDiv = "dialog-countdown";
+		var txtCountDown = null;
+		if(!txtCountDown)
+			txtCountDown = document.getElementById(countDownDiv);
+			
+		function startIdleMonitor()
+		{
+			countTimer = TIME;
+			txtCountDown.innerHTML = countTimer;
+			timeoutDialog.show();
+		}
+		
+		function timedCount()
+		{
+			txtCountDown.innerHTML = countTimer;
+			if(countTimer == 0)
+			{
+				stopCount();
+				window.location.href = redirectPage;
+				return;
+			}
+			countTimer = countTimer - 1;
+			processTimer = setTimeout("timedCount()", 1000);
+		}
+		
+		function doTimer()
+		{
+			if(!timer_is_on)
+			{
+				timer_is_on = 1;
+				timedCount();
+			}
+		}
+		
+		function stopCount()
+		{
+			clearTimeout(processTimer);
+			timer_is_on = 0;
+			keepAlive();
+		}
+	</script>
+</ui:composition>
+</html>

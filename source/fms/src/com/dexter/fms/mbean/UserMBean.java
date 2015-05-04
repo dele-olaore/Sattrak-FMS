@@ -31,9 +31,12 @@ import org.primefaces.model.UploadedFile;
 
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.model.ApplicationTypeDash;
 import com.dexter.fms.model.ApplicationTypeFunction;
 import com.dexter.fms.model.ApplicationTypeReport;
 import com.dexter.fms.model.Audit;
+import com.dexter.fms.model.MDash;
+import com.dexter.fms.model.MDashRole;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
@@ -41,6 +44,7 @@ import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerDriverOvertime;
+import com.dexter.fms.model.PartnerDriverOvertimeRequest;
 import com.dexter.fms.model.PartnerDriverQuery;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerSubscription;
@@ -50,8 +54,11 @@ import com.dexter.fms.model.Report;
 import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.VehicleDriver;
 import com.dexter.fms.model.ref.Department;
+import com.dexter.fms.model.ref.Division;
 import com.dexter.fms.model.ref.DriverGrade;
 import com.dexter.fms.model.ref.Region;
+import com.dexter.fms.model.ref.Subsidiary;
+import com.dexter.fms.model.ref.Unit;
 
 @ManagedBean(name = "userBean")
 @SessionScoped
@@ -71,12 +78,23 @@ public class UserMBean implements Serializable
 	private Region region;
 	private Vector<Region> regions;
 	
+	private Subsidiary subsidiary;
+	private Vector<Subsidiary> subsidiaries;
+	private Division division;
+	private Vector<Division> divisions;
+	private Unit unit;
+	private Vector<Unit> units, deptUnits;
+	
 	private Long personel_dept_id;
 	private Long personel_region_id;
-	private Long personel_id;
+	private Long personel_unit_id;
+	private Long department_id;
+	private Long division_id;
+	private Long subsidiary_id;
+	private Long personel_id, reportsTo_id;
 	private PartnerPersonel personel;
 	private UploadedFile partnerPersonelPhoto;
-	private Vector<PartnerPersonel> personels, personelsWithoutUsers;
+	private Vector<PartnerPersonel> personels, personelsWithoutUsers, unitHead;
 	private StreamedContent personelsExcelTemplate;
 	private UploadedFile personelsBatchExcel;
 	private boolean autoCreate;
@@ -91,7 +109,11 @@ public class UserMBean implements Serializable
 	
 	private PartnerDriverOvertime overtime;
 	private Date overtimeStDate, overtimeEndDate;
-	private Vector<PartnerDriverOvertime> overtimes;
+	private Vector<PartnerDriverOvertime> overtimes, myOvertimes;
+	
+	private PartnerDriverOvertimeRequest overtimeReq, selectedOvertimeReq;
+	private Vector<PartnerDriverOvertimeRequest> myOvertimeReqs, pendingOvertimeReqs;
+	
 	private PartnerDriverQuery dvrQuery;
 	private Date queryStDate, queryEndDate;
 	private Vector<PartnerDriverQuery> dvrQueries;
@@ -105,6 +127,7 @@ public class UserMBean implements Serializable
 	private Vector<MRole> mroles;
 	private Vector<MFunction> partnerFunctions;
 	private Vector<Report> partnerReports;
+	private Vector<MDash> partnerDashs;
 	
 	private String cpassword;
 	private PartnerUser user;
@@ -112,6 +135,8 @@ public class UserMBean implements Serializable
 	
 	private Date audit_st, audit_end;
 	private Vector<Audit> audits;
+	
+	private String approvalStatus, approvalComment;
 	
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
@@ -686,11 +711,53 @@ public class UserMBean implements Serializable
 						}
 					}
 				}
+				
+				for(MDash f : getPartnerDashs())
+				{
+					boolean exist = false;
+					for(MDash rr : getMrole().getDashs())
+					{
+						if(f.getId().longValue() == rr.getId().longValue())
+						{
+							exist = true;
+							break;
+						}
+					}
+					
+					if(f.isSelected() && !exist)
+					{
+						MDashRole mrf = new MDashRole();
+						mrf.setCreatedBy(dashBean.getUser());
+						mrf.setCrt_dt(new Date());
+						mrf.setDash(f);
+						mrf.setRole(getMrole());
+						
+						ret = gDAO.save(mrf);
+					}
+					else if(!f.isSelected() && exist)
+					{
+						// delete it here
+						params = new Hashtable<String, Object>();
+						params.put("role", getMrole());
+						params.put("dash", f);
+						Object rfObj = gDAO.search("MDashRole", params);
+						if(rfObj != null)
+						{
+							Vector<MDashRole> rfList = (Vector<MDashRole>)rfObj;
+
+							for(MDashRole e : rfList)
+							{
+								ret = gDAO.remove(e);
+							}
+						}
+					}
+				}
 				validated = true;
 				setMrole(null);
 				setMroles(null);
 				setPartnerFunctions(null);
 				setPartnerReports(null);
+				setPartnerDashs(null);
 				
 				break;
 			}
@@ -817,6 +884,18 @@ public class UserMBean implements Serializable
 					}
 				}
 			}
+			
+			for(MDash r : getPartnerDashs())
+			{
+				for(MDash rr : getMrole().getDashs())
+				{
+					if(rr.getId().longValue() == r.getId().longValue())
+					{
+						r.setSelected(true);
+						break;
+					}
+				}
+			}
 		}
 		else
 		{
@@ -835,7 +914,7 @@ public class UserMBean implements Serializable
 			if(getPersonel().getRegion() != null)
 				setPersonel_region_id(getPersonel().getRegion().getId());
 			
-			return "edit_staff";
+			return "edit_staff?faces-redirect=true";
 		}
 		else
 		{
@@ -884,10 +963,20 @@ public class UserMBean implements Serializable
 		{
 			case 1: // department
 			{
-				if(getDept().getName() != null)
+				if(getDept().getName() != null && getPartner() != null)
 				{
-					if(getPartner_id2() != null)
-						setPartner_id(getPartner_id2());
+					if(getDivision_id() != null)
+					{
+						Object obj = gDAO.find(Division.class, getDivision_id());
+						if(obj != null)
+							getDept().setDivision((Division)obj);
+					}
+					else if(getSubsidiary_id() != null)
+					{
+						Object obj = gDAO.find(Subsidiary.class, getSubsidiary_id());
+						if(obj != null)
+							getDept().setSubsidiary((Subsidiary)obj);
+					}
 					
 					getDept().setPartner(getPartner());
 					getDept().setCreatedBy(dashBean.getUser());
@@ -896,10 +985,11 @@ public class UserMBean implements Serializable
 					ret = gDAO.save(getDept());
 					if(ret)
 					{
-						//setPartner_id(null);
 						setPersonel_dept_id(getDept().getId());
 						setDept(null);
 						setDepts(null);
+						setDivision_id(null);
+						setSubsidiary_id(null);
 					}
 					validated = true;
 				}
@@ -907,11 +997,8 @@ public class UserMBean implements Serializable
 			}
 			case 2: // region
 			{
-				if(getRegion().getName() != null)
+				if(getRegion().getName() != null && getPartner() != null)
 				{
-					if(getPartner_id3() != null)
-						setPartner_id(getPartner_id3());
-					
 					getRegion().setPartner(getPartner());
 					getRegion().setCreatedBy(dashBean.getUser());
 					getRegion().setCrt_dt(new Date());
@@ -919,7 +1006,6 @@ public class UserMBean implements Serializable
 					ret = gDAO.save(getRegion());
 					if(ret)
 					{
-						//setPartner_id(null);
 						setPersonel_region_id(getRegion().getId());
 						setRegion(null);
 						setRegions(null);
@@ -936,6 +1022,14 @@ public class UserMBean implements Serializable
 					{
 						getPersonel().setPhoto(getPartnerPersonelPhoto().getContents());
 					}
+					
+					if(getReportsTo_id() != null && getReportsTo_id()>0L)
+					{
+						Object obj = gDAO.find(PartnerPersonel.class, getReportsTo_id());
+						if(obj != null)
+							getPersonel().setReportsTo((PartnerPersonel)obj);
+					}
+					
 					getPersonel().setPartner(getPartner());
 					getPersonel().setCreatedBy(dashBean.getUser());
 					getPersonel().setCrt_dt(new Date());
@@ -954,8 +1048,24 @@ public class UserMBean implements Serializable
 							getPersonel().setRegion((Region)obj);
 					}
 					
+					if(getPersonel_unit_id() != null)
+					{
+						Object obj = gDAO.find(Unit.class, getPersonel_unit_id());
+						if(obj != null)
+							getPersonel().setUnit((Unit)obj);
+					}
+					
+					DriverGrade dg = null;
+					if(getDriverGrade_id() != null && getDriverGrade_id() > 0)
+					{
+						Object dgObj = gDAO.find(DriverGrade.class, getDriverGrade_id());
+						if(dgObj != null)
+							dg = (DriverGrade)dgObj;
+					}
+					
 					gDAO.startTransaction();
 					ret = gDAO.save(getPersonel());
+					boolean error = false;
 					if(ret)
 					{
 						if(getPersonel().isHasDriver())
@@ -974,12 +1084,7 @@ public class UserMBean implements Serializable
 								driver.setCertificationFile(getCertFile().getContents());
 							}
 							
-							if(getDriverGrade_id() != null && getDriverGrade_id() > 0)
-							{
-								Object dgObj = gDAO.find(DriverGrade.class, getDriverGrade_id());
-								if(dgObj != null)
-									driver.setDriverGrade((DriverGrade)dgObj);
-							}
+							driver.setDriverGrade(dg);
 							
 							ret = gDAO.save(driver);
 							
@@ -1050,7 +1155,7 @@ public class UserMBean implements Serializable
 								else
 								{
 									gDAO.rollback();
-									validated = false;
+									error = true;
 									msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Password fields are not the same!");
 									FacesContext.getCurrentInstance().addMessage(null, msg);
 								}
@@ -1058,10 +1163,14 @@ public class UserMBean implements Serializable
 							else
 							{
 								gDAO.rollback();
-								validated = false;
+								error = true;
+								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Username, Password and Email fields are required for a user account to be created!");
+								FacesContext.getCurrentInstance().addMessage(null, msg);
 							}
 						}
 						
+						if(!error)
+						{
 						setDrvLicenseNo(null);
 						setGuarantor(null);
 						setCertFile(null);
@@ -1071,11 +1180,14 @@ public class UserMBean implements Serializable
 						setUser(null);
 						setPersonel_dept_id(null);
 						setPersonel_region_id(null);
+						setPersonel_unit_id(null);
 						setPartnerPersonelPhoto(null);
 						setPersonel(null);
 						setPersonels(null);
+						}
 					}
-					validated = true;
+					if(!error)
+						validated = true;
 				}
 				break;
 			}
@@ -1098,7 +1210,7 @@ public class UserMBean implements Serializable
 						{
 							getUser().setPersonel((PartnerPersonel)pObj);
 						}
-						
+						gDAO.startTransaction();
 						ret = gDAO.save(getUser());
 						if(ret)
 						{
@@ -1152,10 +1264,25 @@ public class UserMBean implements Serializable
 							}
 						}
 						
+						for(MDash f : getPartnerDashs())
+						{
+							if(f.isSelected())
+							{
+								MDashRole mrf = new MDashRole();
+								mrf.setCreatedBy(dashBean.getUser());
+								mrf.setCrt_dt(new Date());
+								mrf.setDash(f);
+								mrf.setRole(getMrole());
+								
+								gDAO.save(mrf);
+							}
+						}
+						
 						setMrole(null);
 						setMroles(null);
 						setPartnerFunctions(null);
 						setPartnerReports(null);
+						setPartnerDashs(null);
 					}
 					validated = true;
 				}
@@ -1314,6 +1441,151 @@ public class UserMBean implements Serializable
 				}
 				break;
 			}
+			case 10: // subsidiary
+			{
+				if(getSubsidiary().getName() != null && getPartner() != null)
+				{
+					getSubsidiary().setPartner(getPartner());
+					getSubsidiary().setCreatedBy(dashBean.getUser());
+					getSubsidiary().setCrt_dt(new Date());
+					gDAO.startTransaction();
+					ret = gDAO.save(getSubsidiary());
+					if(ret)
+					{
+						setSubsidiary(null);
+						setSubsidiaries(null);
+					}
+					validated = true;
+				}
+				break;
+			}
+			case 11: // division
+			{
+				if(getDivision().getName() != null && getPartner() != null)
+				{
+					getDivision().setPartner(getPartner());
+					getDivision().setCreatedBy(dashBean.getUser());
+					getDivision().setCrt_dt(new Date());
+					gDAO.startTransaction();
+					ret = gDAO.save(getDivision());
+					if(ret)
+					{
+						setDivision(null);
+						setDivisions(null);
+					}
+					validated = true;
+				}
+				break;
+			}
+			case 12: // unit
+			{
+				if(getUnit().getName() != null && getPartner() != null)
+				{
+					if(getDepartment_id() != null)
+					{
+						Object obj = gDAO.find(Department.class, getDepartment_id());
+						if(obj != null)
+							getUnit().setDepartment((Department)obj);
+					}
+					if(getUnit().getDepartment() != null)
+					{
+						getUnit().setPartner(getPartner());
+						getUnit().setCreatedBy(dashBean.getUser());
+						getUnit().setCrt_dt(new Date());
+						gDAO.startTransaction();
+						ret = gDAO.save(getUnit());
+						if(ret)
+						{
+							setUnit(null);
+							setUnits(null);
+							setDepartment_id(null);
+						}
+						validated = true;
+					}
+					else
+					{
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Unit must belong to a department!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+				}
+				break;
+			}
+			case 13: // create overtime request
+			{
+				if(getOvertimeReq().getOvertimehours() > 0 && getOvertimeReq().getReason() != null && getOvertimeReq().getTranDate() != null)
+				{
+					validated = true;
+					getOvertimeReq().setApprovalStatus("PENDING");
+					getOvertimeReq().setCreatedBy(dashBean.getUser());
+					getOvertimeReq().setCrt_dt(new Date());
+					getOvertimeReq().setDriver(dashBean.getDriver());
+					getOvertimeReq().setPartner(dashBean.getUser().getPartner());
+					gDAO.startTransaction();
+					ret = gDAO.save(getOvertimeReq());
+					if(ret)
+					{
+						setOvertimeReq(null);
+						setMyOvertimeReqs(null);
+					}
+				}
+				
+				break;
+			}
+			case 14: // attend to overtime requests
+			{
+				int selcount = 0;
+				if(getPendingOvertimeReqs() != null && getPendingOvertimeReqs().size() > 0)
+				{
+					validated = true;
+					gDAO.startTransaction();
+					for(PartnerDriverOvertimeRequest e : getPendingOvertimeReqs())
+					{
+						if(e.isSelected())
+						{
+							selcount++;
+							e.setApprovalStatus(getApprovalStatus());
+							e.setApprovedBy(dashBean.getUser());
+							e.setApprovedDate(new Date());
+							ret = gDAO.update(e);
+							if(ret)
+							{
+								if(getApprovalStatus().equalsIgnoreCase("APPROVED"))
+								{
+									PartnerDriverOvertime ov = new PartnerDriverOvertime();
+									ov.setAmountPerHour(e.getAmountPerHour());
+									ov.setCreatedBy(dashBean.getUser());
+									ov.setCrt_dt(new Date());
+									ov.setDriver(e.getDriver());
+									ov.setOvertimehours(e.getOvertimehours());
+									ov.setReason(e.getReason());
+									ov.setTranDate(e.getTranDate());
+									
+									ret = gDAO.save(ov);
+									if(!ret)
+										break;
+								}
+							}
+							else
+								break;
+						}
+					}
+					if(selcount == 0)
+					{
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No pending overtime request was selected!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+					else
+					{
+						setPendingOvertimeReqs(null);
+					}
+				}
+				else
+				{
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No pending overtime request found!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+				break;
+			}
 		}
 		if(validated)
 		{
@@ -1415,7 +1687,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(depts.get(0).getPartner().getId() == getPartner().getId())
+				if(depts.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1460,7 +1732,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(regions.get(0).getPartner().getId() == getPartner().getId())
+				if(regions.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1486,6 +1758,173 @@ public class UserMBean implements Serializable
 		this.regions = regions;
 	}
 
+	public Subsidiary getSubsidiary() {
+		if(subsidiary == null)
+			subsidiary = new Subsidiary();
+		return subsidiary;
+	}
+
+	public void setSubsidiary(Subsidiary subsidiary) {
+		this.subsidiary = subsidiary;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Subsidiary> getSubsidiaries() {
+		boolean research = true;
+		if(subsidiaries == null || subsidiaries.size() == 0)
+			research = true;
+		else if(subsidiaries.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(subsidiaries.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			subsidiaries = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				Object dpsObj = gDAO.search("Subsidiary", params);
+				if(dpsObj != null)
+				{
+					subsidiaries = (Vector<Subsidiary>)dpsObj;
+				}
+			}
+		}
+		return subsidiaries;
+	}
+
+	public void setSubsidiaries(Vector<Subsidiary> subsidiaries) {
+		this.subsidiaries = subsidiaries;
+	}
+
+	public Division getDivision() {
+		if(division == null)
+			division = new Division();
+		return division;
+	}
+
+	public void setDivision(Division division) {
+		this.division = division;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Division> getDivisions() {
+		boolean research = true;
+		if(divisions == null || divisions.size() == 0)
+			research = true;
+		else if(divisions.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(divisions.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			divisions = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				Object dpsObj = gDAO.search("Division", params);
+				if(dpsObj != null)
+				{
+					divisions = (Vector<Division>)dpsObj;
+				}
+			}
+		}
+		return divisions;
+	}
+
+	public void setDivisions(Vector<Division> divisions) {
+		this.divisions = divisions;
+	}
+
+	public Unit getUnit() {
+		if(unit == null)
+			unit = new Unit();
+		return unit;
+	}
+
+	public void setUnit(Unit unit) {
+		this.unit = unit;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Unit> getUnits() {
+		boolean research = true;
+		if(units == null || units.size() == 0)
+			research = true;
+		else if(units.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(units.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			units = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				Object dpsObj = gDAO.search("Unit", params);
+				if(dpsObj != null)
+				{
+					units = (Vector<Unit>)dpsObj;
+				}
+			}
+		}
+		return units;
+	}
+
+	public void setUnits(Vector<Unit> units) {
+		this.units = units;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Unit> getDeptUnits() {
+		boolean research = true;
+		if(deptUnits == null || deptUnits.size() == 0)
+			research = true;
+		else if(deptUnits.size() > 0)
+		{
+			if(getPersonel_dept_id() != null && getPersonel_dept_id() > 0L)
+			{
+				if(deptUnits.get(0).getDepartment() != null && deptUnits.get(0).getDepartment().getId().longValue() == getPersonel_dept_id().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			deptUnits = null;
+			GeneralDAO gDAO = new GeneralDAO();
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("department.id", (getPersonel_dept_id()!=null) ? getPersonel_dept_id() : 0L);
+			Object dpsObj = gDAO.search("Unit", params);
+			if(dpsObj != null)
+			{
+				deptUnits = (Vector<Unit>)dpsObj;
+			}
+		}
+		return deptUnits;
+	}
+
+	public void setDeptUnits(Vector<Unit> deptUnits) {
+		this.deptUnits = deptUnits;
+	}
+
 	public Long getPersonel_dept_id() {
 		return personel_dept_id;
 	}
@@ -1502,12 +1941,52 @@ public class UserMBean implements Serializable
 		this.personel_region_id = personel_region_id;
 	}
 
+	public Long getDepartment_id() {
+		return department_id;
+	}
+
+	public void setDepartment_id(Long department_id) {
+		this.department_id = department_id;
+	}
+
+	public Long getPersonel_unit_id() {
+		return personel_unit_id;
+	}
+
+	public void setPersonel_unit_id(Long personel_unit_id) {
+		this.personel_unit_id = personel_unit_id;
+	}
+
+	public Long getDivision_id() {
+		return division_id;
+	}
+
+	public void setDivision_id(Long division_id) {
+		this.division_id = division_id;
+	}
+
+	public Long getSubsidiary_id() {
+		return subsidiary_id;
+	}
+
+	public void setSubsidiary_id(Long subsidiary_id) {
+		this.subsidiary_id = subsidiary_id;
+	}
+
 	public Long getPersonel_id() {
 		return personel_id;
 	}
 
 	public void setPersonel_id(Long personel_id) {
 		this.personel_id = personel_id;
+	}
+
+	public Long getReportsTo_id() {
+		return reportsTo_id;
+	}
+
+	public void setReportsTo_id(Long reportsTo_id) {
+		this.reportsTo_id = reportsTo_id;
 	}
 
 	public PartnerPersonel getPersonel() {
@@ -1537,7 +2016,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(personels.get(0).getPartner().getId() == getPartner().getId())
+				if(personels.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1587,7 +2066,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(personelsWithoutUsers.get(0).getPartner().getId() == getPartner().getId())
+				if(personelsWithoutUsers.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1613,6 +2092,43 @@ public class UserMBean implements Serializable
 	public void setPersonelsWithoutUsers(
 			Vector<PartnerPersonel> personelsWithoutUsers) {
 		this.personelsWithoutUsers = personelsWithoutUsers;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerPersonel> getUnitHead() {
+		boolean research = true;
+		if(unitHead == null || unitHead.size() == 0)
+			research = true;
+		else if(unitHead.size() > 0)
+		{
+			if(getPersonel_unit_id() != null && getPersonel_unit_id() > 0L)
+			{
+				if(unitHead.get(0).getUnit() != null && unitHead.get(0).getUnit().getId().longValue() == getPersonel_unit_id().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			unitHead = null;
+			if(getPartner() != null && getPersonel_unit_id() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				params.put("unit.id", getPersonel_unit_id());
+				params.put("unitHead", true);
+				Object dpsObj = gDAO.search("PartnerPersonel", params);
+				if(dpsObj != null)
+				{
+					unitHead = (Vector<PartnerPersonel>)dpsObj;
+				}
+			}
+		}
+		return unitHead;
+	}
+
+	public void setUnitHead(Vector<PartnerPersonel> unitHead) {
+		this.unitHead = unitHead;
 	}
 
 	public StreamedContent getPersonelsExcelTemplate() {
@@ -1706,7 +2222,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(drivers.get(0).getPartner().getId() == getPartner().getId())
+				if(drivers.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1785,7 +2301,7 @@ public class UserMBean implements Serializable
 		{
 			if(getDriver() != null)
 			{
-				if(overtimes.get(0).getDriver().getId() == getDriver().getId())
+				if(overtimes.get(0).getDriver().getId().longValue() == getDriver().getId().longValue())
 					research = false;
 			}
 		}
@@ -1814,6 +2330,121 @@ public class UserMBean implements Serializable
 
 	public void setOvertimes(Vector<PartnerDriverOvertime> overtimes) {
 		this.overtimes = overtimes;
+	}
+
+	public PartnerDriverOvertimeRequest getOvertimeReq() {
+		if(overtimeReq == null)
+			overtimeReq = new PartnerDriverOvertimeRequest();
+		return overtimeReq;
+	}
+
+	public void setOvertimeReq(PartnerDriverOvertimeRequest overtimeReq) {
+		this.overtimeReq = overtimeReq;
+	}
+
+	public PartnerDriverOvertimeRequest getSelectedOvertimeReq() {
+		return selectedOvertimeReq;
+	}
+
+	public void setSelectedOvertimeReq(
+			PartnerDriverOvertimeRequest selectedOvertimeReq) {
+		this.selectedOvertimeReq = selectedOvertimeReq;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriverOvertimeRequest> getMyOvertimeReqs() {
+		if(myOvertimeReqs == null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			Query q = gDAO.createQuery("Select e from PartnerDriverOvertimeRequest e where e.createdBy = :createdBy");
+			q.setParameter("createdBy", dashBean.getUser());
+			
+			Object dpsObj = gDAO.search(q, 0);
+			if(dpsObj != null)
+			{
+				myOvertimeReqs = (Vector<PartnerDriverOvertimeRequest>)dpsObj;
+			}
+			gDAO.destroy();
+		}
+		return myOvertimeReqs;
+	}
+
+	public void setMyOvertimeReqs(
+			Vector<PartnerDriverOvertimeRequest> myOvertimeReqs) {
+		this.myOvertimeReqs = myOvertimeReqs;
+	}
+
+	public void resetMyOvertimes()
+	{
+		setMyOvertimes(null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriverOvertime> getMyOvertimes() {
+		if(myOvertimes == null)
+		{
+			if(getOvertimeStDate() != null && getOvertimeEndDate() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Query q = gDAO.createQuery("Select e from PartnerDriverOvertime e where e.driver.personel = :personel and (e.tranDate between :stdt and :enddt)");
+				q.setParameter("personel", dashBean.getUser().getPersonel());
+				q.setParameter("stdt", getOvertimeStDate());
+				q.setParameter("enddt", getOvertimeEndDate());
+				
+				Object dpsObj = gDAO.search(q, 0);
+				if(dpsObj != null)
+				{
+					myOvertimes = (Vector<PartnerDriverOvertime>)dpsObj;
+				}
+				gDAO.destroy();
+			}
+		}
+		return myOvertimes;
+	}
+
+	public void setMyOvertimes(Vector<PartnerDriverOvertime> myOvertimes) {
+		this.myOvertimes = myOvertimes;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriverOvertimeRequest> getPendingOvertimeReqs() {
+		boolean research = true;
+		if(pendingOvertimeReqs == null || pendingOvertimeReqs.size() == 0)
+			research = true;
+		else if(pendingOvertimeReqs.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(pendingOvertimeReqs.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			pendingOvertimeReqs = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Query q = gDAO.createQuery("Select e from PartnerDriverOvertimeRequest e where e.partner = :partner and e.approvalStatus = 'PENDING'");
+				q.setParameter("partner", getPartner());
+				
+				Object dpsObj = gDAO.search(q, 0);
+				if(dpsObj != null)
+				{
+					pendingOvertimeReqs = (Vector<PartnerDriverOvertimeRequest>)dpsObj;
+				}
+				gDAO.destroy();
+			}
+		}
+		return pendingOvertimeReqs;
+	}
+
+	public void setPendingOvertimeReqs(
+			Vector<PartnerDriverOvertimeRequest> pendingOvertimeReqs) {
+		this.pendingOvertimeReqs = pendingOvertimeReqs;
 	}
 
 	public PartnerDriverQuery getDvrQuery() {
@@ -1855,7 +2486,7 @@ public class UserMBean implements Serializable
 		{
 			if(getDriver() != null)
 			{
-				if(dvrQueries.get(0).getDriver().getId() == getDriver().getId())
+				if(dvrQueries.get(0).getDriver().getId().longValue() == getDriver().getId().longValue())
 					research = false;
 			}
 		}
@@ -1904,7 +2535,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(driverGrades.get(0).getPartner().getId() == getPartner().getId())
+				if(driverGrades.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -1957,7 +2588,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(mroles.get(0).getPartner().getId() == getPartner().getId())
+				if(mroles.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -2002,6 +2633,20 @@ public class UserMBean implements Serializable
 							}
 						}
 						mr.setReports(mrReports);
+						
+						List<MDash> mrDashs = new ArrayList<MDash>();
+						params = new Hashtable<String, Object>();
+						params.put("role", mr);
+						Object mrdsObj = gDAO.search("MDashRole", params);
+						if(mrdsObj != null)
+						{
+							Vector<MDashRole> mrrsList = (Vector<MDashRole>)mrdsObj;
+							for(MDashRole mrf : mrrsList)
+							{
+								mrDashs.add(mrf.getDash());
+							}
+						}
+						mr.setDashs(mrDashs);
 					}
 				}
 			}
@@ -2108,6 +2753,51 @@ public class UserMBean implements Serializable
 		this.partnerReports = partnerReports;
 	}
 
+	@SuppressWarnings("unchecked")
+	public Vector<MDash> getPartnerDashs() {
+		boolean research = false;
+		if(partnerDashs == null || partnerDashs.size() == 0)
+			research = true;
+		
+		if(research)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			partnerDashs = new Vector<MDash>();
+			
+			if(getPartner() != null && !getPartner().isSattrak())
+			{
+				if(getSub() != null)
+				{
+					// this is a subscription based loading of the functions
+					Hashtable<String, Object> params = new Hashtable<String, Object>();
+					params.put("appTypeVersion", getSub().getAppTypeVersion());
+					Object mdsObj = gDAO.search("ApplicationTypeDash", params);
+					if(mdsObj != null)
+					{
+						Vector<ApplicationTypeDash> mdsList = (Vector<ApplicationTypeDash>)mdsObj;
+						for(ApplicationTypeDash e : mdsList)
+						{
+							partnerDashs.add(e.getDash());
+						}
+					}
+				}
+			}
+			else if(getPartner() != null)// load all functions, this is a sattrak user
+			{
+				Object fsObj = gDAO.findAll("MDash");
+				if(fsObj != null)
+				{
+					partnerDashs = (Vector<MDash>)fsObj;
+				}
+			}
+		}
+		return partnerDashs;
+	}
+
+	public void setPartnerDashs(Vector<MDash> partnerDashs) {
+		this.partnerDashs = partnerDashs;
+	}
+
 	public String getCpassword() {
 		return cpassword;
 	}
@@ -2135,7 +2825,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(users.get(0).getPartner().getId() == getPartner().getId())
+				if(users.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -2211,7 +2901,7 @@ public class UserMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(audits.get(0).getUser().getPartner().getId() == getPartner().getId())
+				if(audits.get(0).getUser().getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -2247,6 +2937,22 @@ public class UserMBean implements Serializable
 
 	public void setAudits(Vector<Audit> audits) {
 		this.audits = audits;
+	}
+
+	public String getApprovalStatus() {
+		return approvalStatus;
+	}
+
+	public void setApprovalStatus(String approvalStatus) {
+		this.approvalStatus = approvalStatus;
+	}
+
+	public String getApprovalComment() {
+		return approvalComment;
+	}
+
+	public void setApprovalComment(String approvalComment) {
+		this.approvalComment = approvalComment;
 	}
 
 	public DashboardMBean getDashBean() {

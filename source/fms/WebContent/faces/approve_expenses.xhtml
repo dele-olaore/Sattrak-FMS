@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
-			<p:breadCrumb>  
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Approve Expenses" action="#{dashboardBean.gotoPage('approve_expenses', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -30,8 +29,7 @@
 						<p:dataTable id="myPendExpsTable" var="obj" value="#{expenseBean.pendingExpRequests}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
-							binding="#{table}">
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"><!-- binding="#{table}" -->
 							<f:facet name="header">
 								Pending expense request(s) [#{expenseBean.pendingExpRequests.size()}]
 							</f:facet>

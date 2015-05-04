@@ -3,6 +3,7 @@ package com.dexter.fms.model.app;
 import java.io.Serializable;
 import java.util.Date;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -36,6 +37,8 @@ public class VehicleParameters implements Serializable
 	private double fuelComp100KML;
 	private String color;
 	private byte[] photo;
+	
+	@ManyToOne
 	private FuelType fuelType;
 	
 	private String simno;

@@ -5,28 +5,6 @@
     <persistence-unit name="fms" transaction-type="RESOURCE_LOCAL">
         <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
 		<!--<jta-data-source>java:comp/env/ds/nipostDS</jta-data-source>-->
-		<class>com.dexter.fms.model.ApplicationSetup</class>
-        <class>com.dexter.fms.model.ApplicationSubscriptionModule</class>
-        <class>com.dexter.fms.model.ApplicationType</class>
-        <class>com.dexter.fms.model.ApplicationTypeModule</class>
-        <class>com.dexter.fms.model.MFunction</class>
-        <class>com.dexter.fms.model.Module</class>
-        <class>com.dexter.fms.model.MRole</class>
-        <class>com.dexter.fms.model.MRoleFunction</class>
-        <class>com.dexter.fms.model.Partner</class>
-        <class>com.dexter.fms.model.PartnerSubscription</class>
-        <class>com.dexter.fms.model.PartnerUser</class>
-        <class>com.dexter.fms.model.PartnerUserRole</class>
-        <class>com.dexter.fms.model.SubscriptionPackage</class>
-        <class>com.dexter.fms.model.SubscriptionType</class>
-        <!--<class>com.dexter.fms.model.ref.Department</class>
-        <class>com.dexter.fms.model.ref.FuelType</class>
-        <class>com.dexter.fms.model.ref.ItemType</class>
-        <class>com.dexter.fms.model.ref.Region</class>
-        <class>com.dexter.fms.model.ref.VehicleMake</class>
-        <class>com.dexter.fms.model.ref.VehicleModel</class>
-        <class>com.dexter.fms.model.ref.VehicleType</class>
-        <class>com.dexter.fms.model.ref.VendorType</class>-->
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver" />
@@ -41,6 +19,8 @@
             <!-- EclipseLink should create the database schema automatically -->
             <property name="eclipselink.logging.level" value="FINE"/>
       		<property name="eclipselink.ddl-generation" value="create-tables"/>
+      		<property name="eclipselink.query-results-cache" value="false"/>
+      		<property name="eclipse.persistance-context.flush-mode" value="COMMIT" />
         </properties>
     </persistence-unit>
 </persistence>

@@ -53,6 +53,8 @@ public class PartnerDriver implements Serializable
 	private Vehicle vehicle;
 	@Transient
 	private int yearsOfService;
+	@Transient
+	private int score;
 	
 	public PartnerDriver()
 	{}
@@ -159,6 +161,14 @@ public class PartnerDriver implements Serializable
 
 	public void setYearsOfService(int yearsOfService) {
 		this.yearsOfService = yearsOfService;
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void setScore(int score) {
+		this.score = score;
 	}
 	
 }

@@ -37,6 +37,7 @@ public class MFunction implements Serializable
 	private int displayIndex;
 	
 	private boolean active;
+	private boolean hasShortcut;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -125,6 +126,14 @@ public class MFunction implements Serializable
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public boolean isHasShortcut() {
+		return hasShortcut;
+	}
+
+	public void setHasShortcut(boolean hasShortcut) {
+		this.hasShortcut = hasShortcut;
 	}
 
 	public Date getCrt_dt() {

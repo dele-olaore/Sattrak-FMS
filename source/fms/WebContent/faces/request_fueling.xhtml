@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Request Fueling" action="#{dashboardBean.gotoPage('request_fueling', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -86,7 +85,7 @@
 								</h:inputText>
 							</p:panelGrid>
 							<p:outputPanel id="fuelingDataPanel2">
-							<h:outputText value="Manual fueling capture not support by partner's account setup!" rendered="#{fleetBean.partner != null and (fleetBean.partner.fuelingType == 'Automated')}" />
+							<h:outputText value="Manual fueling capture not supported by partner's account setup!" rendered="#{fleetBean.partner != null and (fleetBean.partner.fuelingType == 'Automated')}" />
 							<p:panelGrid columns="2">
 								<h:outputLabel for="fueldt2" value="Fuel date: *" />
 								<p:calendar id="fueldt2" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.fuelingRequest.fueling_dt}" navigator="true" />

@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Driving Info" action="#{dashboardBean.gotoPage('manage_v_driverinfo', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -29,7 +28,7 @@
 				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-		  			<p:ajax update="flt1, vch1" />
+		  			<p:ajax update="flt1, vch1, :form:tabs:vedriver" />
 		  		</p:selectOneMenu>
 		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
 		  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
@@ -60,15 +59,20 @@
 				<p:tab id="srt" title="Capture Warning">
 					<p:panelGrid columns="1">
 						<p:panelGrid columns="2">
+							<h:outputLabel for="vedriver" value="Event Driver: *" />
+							<p:selectOneMenu id="vedriver" value="#{fleetBean.driver_id}">
+					  			<f:selectItems value="#{ddBean.getPartnerDrivers(fleetBean.partner_id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+						
 							<h:outputLabel for="fueldt" value="Event date: *" />
 							<p:calendar id="fueldt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.vehicleBehaviour.eventDate}" navigator="true" />
 							
-							<h:outputLabel for="vwarning" value="Warning: *" />
+							<h:outputLabel for="vwarning" value="Type of event: *" />
 					  		<p:selectOneMenu id="vwarning" value="#{fleetBean.warning_id}">
 					  			<f:selectItems value="#{ddBean.vehicleWarnings}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 					  		</p:selectOneMenu>
 					  		
-					  		<h:outputLabel for="fuelcost" value="Warning value: *" />
+					  		<h:outputLabel for="fuelcost" value="Event value: *" />
 					  		<p:inputText id="fuelcost" value="#{fleetBean.vehicleBehaviour.warningValue}" />
 						</p:panelGrid>
 						<f:facet name="footer">

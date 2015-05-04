@@ -1,7 +1,18 @@
 package com.dexter.fms.mbean;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.rmi.RemoteException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -20,19 +31,16 @@ import javax.faces.bean.ApplicationScoped;
 import javax.faces.bean.ManagedBean;
 import javax.faces.context.FacesContext;
 import javax.persistence.Query;
-import javax.xml.rpc.ServiceException;
 
-import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.EResult;
-import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SAATRAKUnitEvent;
-import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.SATTRACKUnitEventResult;
-import org.datacontract.schemas._2004._07.ZONIntegrationWCFService.UnitEventEEvent;
-import org.tempuri.IZONService;
-import org.tempuri.ZONServiceLocator;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationSetup;
+import com.dexter.fms.model.MDash;
+import com.dexter.fms.model.MDashRole;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
@@ -51,11 +59,13 @@ import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.ExpenseType;
 import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.app.VehicleFuelData;
+import com.dexter.fms.model.app.VehicleFueling;
 import com.dexter.fms.model.app.VehicleLicense;
 import com.dexter.fms.model.app.VehicleLocationData;
 import com.dexter.fms.model.app.VehicleOdometerData;
 import com.dexter.fms.model.app.VehicleStatusEnum;
 import com.dexter.fms.model.app.VehicleTrackerData;
+import com.dexter.fms.model.app.VehicleTrackerEventData;
 import com.dexter.fms.model.ref.DocumentType;
 import com.dexter.fms.model.ref.FuelType;
 import com.dexter.fms.model.ref.ItemType;
@@ -64,7 +74,7 @@ import com.dexter.fms.model.ref.ServiceType;
 import com.dexter.fms.model.ref.TransactionType;
 import com.dexter.fms.model.ref.VehicleWarning;
 
-@ManagedBean(name = "appBean")
+@ManagedBean(name = "appBean", eager=true)
 @ApplicationScoped
 public class ApplicationMBean implements Serializable
 {
@@ -78,11 +88,13 @@ public class ApplicationMBean implements Serializable
 	
 	private boolean appSetup;
 	
-	private Timer timer, timer2, trackerTimer;
-    private TimerTask task, task2, trackerTask;
+	private Timer timer, timer2, trackerEventTimer, trackerRealTimeTimer;
+	private TimerTask task, task2, trackerEventTask, trackerRealTimeTask;
     
-    private int tracker_interval = 5; // interval in minutes
-	private Long lastReceivedId = -1L;
+	//private int tracker_interval = 5; // interval in minutes
+	//private Long lastReceivedId = -1L;
+	
+	private String userName = "admin1", userHost = "v5", userOrg = "zon_sattrak_telematics", password = "sattrak123", lastGMTTime = null;
 	
 	public ApplicationMBean()
 	{
@@ -103,6 +115,10 @@ public class ApplicationMBean implements Serializable
                 logger.info("Starting budgets update at: " + new Date());
                 checkBudgets();
                 logger.info("Finished budgets update at: " + new Date());
+                
+                logger.info("Starting disposable vehicles check at: " + new Date());
+                checkDisposableVehicles();
+                logger.info("Finished disposable vehicles check at: " + new Date());
             }
         };
         
@@ -123,48 +139,354 @@ public class ApplicationMBean implements Serializable
         timer2 = new Timer();
         timer2.scheduleAtFixedRate(task2, new Date(), 1000 * 60 * 5); // 5 minutes
         
-        trackerTimer = new Timer();
-		trackerTask = new TimerTask()
+        trackerEventTimer = new Timer();
+		trackerEventTask = new TimerTask()
 		{
-			@SuppressWarnings("unchecked")
+			@SuppressWarnings({ "deprecation" })
 			@Override
 			public void run()
 			{
-				logger.info("Starting tracker info download from the tracker web service");
+				logger.info("Starting tracker events info download from the tracker web service");
 				
-				ZONServiceLocator zonLocator = new ZONServiceLocator();
+				String eventRequestedProps = "event_type,unit_id,event_time,event_name,event_text,event_value,h_address,h_distance,unit_name";
+            	
+            	String uri = "http://galoolitools.dnsalias.com/galooliDevKitService/galooliDevKitService.svc/json/GetEventsInformation?";
+            	uri += "userName="+userName+"&";
+            	uri += "userHost="+userHost+"&";
+            	uri += "userOrg="+userOrg+"&";
+            	uri += "password="+password+"&";
+            	uri += "requestedUnits=any&";
+            	uri += "requestedEvents=any&";//any
+            	uri += "requestedPropertiesStr="+eventRequestedProps+"&";
+            	
+            	Calendar c = Calendar.getInstance();
+            	c.add(Calendar.HOUR_OF_DAY, -1);
+                //c.set(Calendar.MINUTE, 0);
+                //c.set(Calendar.SECOND, 0);
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String startTimeStr = sdf.format(c.getTime());
+                c = Calendar.getInstance();
+                //c.set(Calendar.HOUR_OF_DAY, 23);
+                //c.set(Calendar.MINUTE, 59);
+                //c.set(Calendar.SECOND, 59);
+                String endTimeStr = sdf.format(c.getTime());
+            	uri += "startTime=" + URLEncoder.encode(startTimeStr) + "&";
+            	uri += "endTime=" + URLEncoder.encode(endTimeStr);
+				
 				try
 				{
-					Calendar c = Calendar.getInstance();
-					Calendar c2 = Calendar.getInstance();
+					URL url = new URL(uri);
+                	HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                	connection.setRequestMethod("GET");
+                	connection.setRequestProperty("Accept", "application/json");
+                	InputStream is = connection.getInputStream();
+                	
+                	String resultString = null;
+                	try {
+                		resultString = getStringFromInputStream(is);
+                	} catch(Exception ex){
+                		ex.printStackTrace();
+                	}
+                	finally
+                	{
+                		try{
+                			is.close();
+                		}catch(Exception ig){}
+                	}
+                	
+                	JSONObject resultJSON = null;
+                	if(resultString != null)
+                	{
+	                	try {
+	                		resultJSON = new JSONObject(resultString);
+	                	} catch(Exception ex){
+	                		ex.printStackTrace();
+	                	}
+                	}
+                	
+                	if(resultJSON != null)
+                	{
+                		JSONObject commonResultObj = resultJSON.getJSONObject("CommonResult");
+                		
+                		int resultCode = commonResultObj.getInt("ResultCode");
+                		logger.info("tracker service result: " + resultCode);
+                		System.out.println("result code: " + resultCode);
+                		if(resultCode == 0)
+	                    {
+                			JSONArray dataSet = commonResultObj.getJSONArray("DataSet");
+                			logger.info("Tracker records count: " + dataSet.length());
+	                    	System.out.println("Tracker records count: " + dataSet.length());
+	                        if(dataSet.length() > 0)
+	                        {
+	                        	GeneralDAO gDAO = new GeneralDAO();
+	                        	gDAO.startTransaction();
+	                        	for(int i=0; i<dataSet.length(); i++)
+                                {
+                                	JSONArray e_values = dataSet.getJSONArray(i);
+                                	
+                                	// event_type,unit_id,event_time,event_name,event_text,event_value,h_address,h_distance,unit_name
+                                	String event_type = e_values.getString(0);
+                                	String unit_id = e_values.getString(1);
+                                	String event_time = e_values.getString(2);event_time = event_time.replaceAll("'", "");
+                                	String event_name = e_values.getString(3);event_name = event_name.replaceAll("'", "");
+                                	String event_text = e_values.getString(4);event_text = event_text.replaceAll("'", ""); // initial value
+                                	String event_value = e_values.getString(5); // current value
+                                	String h_address = e_values.getString(6);h_address = h_address.replaceAll("'", "");
+                                	String h_distance = e_values.getString(7);
+                                	String unit_name = e_values.getString(8);unit_name = unit_name.replaceAll("'", "");
+                                	
+                                	// the tran time coming from the tracker is in GTM, so we add 1 hour to it to get the GTM+1 value, which is our time zone
+                                    Calendar tranTimeCal = Calendar.getInstance();
+                                    tranTimeCal.setTime(sdf.parse(event_time));
+                                    tranTimeCal.add(Calendar.HOUR, -1);
+                                    
+                                    Query q = gDAO.createQuery("Select e from Vehicle e where e.zonControlId=:zonControlId");
+					            	q.setParameter("zonControlId", Integer.parseInt(unit_id));
+					            	
+					            	Object vObj = gDAO.search(q, 1);
+					            	if(vObj != null)
+					            	{
+					            		Vehicle v = (Vehicle)vObj;
+					            		
+					            		VehicleTrackerEventData vted = new VehicleTrackerEventData();
+					            		vted.setVehicle(v);
+					            		vted.setCaptured_dt(tranTimeCal.getTime());
+					            		vted.setCrt_dt(new Date());
+					            		vted.setEvent_name(event_name);
+					            		vted.setEvent_text(event_text);
+					            		vted.setEvent_time(event_time);
+					            		vted.setEvent_type(event_type);
+					            		vted.setEvent_value(event_value);
+					            		vted.setH_address(h_address);
+					            		vted.setH_distance(h_distance);
+					            		vted.setUnit_id(unit_id);
+					            		vted.setUnit_name(unit_name);
+					            		
+					            		boolean exists = false;
+	                                    // check if the current record exists before creating it, only do this for first time runs
+	                                    Query checkQ = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle = :vehicle and e.captured_dt = :tranTime");
+	                                    checkQ.setParameter("vehicle", vted.getVehicle());
+	                                    checkQ.setParameter("tranTime", vted.getCaptured_dt());
+	                                    try
+	                                    {
+	                                        @SuppressWarnings("rawtypes")
+	                                        List checkObj = checkQ.getResultList();
+	                                        if(checkObj != null && checkObj.size() > 0)
+	                                        {
+	                                            exists = true;
+	                                        }
+	                                    }
+	                                    catch(Exception ex)
+	                                    {
+	                                        ex.printStackTrace();
+	                                    }
+	                                    if(!exists)
+	                                    	gDAO.save(vted);
+                                	
+	                                	if(event_type.equalsIgnoreCase("6001")) // Refuel event
+	                                	{
+    					            		if(v.getPartner().getFuelingType().equalsIgnoreCase("Automated") ||
+    					            				v.getPartner().getFuelingType().equalsIgnoreCase("Both"))
+    					            		{
+	    					            		VehicleFueling vf = new VehicleFueling();
+	    										vf.setAmt(0);
+	    										vf.setCaptured_dt(tranTimeCal.getTime());
+	    										vf.setCreatedBy(null);
+	    										vf.setCrt_dt(new Date());
+	    										vf.setFuelLevel(Double.parseDouble(event_value)+Double.parseDouble(event_text));
+	    										vf.setLitres(Double.parseDouble(event_value));
+	    										vf.setLocation(h_address);
+	    										vf.setOdometer(Double.parseDouble(h_distance));
+	    										vf.setSource("Tracker");
+	    										vf.setVehicle(v);
+	    										
+	    										exists = false;
+	    	                                    // check if the current record exists before creating it, only do this for first time runs
+	    	                                    checkQ = gDAO.createQuery("Select e from VehicleFueling e where e.vehicle = :vehicle and e.captured_dt = :tranTime");
+	    	                                    checkQ.setParameter("vehicle", vf.getVehicle());
+	    	                                    checkQ.setParameter("tranTime", vf.getCaptured_dt());
+	    	                                    try
+	    	                                    {
+	    	                                        @SuppressWarnings("rawtypes")
+	    	                                        List checkObj = checkQ.getResultList();
+	    	                                        if(checkObj != null && checkObj.size() > 0)
+	    	                                        {
+	    	                                            exists = true;
+	    	                                        }
+	    	                                    }
+	    	                                    catch(Exception ex)
+	    	                                    {
+	    	                                        ex.printStackTrace();
+	    	                                    }
+	    	                                    if(!exists)
+	    	                                    	gDAO.save(vf);
+    					            		}
+    					            		
+    					            		VehicleFuelData vfd = new VehicleFuelData();
+    					            		vfd.setCaptured_dt(tranTimeCal.getTime());
+    					            		vfd.setCrt_dt(new Date());
+    					            		vfd.setFuelLevel(Double.parseDouble(event_value)+Double.parseDouble(event_text));
+    					            		vfd.setSource("Tracker");
+    					            		vfd.setVehicle(v);
+    					            		
+    					            		exists = false;
+    	                                    // check if the current record exists before creating it, only do this for first time runs
+    	                                    checkQ = gDAO.createQuery("Select e from VehicleFuelData e where e.vehicle = :vehicle and e.captured_dt = :tranTime");
+    	                                    checkQ.setParameter("vehicle", vfd.getVehicle());
+    	                                    checkQ.setParameter("tranTime", vfd.getCaptured_dt());
+    	                                    try
+    	                                    {
+    	                                        @SuppressWarnings("rawtypes")
+    	                                        List checkObj = checkQ.getResultList();
+    	                                        if(checkObj != null && checkObj.size() > 0)
+    	                                        {
+    	                                            exists = true;
+    	                                        }
+    	                                    }
+    	                                    catch(Exception ex)
+    	                                    {
+    	                                        ex.printStackTrace();
+    	                                    }
+    	                                    if(!exists)
+    	                                    	gDAO.save(vfd);
+    					            	}
+                                	}
+                                }
+	                        	gDAO.commit();
+	                        	gDAO.destroy();
+								logger.info("Commited database storage transaction for the downloaded tracker events");
+	                        }
+	                    }
+                	}
+				}
+            	catch(RemoteException ex)
+            	{
+					ex.printStackTrace();
+				}
+				catch (MalformedURLException e)
+				{
+					e.printStackTrace();
+				}
+				catch (ProtocolException e)
+				{
+					e.printStackTrace();
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
+				}
+				catch (ParseException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		trackerRealTimeTimer = new Timer();
+		trackerRealTimeTask = new TimerTask()
+		{
+			@SuppressWarnings({ "deprecation" })
+			@Override
+			public void run()
+			{
+				try
+				{
+					logger.info("Starting tracker real time info download from the tracker web service");
+                	
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 					
-					c.set(Calendar.HOUR_OF_DAY, 0);
-					c.set(Calendar.MINUTE, 0);
-					c.set(Calendar.SECOND, 0);
-					
-					c2.set(Calendar.HOUR_OF_DAY, 23);
-					c2.set(Calendar.MINUTE, 59);
-					c2.set(Calendar.SECOND, 59);
-					
-					IZONService zonService = zonLocator.getBasicHttpBinding_IZONService();
-					SATTRACKUnitEventResult result = zonService.SATTRAK_GetDailyEvents(c, c2, lastReceivedId);
-					logger.info("tracker service result: " + result.getResult());
-					if(result.getResult() == EResult.Ok)
-					{
-						// lastReceivedId = result.getLastQueriedId();
-						SAATRAKUnitEvent[] unitEvents = result.getUnitEvents();
-						logger.info("tracker result length: " + unitEvents.length);
-						if(unitEvents != null && unitEvents.length > 0)
-						{
-							GeneralDAO gDAO = new GeneralDAO();
-							
-							try
-					    	{
-					    		gDAO.startTransaction();
-					            for(SAATRAKUnitEvent e : unitEvents)
-								{
-					            	Query q = gDAO.createQuery("Select e from Vehicle e where e.zonControlId=:zonControlId");
-					            	q.setParameter("zonControlId", e.getUnitID());
+                	if(lastGMTTime == null)
+                	{
+                		Calendar c = Calendar.getInstance();
+                		c.add(Calendar.HOUR_OF_DAY, -1);
+                		/*c.set(Calendar.HOUR_OF_DAY, 0);
+                		c.set(Calendar.MINUTE, 0);
+                		c.set(Calendar.SECOND, 0);
+                		c.set(Calendar.MILLISECOND, 0);*/
+                		lastGMTTime = sdf.format(c.getTime());
+                	}
+                	
+                	String realtimeRequestedProps = "address,distance,longitude,latitude,battery_voltage,engine_hours,speed,heading,hdop,status,unit_id";
+                	String uri = "http://galoolitools.dnsalias.com/galooliDevKitService/galooliDevKitService.svc/json/GetRealTimeData?";
+                	uri += "userName="+userName+"&";
+                	uri += "userHost="+userHost+"&";
+                	uri += "userOrg="+userOrg+"&";
+                	uri += "password="+password+"&";
+                	uri += "requestedPropertiesStr="+realtimeRequestedProps+"&";
+                	uri += "lastGMTUpdateTime=" + URLEncoder.encode(lastGMTTime);
+                	
+                	URL url = new URL(uri);
+                	HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                	connection.setRequestMethod("GET");
+                	connection.setRequestProperty("Accept", "application/json");
+                	InputStream is = connection.getInputStream();
+                	
+                	String resultString = null;
+                	try {
+                		resultString = getStringFromInputStream(is);
+                	} catch(Exception ex){
+                		ex.printStackTrace();
+                	}
+                	finally
+                	{
+                		try{
+                			is.close();
+                		}catch(Exception ig){}
+                	}
+                	
+                	JSONObject resultJSON = null;
+                	if(resultString != null)
+                	{
+	                	try {
+	                		resultJSON = new JSONObject(resultString);
+	                	} catch(Exception ex){
+	                		ex.printStackTrace();
+	                	}
+                	}
+                	
+                	if(resultJSON != null)
+                	{
+                		JSONObject commonResultObj = resultJSON.getJSONObject("CommonResult");
+                		String maxGMTUpdateTime = resultJSON.getString("MaxGmtUpdateTime");
+                		
+                		int resultCode = commonResultObj.getInt("ResultCode");
+                		logger.info("tracker service result: " + resultCode);
+                		System.out.println("result code: " + resultCode);
+                		if(resultCode == 0)
+	                    {
+                			lastGMTTime = maxGMTUpdateTime;
+                			JSONArray dataSet = commonResultObj.getJSONArray("DataSet");
+                			logger.info("Tracker records count: " + dataSet.length());
+	                    	System.out.println("Tracker records count: " + dataSet.length());
+	                        if(dataSet.length() > 0)
+	                        {
+	                        	GeneralDAO gDAO = new GeneralDAO();
+	                        	gDAO.startTransaction();
+	                        	for(int i=0; i<dataSet.length(); i++)
+                                {
+                                	JSONArray e_values = dataSet.getJSONArray(i);
+                                	
+                                	// address,distance,longitude,latitude,battery_voltage,engine_hours,speed,heading,hdop,status,unit_id
+                                	String event_time = e_values.getString(0);event_time = event_time.replaceAll("'", "");
+                                	String address = e_values.getString(1);
+                                	String distance = e_values.getString(2);
+                                	String longitude = e_values.getString(3);
+                                	String latitude = e_values.getString(4);
+                                	String battery_voltage = e_values.getString(5);
+                                	String engine_hours = e_values.getString(6);
+                                	String speed = e_values.getString(7);
+                                	String heading = e_values.getString(8);
+                                	String hdop = e_values.getString(9);
+                                	String status = e_values.getString(10);
+                                	String unit_id = e_values.getString(11);
+                                	
+                                	// the tran time coming from the tracker is in GTM, so we add 1 hour to it to get the GTM+1 value, which is our time zone
+                                    Calendar tranTimeCal = Calendar.getInstance();
+                                    tranTimeCal.setTime(sdf.parse(event_time));
+                                    tranTimeCal.add(Calendar.HOUR, -1);
+                                    
+                                    Query q = gDAO.createQuery("Select e from Vehicle e where e.zonControlId=:zonControlId");
+					            	q.setParameter("zonControlId", Integer.parseInt(unit_id));
 					            	
 					            	Object vObj = gDAO.search(q, 1);
 					            	if(vObj != null)
@@ -172,116 +494,127 @@ public class ApplicationMBean implements Serializable
 					            		Vehicle v = (Vehicle)vObj;
 					            		
 					            		VehicleTrackerData vtd = new VehicleTrackerData();
-					            		vtd.setCrt_dt(new Date());
-					            		vtd.setCaptured_dt(e.getEventTime().getTime());
-					            		vtd.setFuelLevel(e.getEventFinalValue());
-					            		vtd.setLat(e.getLangitude());
-					            		vtd.setLon(e.getLongitude());
-					            		vtd.setOdometer(e.getDistance());
-					            		vtd.setVehicleTStatus(e.getStatus().getValue());
-					            		vtd.setSpeed(e.getSpeed());
-					            		vtd.setHeading(e.getHeading());
-					            		vtd.setHdop(e.getHDOP());
 					            		vtd.setVehicle(v);
-					            		gDAO.save(vtd);
 					            		
-					            		Hashtable<String, Object> params = new Hashtable<String, Object>();
-					            		params.put("active", true);
-					            		Object subsObj = gDAO.search("VehicleLocationData", params);
-					            		if(subsObj != null)
-					            		{
-					            			Vector<VehicleLocationData> subs = (Vector<VehicleLocationData>)subsObj;
-					            			for(VehicleLocationData vld : subs)
-					            			{
-					            				vld.setActive(false);
-					            				gDAO.update(vld);
-					            			}
-					            		}
-					            		
-					            		VehicleLocationData vld = new VehicleLocationData();
-					            		vld.setVehicle(v);
-					            		vld.setAddress(e.getAddress());
-					            		vld.setCaptured_dt(e.getEventTime().getTime());
-					            		vld.setCrt_dt(new Date());
-					            		vld.setLat(e.getLangitude());
-					            		vld.setLon(e.getLongitude());
-					            		vld.setActive(true);
-					            		gDAO.save(vld);
-					            		
-					            		VehicleOdometerData vod = new VehicleOdometerData();
+					            		boolean exists = false;
+	                                    // check if the current record exists before creating it, only do this for first time runs
+	                                    Query checkQ = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle = :vehicle");
+	                                    checkQ.setParameter("vehicle", vtd.getVehicle());
+	                                    try
+	                                    {
+	                                        @SuppressWarnings("rawtypes")
+	                                        List checkObj = checkQ.getResultList();
+	                                        if(checkObj != null && checkObj.size() > 0)
+	                                        {
+	                                        	for(Object vtdObj : checkObj)
+	                                        	{
+	                                        		if(vtdObj instanceof VehicleTrackerData)
+	                                        		{
+	                                        			vtd = (VehicleTrackerData)vtdObj;
+	                                        			exists = true;
+	                                        		}
+	                                        	}
+	                                        }
+	                                    }
+	                                    catch(Exception ex)
+	                                    {
+	                                        ex.printStackTrace();
+	                                    }
+	                                    
+	                                    vtd.setAddress(address);
+	                                    vtd.setBatteryVoltage(Double.parseDouble(battery_voltage));
+	                                    vtd.setCaptured_dt(tranTimeCal.getTime());
+	                                    vtd.setCrt_dt(new Date());
+	                                    vtd.setEngineHours(Double.parseDouble(engine_hours));
+	                                    vtd.setHdop(Integer.parseInt(hdop));
+	                                    vtd.setHeading(Integer.parseInt(heading));
+	                                    vtd.setLat(Double.parseDouble(latitude));
+	                                    vtd.setLon(Double.parseDouble(longitude));
+	                                    vtd.setOdometer(Double.parseDouble(distance));
+	                                    vtd.setSpeed(Double.parseDouble(speed));
+	                                    vtd.setVehicleTStatus(status);
+	                                    
+	                                    if(exists)
+	                                    	gDAO.update(vtd);
+	                                    else
+	                                    	gDAO.save(vtd);
+	                                    
+	                                    VehicleOdometerData vod = new VehicleOdometerData();
 					            		vod.setVehicle(v);
-					            		vod.setCaptured_dt(e.getEventTime().getTime());
+					            		vod.setCaptured_dt(tranTimeCal.getTime());
 					            		vod.setCrt_dt(new Date());
-					            		vod.setOdometer(e.getDistance());
+					            		vod.setOdometer(Double.parseDouble(distance));
 					            		vod.setSource("Tracker");
 					            		
 					            		gDAO.save(vod);
 					            		
-					            		VehicleFuelData vfd = new VehicleFuelData();
-					            		vfd.setCaptured_dt(e.getEventTime().getTime());
-					            		vfd.setCrt_dt(new Date());
-					            		vfd.setFuelLevel(e.getEventFinalValue());
-					            		vfd.setSource("Tracker");
-					            		vfd.setVehicle(v);
-					            		
-					            		gDAO.save(vfd);
-					            		
-					            		if(e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Refueled) || 
-					            				e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Drop))
-					            		{
-					            			/*VehicleFueling vf = new VehicleFueling();
-					            			vf.setVehicle(v);
-					            			vf.setCaptured_dt(e.getEventTime().getTime());
-						            		vf.setCrt_dt(new Date());
-						            		vf.setOdometer(e.getDistance());
-						            		vf.setFuelLevel(e.getEventFinalValue());
-						            		vf.setAmt(e.getEventValue());
-						            		vf.setLitres(e.getEventFinalValue() - e.getEventInitValue());
-						            		vf.setLocation(e.getAddress());
-						            		
-						            		gDAO.save(vf);*/
-						            		
-						            		if(e.getEventType().getValue().equals(UnitEventEEvent.Fuel_Refueled))
-						            		{
-						            			// TODO: send email alert here
-						            		}
-						            		
-						            		if(e.getEventFinalValue() == 0)
-						            		{
-						            			// TODO: alert here, empty tank
-						            		}
-					            		}
+					            		VehicleLocationData vld = new VehicleLocationData();
+					            		vld.setVehicle(v);
+					            		vld.setActive(true);
+					            		vld.setAddress(address);
+					            		vld.setCaptured_dt(tranTimeCal.getTime());
+					            		vld.setCrt_dt(new Date());
+					            		vld.setLat(Double.parseDouble(latitude));
+					            		vld.setLon(Double.parseDouble(longitude));
+					            		checkQ = gDAO.createQuery("Select e from VehicleLocationData e where e.vehicle = :vehicle and e.active=:active");
+	                                    checkQ.setParameter("vehicle", vld.getVehicle());
+	                                    checkQ.setParameter("active", true);
+	                                    try
+	                                    {
+	                                        @SuppressWarnings("rawtypes")
+	                                        List checkObj = checkQ.getResultList();
+	                                        if(checkObj != null && checkObj.size() > 0)
+	                                        {
+	                                        	for(Object vldObj : checkObj)
+	                                        	{
+	                                        		if(vldObj instanceof VehicleLocationData)
+	                                        		{
+	                                        			VehicleLocationData vld_old = (VehicleLocationData)vldObj;
+	                                        			vld_old.setActive(false);
+	                                        			gDAO.update(vld_old);
+	                                        		}
+	                                        	}
+	                                        }
+	                                    }
+	                                    catch(Exception ex)
+	                                    {
+	                                        ex.printStackTrace();
+	                                    }
+	                                    gDAO.save(vld);
 					            	}
-								}
-								gDAO.commit();
-								logger.info("Commited database storage transaction for the downloaded events");
-					    	}
-							catch(Exception ex)
-					    	{
-					    		gDAO.rollback();
-					    		logger.log(Level.SEVERE, "Persist failed for galoli event record. " + ex);
-					    	}
-							finally
-							{
-								gDAO.destroy();
-								logger.info("Closed database connection.");
-							}
-						}
-					}
-				}
-				catch(ServiceException ex)
-            	{
-					ex.printStackTrace();
+                                }
+	                        	gDAO.commit();
+	                        	gDAO.destroy();
+								logger.info("Commited database storage transaction for the downloaded tracker realtime data");
+	                        }
+	                    }
+                	}
 				}
             	catch(RemoteException ex)
             	{
 					ex.printStackTrace();
 				}
+				catch (MalformedURLException e)
+				{
+					e.printStackTrace();
+				}
+				catch (ProtocolException e)
+				{
+					e.printStackTrace();
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
+				}
+				catch (ParseException e)
+				{
+					e.printStackTrace();
+				}
 			}
 		};
 		
-		//Calendar c = Calendar.getInstance();
-    	//trackerTimer.scheduleAtFixedRate(trackerTask, c.getTime(), 1000 * 60 * tracker_interval); // every 5 minutes after first call
+		//trackerEventTimer.scheduleAtFixedRate(trackerEventTask, new Date(), 1000 * 60 * 5); // every 5 minutes after first call
+		//trackerRealTimeTimer.scheduleAtFixedRate(trackerRealTimeTask, new Date(), 1000 * 60 * 1); // every 1 minutes after first call
 	}
 	
 	public String getYear()
@@ -373,7 +706,7 @@ public class ApplicationMBean implements Serializable
 			{
 				Date now = new Date();
 				boolean change = false;
-				if(e.getLic_start_dt().before(now) && e.getLic_end_dt().after(now) && !e.isActive() && !e.isExpired())
+				if(e.getLic_start_dt() != null && e.getLic_start_dt().before(now) && e.getLic_end_dt() != null && e.getLic_end_dt().after(now) && !e.isActive() && !e.isExpired())
 				{
 					e.setActive(true);
 					e.setExpired(false);
@@ -408,8 +741,9 @@ public class ApplicationMBean implements Serializable
 	{
 		GeneralDAO gDAO = new GeneralDAO();
 		
-		Query q = gDAO.createQuery("Select e from CorporateTrip e where e.approvalStatus=:approvalStatus and e.tripStatus=:tripStatus and e.departureDateTime < :nowDateTime");
+		Query q = gDAO.createQuery("Select e from CorporateTrip e where e.approvalStatus=:approvalStatus and e.approvalStatus2=:approvalStatus2 and e.tripStatus=:tripStatus and e.departureDateTime < :nowDateTime");
 		q.setParameter("approvalStatus", "APPROVED");
+		q.setParameter("approvalStatus2", "APPROVED");
 		q.setParameter("tripStatus", "AWAITING");
 		q.setParameter("nowDateTime", new Date());
 		
@@ -509,6 +843,73 @@ public class ApplicationMBean implements Serializable
 			}
 			gDAO.commit();
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void checkDisposableVehicles()
+	{
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Object pObjs = gDAO.findAll("Partner");
+		if(pObjs != null)
+		{
+			Vector<Partner> partners = (Vector<Partner>)pObjs;
+			for(Partner p : partners)
+			{
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("active", true);
+				params.put("partner", p);
+				
+				Object objs = gDAO.search("Vehicle", params);
+				if(objs != null)
+				{
+					Vector<Vehicle> vehicles = (Vector<Vehicle>)objs;
+					for(Vehicle v : vehicles)
+					{
+						if(!v.isDisposalAlertSent() && v.getFleet() != null && v.getFleet().getVehiclesActiveMonths() > 0)
+						{
+							if(v.getAgeInMonths() > 0 && v.getAgeInMonths() >= v.getFleet().getVehiclesActiveMonths())
+							{
+								if(v.getAssignee() != null)
+								{
+									params = new Hashtable<String, Object>();
+									params.put("personel", v.getAssignee());
+									Object uObj = gDAO.search("PartnerUser", params);
+									PartnerUser u = null;
+									if(uObj != null)
+									{
+										Vector<PartnerUser> uList = (Vector<PartnerUser>)uObj;
+										if(uList.size() > 0)
+											u = uList.get(0);
+									}
+									if(u != null)
+									{
+										Notification n = new Notification();
+										n.setCrt_dt(new Date());
+										n.setNotified(false);
+										n.setSubject("Vehicle due for Disposal");
+										n.setUser(u);
+										n.setMessage("Vehicle: " + v.getRegistrationNo() + " is due for disposal!");
+										n.setPage_url("manage_vehicles.xhtml");
+										
+										gDAO.startTransaction();
+										gDAO.save(n);
+										
+										v.setDisposalAlertSent(true);
+										v.setDisposalStatus("TO-BE-DISPOSED");
+										gDAO.update(v);
+										
+										gDAO.commit();
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		gDAO.destroy();
 	}
 	
 	public String getRandomNumber()
@@ -872,7 +1273,7 @@ public class ApplicationMBean implements Serializable
 		logger.log(Level.INFO, "Saving module: 'Users Management'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		Module fleetManagement = new Module();
 		fleetManagement.setName("Fleets Management");
-		fleetManagement.setDisplay_name("Fleets");
+		fleetManagement.setDisplay_name("Fleet Group");
 		fleetManagement.setIcon_url("truck-2.png");
 		fleetManagement.setDescription("Fleets Management module consists of functions for managing your fleets.");
 		fleetManagement.setMain_page_url("fleet_management");
@@ -1321,6 +1722,25 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(function882);
 		logger.log(Level.INFO, "Saving function: 'Manage Assets'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
+		MFunction disposalRequest = new MFunction();
+		disposalRequest.setName("Request Disposal");
+		disposalRequest.setDescription("Request for disposal for various vehicles.");
+		disposalRequest.setPage_url("request_vdisposal");
+		disposalRequest.setModule(assetManagement);
+		disposalRequest.setActive(true);
+		disposalRequest.setCrt_dt(new Date());
+		gDAO.save(disposalRequest);
+		logger.log(Level.INFO, "Saving function: 'Disposal Request'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction disposalApproval = new MFunction();
+		disposalApproval.setName("Approve Disposal");
+		disposalApproval.setDescription("Approve / Deny requests for disposal requests.");
+		disposalApproval.setPage_url("approve_vdisposal");
+		disposalApproval.setModule(assetManagement);
+		disposalApproval.setActive(true);
+		disposalApproval.setCrt_dt(new Date());
+		gDAO.save(disposalApproval);
+		logger.log(Level.INFO, "Saving function: 'Disposal Approval'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MFunction function883 = new MFunction();
 		function883.setName("Manage Customers");
 		function883.setDescription("Manage your customers.");
@@ -1388,6 +1808,15 @@ public class ApplicationMBean implements Serializable
 		dtypeFunc.setCrt_dt(new Date());
 		gDAO.save(dtypeFunc);
 		logger.log(Level.INFO, "Saving function: 'Document Types'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		MFunction wtypeFunc = new MFunction();
+		wtypeFunc.setName("Driving Warning Types");
+		wtypeFunc.setDescription("Manage supported driving warning types.");
+		wtypeFunc.setPage_url("manage_warntypes");
+		wtypeFunc.setModule(appManagement);
+		wtypeFunc.setActive(true);
+		wtypeFunc.setCrt_dt(new Date());
+		gDAO.save(wtypeFunc);
+		logger.log(Level.INFO, "Saving function: 'Driving warning Types'..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		MFunction auditFunc = new MFunction();
 		auditFunc.setName("Audit Trail");
@@ -1714,6 +2143,22 @@ public class ApplicationMBean implements Serializable
 		gDAO.save(rf882);
 		logger.log(Level.INFO, "Mapping role-function: 882..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
+		MRoleFunction rf882_1 = new MRoleFunction();
+		rf882_1.setRole(adminRole);
+		rf882_1.setFunction(disposalRequest);
+		rf882_1.setCrt_dt(new Date());
+		rf882_1.setCreatedBy(adminUser);
+		gDAO.save(rf882_1);
+		logger.log(Level.INFO, "Mapping role-function: 882_1..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
+		MRoleFunction rf882_2 = new MRoleFunction();
+		rf882_2.setRole(adminRole);
+		rf882_2.setFunction(disposalApproval);
+		rf882_2.setCrt_dt(new Date());
+		rf882_2.setCreatedBy(adminUser);
+		gDAO.save(rf882_2);
+		logger.log(Level.INFO, "Mapping role-function: 882_2..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		
 		MRoleFunction rf883 = new MRoleFunction();
 		rf883.setRole(adminRole);
 		rf883.setFunction(function883);
@@ -1759,6 +2204,13 @@ public class ApplicationMBean implements Serializable
 		rf8.setCreatedBy(adminUser);
 		gDAO.save(rf8);
 		logger.log(Level.INFO, "Mapping role-function: doc type..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
+		rf8 = new MRoleFunction();
+		rf8.setRole(adminRole);
+		rf8.setFunction(wtypeFunc);
+		rf8.setCrt_dt(new Date());
+		rf8.setCreatedBy(adminUser);
+		gDAO.save(rf8);
+		logger.log(Level.INFO, "Mapping role-function: warning type..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
 		
 		rf8 = new MRoleFunction();
 		rf8.setRole(adminRole);
@@ -1798,7 +2250,7 @@ public class ApplicationMBean implements Serializable
 		rcusbook.setCreatedBy(adminUser);
 		gDAO.save(rcusbook);
 		logger.log(Level.INFO, "Mapping role-function: customer booking..." + ((gDAO.getMessage() != null && gDAO.getMessage().length() > 0) ? " Message: " + gDAO.getMessage() : "Done"));
-				
+		
 		// setup reports
 		Report r = new Report();
 		r.setModule("Users");
@@ -2055,6 +2507,79 @@ public class ApplicationMBean implements Serializable
 		mr.setRole(adminRole);
 		gDAO.save(mr);
 		
+		MDash dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("trackv");
+		dash.setDescription("To track some vehicles");
+		gDAO.save(dash);
+		MDashRole dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("duelics");
+		dash.setDescription("Notification for due licenses");
+		gDAO.save(dash);
+		dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("duemaints");
+		dash.setDescription("Notification for due maintenances");
+		gDAO.save(dash);
+		dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("recentexpenses");
+		dash.setDescription("Recent expenses analysis");
+		gDAO.save(dash);
+		dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("bookings");
+		dash.setDescription("Company personnel trip bookings");
+		gDAO.save(dash);
+		dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		dash = new MDash();
+		dash.setActive(true);
+		dash.setCrt_dt(new Date());
+		dash.setName("alerts");
+		dash.setDescription("MISC Alerts");
+		gDAO.save(dash);
+		dashRole = new MDashRole();
+		dashRole.setCreatedBy(adminUser);
+		dashRole.setCrt_dt(new Date());
+		dashRole.setDash(dash);
+		dashRole.setRole(adminRole);
+		gDAO.save(dashRole);
+		
 		PartnerUserRole adminUserRole = new PartnerUserRole();
 		adminUserRole.setRole(adminRole);
 		adminUserRole.setUser(adminUser);
@@ -2114,4 +2639,30 @@ public class ApplicationMBean implements Serializable
 		this.appSetup = appSetup;
 	}
 	
+	// convert InputStream to String
+    private static String getStringFromInputStream(InputStream is)
+    {
+    	BufferedReader br = null;
+    	StringBuilder sb = new StringBuilder();
+    	
+    	String line;
+    	try
+    	{
+    		br = new BufferedReader(new InputStreamReader(is));
+    		while ((line = br.readLine()) != null) {
+    			sb.append(line);
+    		}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	} finally {
+    		if (br != null) {
+    			try {
+    				br.close();
+    			} catch (IOException e) {
+    				e.printStackTrace();
+    			}
+    		}
+    	}
+    	return sb.toString();
+    }
 }

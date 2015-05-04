@@ -17,6 +17,7 @@ import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.ref.VehicleModel;
 import com.dexter.fms.model.ref.Vendor;
@@ -49,9 +50,14 @@ public class Vehicle implements Serializable
 	private Fleet fleet;
 	@ManyToOne
 	private Partner partner;
+	@ManyToOne
+	private PartnerPersonel assignee;
 	
 	private boolean active;
 	private String activeStatus;
+	
+	private boolean disposalAlertSent; // marked when alert for this vehicle to be disposed is already sent
+	private String disposalStatus; // Disposable status of this vehicle
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -70,7 +76,7 @@ public class Vehicle implements Serializable
 	@Transient
 	private boolean selected;
 	@Transient
-	private int age; // age in years, this should be purchased date - current date or should it be model year - cur year
+	private int age, ageInMonths; // age in years, this should be purchased date - current date or should it be model year - cur year
 	
 	@Transient
 	private VehicleLicense last_lic;
@@ -80,6 +86,8 @@ public class Vehicle implements Serializable
 	private BigDecimal maint_odometer;
 	@Transient
 	private VehicleRoutineMaintenance last_rout_maint;
+	@Transient
+	private VehicleRoutineMaintenanceSetup rout_setup;
 	
 	public Vehicle()
 	{}
@@ -188,6 +196,22 @@ public class Vehicle implements Serializable
 		this.activeStatus = activeStatus;
 	}
 
+	public boolean isDisposalAlertSent() {
+		return disposalAlertSent;
+	}
+
+	public void setDisposalAlertSent(boolean disposalAlertSent) {
+		this.disposalAlertSent = disposalAlertSent;
+	}
+
+	public String getDisposalStatus() {
+		return disposalStatus;
+	}
+
+	public void setDisposalStatus(String disposalStatus) {
+		this.disposalStatus = disposalStatus;
+	}
+
 	public Date getCrt_dt() {
 		return crt_dt;
 	}
@@ -258,6 +282,22 @@ public class Vehicle implements Serializable
 		this.age = age;
 	}
 
+	public int getAgeInMonths() {
+		if(getPurchaseDate() != null)
+		{
+			long day = (1000 * 60 * 60 * 24); // 24 hours in milliseconds
+			long time = day * 30; // 30 days for a month
+			
+			long pdtime = getPurchaseDate().getTime();
+			ageInMonths = Integer.parseInt(""+(pdtime/time));
+		}
+		return ageInMonths;
+	}
+
+	public void setAgeInMonths(int ageInMonths) {
+		this.ageInMonths = ageInMonths;
+	}
+
 	public VehicleLicense getLast_lic() {
 		return last_lic;
 	}
@@ -282,12 +322,30 @@ public class Vehicle implements Serializable
 		this.last_rout_maint = last_rout_maint;
 	}
 
+	public VehicleRoutineMaintenanceSetup getRout_setup() {
+		if(rout_setup == null)
+			rout_setup = new VehicleRoutineMaintenanceSetup();
+		return rout_setup;
+	}
+
+	public void setRout_setup(VehicleRoutineMaintenanceSetup rout_setup) {
+		this.rout_setup = rout_setup;
+	}
+
 	public BigDecimal getMaint_odometer() {
 		return maint_odometer;
 	}
 
 	public void setMaint_odometer(BigDecimal maint_odometer) {
 		this.maint_odometer = maint_odometer;
+	}
+
+	public PartnerPersonel getAssignee() {
+		return assignee;
+	}
+
+	public void setAssignee(PartnerPersonel assignee) {
+		this.assignee = assignee;
 	}
 	
 }

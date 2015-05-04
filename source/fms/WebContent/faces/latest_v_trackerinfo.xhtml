@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Tracker Info" action="#{dashboardBean.gotoPage('latest_v_trackerinfo', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -83,23 +82,23 @@
 				
 				<p:column sortBy="#{obj.trackerData.get(0).captured_dt}" headerText="Captured date">
 					<h:outputText value="#{obj.trackerData.get(0).captured_dt}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
-					<h:outputText value="N/A" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
 				<p:column headerText="Odometer" sortBy="#{obj.trackerData.get(0).odometer}">
 					<h:outputText value="#{obj.trackerData.get(0).odometer}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
-					<h:outputText value="N/A" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
-				<p:column headerText="Fuel Level" sortBy="#{obj.trackerData.get(0).fuelLevel}">
-					<h:outputText value="#{obj.trackerData.get(0).fuelLevel}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
-					<h:outputText value="N/A" />
+				<p:column headerText="Battery Volt." sortBy="#{obj.trackerData.get(0).batteryVoltage}">
+					<h:outputText value="#{obj.trackerData.get(0).batteryVoltage}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
 				<p:column headerText="Lon" sortBy="#{obj.trackerData.get(0).lon}">
 					<h:outputText value="#{obj.trackerData.get(0).lon}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
-					<h:outputText value="N/A" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
 				<p:column headerText="Lat" sortBy="#{obj.trackerData.get(0).lat}">
 					<h:outputText value="#{obj.trackerData.get(0).lat}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
-					<h:outputText value="N/A" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
 			</p:dataTable>
 		</p:outputPanel>

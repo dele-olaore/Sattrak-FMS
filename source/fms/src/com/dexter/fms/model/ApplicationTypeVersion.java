@@ -40,6 +40,8 @@ public class ApplicationTypeVersion implements Serializable
 	private Vector<Module> modules;
 	@Transient
 	private Vector<Report> reports;
+	@Transient
+	private Vector<MDash> dashs;
 	
 	public ApplicationTypeVersion()
 	{}
@@ -119,4 +121,15 @@ public class ApplicationTypeVersion implements Serializable
 	public void setReports(Vector<Report> reports) {
 		this.reports = reports;
 	}
+
+	public Vector<MDash> getDashs() {
+		if(dashs == null)
+			dashs = new Vector<MDash>();
+		return dashs;
+	}
+
+	public void setDashs(Vector<MDash> dashs) {
+		this.dashs = dashs;
+	}
+	
 }

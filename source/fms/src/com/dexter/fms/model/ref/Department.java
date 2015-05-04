@@ -28,6 +28,10 @@ public class Department implements Serializable
 	
 	@ManyToOne
 	private Partner partner;
+	@ManyToOne
+	private Division division;
+	@ManyToOne
+	private Subsidiary subsidiary;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -62,6 +66,14 @@ public class Department implements Serializable
 		this.partner = partner;
 	}
 
+	public Division getDivision() {
+		return division;
+	}
+
+	public void setDivision(Division division) {
+		this.division = division;
+	}
+
 	public Date getCrt_dt() {
 		return crt_dt;
 	}
@@ -76,6 +88,14 @@ public class Department implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public Subsidiary getSubsidiary() {
+		return subsidiary;
+	}
+
+	public void setSubsidiary(Subsidiary subsidiary) {
+		this.subsidiary = subsidiary;
 	}
 	
 }

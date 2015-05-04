@@ -1,0 +1,94 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Driving Warning Types</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Warning Types" action="#{dashboardBean.gotoPage('manage_warntypes', false)}" ajax="false" />
+    		</p:breadCrumb>
+		
+			<span style="float:right">
+			<p:commandLink value="New Driving Warning Type" onclick="dlg.show();"/>
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:dataTable id="warnTypesTable" var="obj" value="#{fleetBean.warnTypes}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available driving warning type(s)
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
+        			<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.description}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.description}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column headerText="" style="width: 10%">
+						<p:rowEditor rendered="#{not obj.systemObj}" />
+						<h:outputText value="Can't Edit" rendered="#{obj.systemObj}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newWarnTypeDialog" header="New Driving Warning Type" widgetVar="dlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+  		<h:outputLabel for="wtname" value="Name: *" />
+  		<p:inputText id="wtname" value="#{fleetBean.warnType.name}" />
+  		
+  		<h:outputLabel for="wtdesc" value="Description: " />
+		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="wtdesc" value="#{fleetBean.warnType.description}" rows="3" cols="30" counter="counter" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveWarnType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

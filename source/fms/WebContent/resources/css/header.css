@@ -300,10 +300,10 @@ header > div > div > div {
 
 /* ==================================================
  * 3) Header: Main
- *    The blue bar :)
+ *    The blue bar :) 60px;
  * ================================================== */
 #header_main {
-	height: 60px;
+	height: 150px;
 	border-top: 1px solid #7a9cc0;
 	border-bottom: 1px solid #04172b;
 	padding-top: 29px;

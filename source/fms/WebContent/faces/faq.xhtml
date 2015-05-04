@@ -1,0 +1,41 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">FAQ</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="FAQ" action="#{dashboardBean.gotoPage('faq', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td>
+			<p:outputPanel id="OPanel">
+				<p:accordionPanel multiple="true">
+					<p:tab title="What is FMS?">
+						Answer goes here...
+					</p:tab>
+					<p:tab title="Another question goes here?">
+						Answer goes here...
+					</p:tab>
+				</p:accordionPanel>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

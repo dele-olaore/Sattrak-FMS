@@ -11,14 +11,17 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Roles" action="#{dashboardBean.gotoPage('manage_roles', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
+		
+			<span style="float:right">
 			<p:commandLink value="New Role" action="#{dashboardBean.gotoPage('new_role', true)}" ajax="false" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -83,6 +86,12 @@
 					<f:setPropertyActionListener value="#{obj}" target="#{userBean.mrole}" />
 				</p:commandLink>
 			</p:column>
+			<p:column sortBy="#{obj.dashs.size()}" headerText="Dashs" style="width: 10%">
+				<h:outputText value="#{obj.dashs.size()} dash(s)" />
+				<p:commandLink value=" Edit" action="#{userBean.initRoleFunctionEdit}" icon="ui-icon-pencil" rendered="#{not obj.defaultRole}" oncomplete="editfunctionsdlg.show();">
+					<f:setPropertyActionListener value="#{obj}" target="#{userBean.mrole}" />
+				</p:commandLink>
+			</p:column>
 			<p:column headerText="Created">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
@@ -124,6 +133,16 @@
 			</f:facet>
 			<p:selectBooleanCheckbox value="#{obj.selected}" />
 			<h:outputText value="#{obj.title} (#{obj.module})" />
+		</p:dataGrid>
+		
+		<h:outputLabel for="rldahs" value="Role dash(s): " />
+		<p:dataGrid id="rldahs" var="obj" value="#{userBean.partnerDashs}"
+			columns="1">
+			<f:facet name="header">
+				Available dash(s) for partner
+			</f:facet>
+			<p:selectBooleanCheckbox value="#{obj.selected}" />
+			<h:outputText value="#{obj.name} (#{obj.description})" />
 		</p:dataGrid>
 		
 		</p:panelGrid>

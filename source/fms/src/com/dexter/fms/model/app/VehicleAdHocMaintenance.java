@@ -13,6 +13,7 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerUser;
+import com.dexter.fms.model.ref.Vendor;
 
 @Entity
 public class VehicleAdHocMaintenance implements Serializable
@@ -26,6 +27,8 @@ public class VehicleAdHocMaintenance implements Serializable
 	
 	@ManyToOne
 	private Vehicle vehicle;
+	@ManyToOne
+	private WorkOrder workOrder;
 	
 	@Temporal(TemporalType.DATE)
 	private Date start_dt;
@@ -37,6 +40,9 @@ public class VehicleAdHocMaintenance implements Serializable
 	
 	private boolean active;
 	private String status;
+	
+	@ManyToOne
+	private Vendor vendor;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -61,6 +67,14 @@ public class VehicleAdHocMaintenance implements Serializable
 
 	public void setVehicle(Vehicle vehicle) {
 		this.vehicle = vehicle;
+	}
+
+	public WorkOrder getWorkOrder() {
+		return workOrder;
+	}
+
+	public void setWorkOrder(WorkOrder workOrder) {
+		this.workOrder = workOrder;
 	}
 
 	public Date getStart_dt() {
@@ -117,6 +131,14 @@ public class VehicleAdHocMaintenance implements Serializable
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public Vendor getVendor() {
+		return vendor;
+	}
+
+	public void setVendor(Vendor vendor) {
+		this.vendor = vendor;
 	}
 
 	public Date getCrt_dt() {

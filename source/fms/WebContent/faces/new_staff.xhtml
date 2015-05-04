@@ -11,15 +11,14 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
-			<p:breadCrumb>  
+		<td align="left" colspan="2">
+			<p:breadCrumb>
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Personels" action="#{dashboardBean.gotoPage('manage_staffs', false)}" ajax="false" />
     			<p:menuitem value="New Personel" action="#{dashboardBean.gotoPage('new_staff', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -37,21 +36,31 @@
 	  		
 	  		<h:outputLabel for="staffdept" value="Department: " />
 			<p:selectOneMenu id="staffdept" value="#{userBean.personel_dept_id}">
-				<f:selectItem itemLabel="-- All --" itemValue="0" />
+				<f:selectItem itemLabel="" itemValue="0" />
 	  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffunit" />
 	  		</p:selectOneMenu>
 	  		
-	  		<h:outputText value="Department does not exist?" />
-	  		<p:commandLink id="newdplink" value="New Department" onclick="deptdlg.show();" />
+	  		<h:outputLabel for="staffisfleetmanager" value="Is Fleet Manager?: " />
+			<p:selectBooleanCheckbox id="staffisfleetmanager" value="#{userBean.personel.fleetManager}" />
+	  		
+	  		<h:outputLabel for="staffunit" value="Unit: " />
+			<p:selectOneMenu id="staffunit" value="#{userBean.personel_unit_id}">
+				<f:selectItem itemLabel="" itemValue="0" />
+	  			<f:selectItems value="#{userBean.deptUnits}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffrto" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="staffisuthead" value="Is Unit Head?: " />
+			<p:selectBooleanCheckbox id="staffisuthead" value="#{userBean.personel.unitHead}">
+				<p:ajax update="staffrto" />
+			</p:selectBooleanCheckbox>
 	  		
 	  		<h:outputLabel for="staffrg" value="Region: " />
 			<p:selectOneMenu id="staffrg" value="#{userBean.personel_region_id}">
-				<f:selectItem itemLabel="-- All --" itemValue="0" />
+				<f:selectItem itemLabel="" itemValue="0" />
 	  			<f:selectItems value="#{userBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 	  		</p:selectOneMenu>
-	  		
-	  		<h:outputText value="Region does not exist?" />
-	  		<p:commandLink value="New Region" onclick="regiondlg.show();" />
 	  		
 	  		<h:outputLabel for="staffid" value="Staff ID: " />
 			<p:inputText id="staffid" value="#{userBean.personel.staff_id}" />
@@ -65,8 +74,8 @@
 			<h:outputLabel for="staffphoto" value="Photo: " />
 			<p:fileUpload id="staffphoto" value="#{userBean.partnerPersonelPhoto}" mode="simple" />
 			
-			<h:outputLabel for="staffage" value="Age: " />
-			<p:inputText id="staffage" value="#{userBean.personel.age}" />
+			<h:outputLabel for="staffdob" value="Date of birth: " />
+			<p:calendar id="staffdob" value="#{userBean.personel.dob}" showOn="button" />
 			
 			<h:outputLabel for="staffphone" value="Phone: " />
 			<p:inputText id="staffphone" value="#{userBean.personel.phone}" />
@@ -88,6 +97,11 @@
 			
 			<h:outputLabel for="staffhdate" value="Hired date: " />
 			<p:calendar id="staffhdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.personel.hiredDate}" showOn="button" />
+			
+			<h:outputLabel for="staffrto" value="Reports To: " />
+			<p:selectOneMenu id="staffrto" value="#{userBean.reportsTo_id}">
+	  			<f:selectItems value="#{userBean.unitHead}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
 			
 			<h:outputLabel for="staffnok" value="Next of Kin: " />
 			<p:panelGrid id="staffnok" columns="2" cellpadding="5" >
@@ -118,7 +132,7 @@
 	  		<p:panelGrid id="stdrv" columns="2" cellpadding="5" >
 	  			<h:outputLabel for="stdrvinfo" value="" rendered="#{not userBean.personel.hasDriver}" />
 	  			<h:outputText id="stdrvinfo" value="Select the box above if this personel is a driver." rendered="#{not userBean.personel.hasDriver}" />
-	  		
+	  			
 	  			<h:outputLabel for="stdrvgrd" value="Grade: " rendered="#{userBean.personel.hasDriver}" />
 				<p:selectOneMenu id="stdrvgrd" value="#{userBean.driverGrade_id}" rendered="#{userBean.personel.hasDriver}">
 					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
@@ -126,7 +140,7 @@
 		  		</p:selectOneMenu>
 		  		<h:outputText value="Grade does not exist?" rendered="#{userBean.personel.hasDriver}" />
 	  			<p:commandLink id="newdglink" value="New Driver Grade" onclick="dgdlg.show();" rendered="#{userBean.personel.hasDriver}" />
-	  		
+	  			
 	  			<h:outputLabel for="stdrvlicno" value="Driver's license No.: " rendered="#{userBean.personel.hasDriver}" />
 	  			<p:inputText id="stdrvlicno" value="#{userBean.drvLicenseNo}" rendered="#{userBean.personel.hasDriver}" />
 	  			
@@ -143,7 +157,6 @@
 				<p:fileUpload id="stdrvcfile" value="#{userBean.certFile}" mode="simple" rendered="#{userBean.personel.hasDriver}" />
 	  			
 	  		</p:panelGrid>
-			
 			
 			<h:outputLabel for="staffisuser" value="Is User?: " />
 			<p:selectBooleanCheckbox id="staffisuser" value="#{userBean.personel.hasUser}">

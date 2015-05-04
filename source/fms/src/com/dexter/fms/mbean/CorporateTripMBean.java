@@ -22,11 +22,11 @@ import com.dexter.fms.model.Notification;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerPersonel;
+import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.CorporateTrip;
 import com.dexter.fms.model.app.CorporateTripPassenger;
 import com.dexter.fms.model.app.Fleet;
 import com.dexter.fms.model.app.Vehicle;
-import com.dexter.fms.model.app.VehicleDriver;
 import com.dexter.fms.model.app.VehicleStatusEnum;
 
 @ManagedBean(name = "ctripBean")
@@ -84,7 +84,7 @@ public class CorporateTripMBean implements Serializable
 				final StringBuilder body = new StringBuilder("<html><body>");
 				body.append("<p><strong>Dear ").append(getTrip().getStaff().getFirstname()).append("</strong></p>");
 				body.append("<p>Your trip completion request for Vehicle: <strong>").append(getTrip().getVehicle().getRegistrationNo()).append("</strong> has been <strong><font color=red>DENIED</font></strong>.</p>");
-				body.append("<p>Denied by: ").append(getTrip().getApproveUser().getPersonel().getFirstname()).append(" ").append(getTrip().getApproveUser().getPersonel().getLastname()).append("</p>");
+				body.append("<p>Denied by: ").append(getTrip().getApproveUser2().getPersonel().getFirstname()).append(" ").append(getTrip().getApproveUser2().getPersonel().getLastname()).append("</p>");
 				body.append("<p>Regards</br>Sattrak FMS Portal</p>");
 				body.append("</body></html>");
 				
@@ -225,7 +225,7 @@ public class CorporateTripMBean implements Serializable
 				notif.setNotified(false);
 				notif.setPage_url("attend_trips");
 				notif.setSubject("Trip Completion Request");
-				notif.setUser(getTrip().getApproveUser());
+				notif.setUser(getTrip().getApproveUser2());
 				notif.setMessage("A trip completion request has just been submitted for one of the trips you approved");
 				
 				gDAO.save(notif);
@@ -233,7 +233,7 @@ public class CorporateTripMBean implements Serializable
 				gDAO.commit();
 				
 				final StringBuilder body = new StringBuilder("<html><body>");
-				body.append("<p><strong>Dear ").append(getTrip().getApproveUser().getPersonel().getFirstname()).append("</strong></p>");
+				body.append("<p><strong>Dear ").append(getTrip().getApproveUser2().getPersonel().getFirstname()).append("</strong></p>");
 				body.append("<p>A trip completion request has just been submitted for one of the trips you approved. Details below: -</p>");
 				body.append("<p>Staff: ").append(getTrip().getStaff().getFirstname()).append(" ").append(getTrip().getStaff().getLastname()).append("</br>");
 				body.append("Vehicle: ").append(getTrip().getVehicle().getRegistrationNo()).append("</br>");
@@ -242,7 +242,7 @@ public class CorporateTripMBean implements Serializable
 				body.append("<p>Regards</br>Sattrak FMS Portal</p>");
 				body.append("</body></html>");
 				
-				final String email = getTrip().getApproveUser().getPersonel().getEmail();
+				final String email = getTrip().getApproveUser2().getPersonel().getEmail();
 				Thread notifyThread = new Thread()
 				{
 					public void run()
@@ -288,94 +288,62 @@ public class CorporateTripMBean implements Serializable
 		{
 			GeneralDAO gDAO = new GeneralDAO();
 			
-			getTrip().setAttendedDate(new Date());
-			getTrip().setApproveUser(dashBean.getUser());
-			boolean valid = true;
-			Vehicle v = null;
-			
-			Notification notif = new Notification();
-			notif.setCrt_dt(new Date());
-			notif.setNotified(false);
-			notif.setUser(getTrip().getCreatedBy());
-			notif.setPage_url("trip_request");
-			notif.setSubject("Trip Request - " + getTrip().getApprovalStatus());
-			notif.setMessage("Your trip request with Departure Time: " + getTrip().getDepartureDateTime() + " and Destignation: " + getTrip().getArrivalLocation() + " has been: " + getTrip().getApprovalStatus() + ".");
-			final StringBuilder body = new StringBuilder("<html><body>");
-			body.append("<p><strong>Dear ").append(getTrip().getStaff().getFirstname()).append("</strong></p>");
-			body.append("<p>Your trip request with Departure Time: <strong>").append(getTrip().getDepartureDateTime()).append("</strong> and Destignation: <strong>").append(getTrip().getArrivalLocation()).append("</strong> has been: <strong>").append((getTrip().getApprovalStatus().equals("APPROVED")) ? "<font color=green>" : "<font color=red>").append(getTrip().getApprovalStatus()).append("</font></strong></p>");
-			body.append("<p>Reasons: <strong>").append(getTrip().getApprovalReason()).append("</strong></p>");
-			if(getTrip().getApprovalStatus().equals("APPROVED"))
+			if(dashBean.getUser().getPersonel().isUnitHead())
 			{
-				getTrip().setTripStatus("AWAITING");
-				if(getVehicle_id() != null)
+				getTrip().setAttendedDate(new Date());
+				getTrip().setApproveUser(dashBean.getUser());
+				
+				Notification notif = new Notification(), notif2 = null;
+				notif.setCrt_dt(new Date());
+				notif.setNotified(false);
+				notif.setUser(getTrip().getCreatedBy());
+				notif.setPage_url("trip_request");
+				notif.setSubject("Trip Request - " + getTrip().getApprovalStatus() + " - By Unit Head");
+				notif.setMessage("Your trip request with Departure Time: " + getTrip().getDepartureDateTime() + " and Destignation: " + getTrip().getArrivalLocation() + " has been: " + getTrip().getApprovalStatus() + " by your unit head.");
+				final StringBuilder body = new StringBuilder("<html><body>");
+				body.append("<p><strong>Dear ").append(getTrip().getStaff().getFirstname()).append("</strong></p>");
+				body.append("<p>Your trip request with Departure Time: <strong>").append(getTrip().getDepartureDateTime()).append("</strong> and Destignation: <strong>").append(getTrip().getArrivalLocation()).append("</strong> has been: <strong>").append((getTrip().getApprovalStatus().equals("APPROVED")) ? "<font color=green>" : "<font color=red>").append(getTrip().getApprovalStatus()).append("</font></strong> by your unit head.</p>");
+				body.append("<p>Reasons: <strong>").append(getTrip().getApprovalReason()).append("</strong></p>");
+				if(getTrip().getApprovalStatus().equals("APPROVED"))
 				{
-					Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
-					if(vObj != null)
+					getTrip().setApprovalStatus2("PENDING");
+					body.append("<p>Your request now needs to be approved by the Fleet Manager.</p>");
+					
+					Query q = gDAO.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.fleetManager=:fleetManager");
+					q.setParameter("partner", dashBean.getUser().getPartner());
+					q.setParameter("active", true);
+					q.setParameter("fleetManager", true);
+					PartnerUser userToNotif = null;
+					Object objs = gDAO.search(q, 0);
+					if(objs != null)
 					{
-						v = (Vehicle)vObj;
-						if(v.isActive() && v.getActiveStatus().equals(VehicleStatusEnum.ACTIVE.getStatus()))
-						{
-							v.setActiveStatus(VehicleStatusEnum.BOOKED_FOR_TRIP.getStatus());
-							getTrip().setVehicle(v);
-							
-							body.append("<p>Resources for your trip: -</p>");
-							body.append("<p>Vehicle: ").append(v.getRegistrationNo()).append("<br/>");
-							
-							PartnerDriver pd = null;
-							Object dObj = gDAO.find(PartnerDriver.class, getDriver_id());
-							if(dObj != null)
-								pd = (PartnerDriver)dObj;
-							
-							if(pd != null)
-							{
-								getTrip().setDriver(pd);
-								body.append("Driver: ").append(getTrip().getDriver().getPersonel().getFirstname()).append(" ").append(getTrip().getDriver().getPersonel().getLastname()).append("</p>");
-								valid = true;
-							}
-							else
-							{
-								valid = false;
-								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please select a valid driver for the trip!");
-								FacesContext.getCurrentInstance().addMessage(null, msg);
-							}
-						}
-						else
-						{
-							valid = false;
-							msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "In-active vehicle selected!");
-							FacesContext.getCurrentInstance().addMessage(null, msg);
-						}
+						Vector<PartnerUser> usrs = (Vector<PartnerUser>)objs;
+						for(PartnerUser e : usrs)
+							userToNotif = e;
 					}
-					else
+					if(userToNotif != null)
 					{
-						// invalid vehicle selected
-						valid = false;
-						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Unknown vehicle selected!");
-						FacesContext.getCurrentInstance().addMessage(null, msg);
+						notif2 = new Notification();
+						notif2.setCrt_dt(new Date());
+						notif2.setNotified(false);
+						notif2.setUser(userToNotif);
+						notif2.setPage_url("attend_trips");
+						notif2.setSubject("Trip Request - " + getTrip().getApprovalStatus() + " - By Unit Head");
+						notif2.setMessage("You have a new trip request with Departure Time: " + getTrip().getDepartureDateTime() + " and Destignation: " + getTrip().getArrivalLocation() + " which has been: " + getTrip().getApprovalStatus() + " by the unit head.");
 					}
 				}
-				else
-				{
-					// must select a vehicle after approval for the trip
-					valid = false;
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Vehicle must be selected for a trip approval!");
-					FacesContext.getCurrentInstance().addMessage(null, msg);
-				}
-			}
-			body.append("<p>Your request was attended to by: -</p>");
-			body.append("<p>").append(getTrip().getApproveUser().getPersonel().getFirstname()).append(" ").append(getTrip().getApproveUser().getPersonel().getLastname()).append("</p>");
-			body.append("<p>Regards</br>Sattrak FMS Portal</p>");
-			body.append("</body></html>");
-			
-			if(valid && v != null)
-			{
+				body.append("<p>Your request was attended to by: -</p>");
+				body.append("<p>").append(getTrip().getApproveUser().getPersonel().getFirstname()).append(" ").append(getTrip().getApproveUser().getPersonel().getLastname()).append("</p>");
+				body.append("<p>Regards</br>Sattrak FMS Portal</p>");
+				body.append("</body></html>");
+				
 				gDAO.startTransaction();
 				boolean ret = gDAO.update(getTrip());
 				if(ret)
 				{
 					gDAO.save(notif);
-					
-					gDAO.update(v);
+					if(notif2 != null)
+						gDAO.save(notif2);
 					gDAO.commit();
 					
 					final String email = getTrip().getStaff().getEmail();
@@ -392,7 +360,7 @@ public class CorporateTripMBean implements Serializable
 							try
 							{
 								if(email != null)
-									Emailer.sendEmail("fms@sattrakservices.com", new String[]{email}, "FMS - Trip Request - " + apStatus, body.toString());
+									Emailer.sendEmail("fms@sattrakservices.com", new String[]{email}, "FMS - Trip Request - " + apStatus + " - By Unit Head", body.toString());
 							}
 							catch(Exception ex)
 							{
@@ -411,9 +379,139 @@ public class CorporateTripMBean implements Serializable
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Error occurred during save: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				
+				gDAO.destroy();
 			}
-			
-			gDAO.destroy();
+			else if(dashBean.getUser().getPersonel().isFleetManager())
+			{
+				getTrip().setAttendedDate2(new Date());
+				getTrip().setApproveUser2(dashBean.getUser());
+				
+				boolean valid = true;
+				Vehicle v = null;
+				
+				Notification notif = new Notification();
+				notif.setCrt_dt(new Date());
+				notif.setNotified(false);
+				notif.setUser(getTrip().getCreatedBy());
+				notif.setPage_url("trip_request");
+				notif.setSubject("Trip Request - " + getTrip().getApprovalStatus2() + " - By Fleet Manager");
+				notif.setMessage("Your trip request with Departure Time: " + getTrip().getDepartureDateTime() + " and Destignation: " + getTrip().getArrivalLocation() + " has been: " + getTrip().getApprovalStatus2() + " by the fleet manager.");
+				final StringBuilder body = new StringBuilder("<html><body>");
+				body.append("<p><strong>Dear ").append(getTrip().getStaff().getFirstname()).append("</strong></p>");
+				body.append("<p>Your trip request with Departure Time: <strong>").append(getTrip().getDepartureDateTime()).append("</strong> and Destignation: <strong>").append(getTrip().getArrivalLocation()).append("</strong> has been: <strong>").append((getTrip().getApprovalStatus2().equals("APPROVED")) ? "<font color=green>" : "<font color=red>").append(getTrip().getApprovalStatus2()).append("</font></strong></p>");
+				body.append("<p>Reasons: <strong>").append(getTrip().getApprovalReason2()).append("</strong></p>");
+				if(getTrip().getApprovalStatus2().equals("APPROVED"))
+				{
+					getTrip().setTripStatus("AWAITING");
+					if(getVehicle_id() != null)
+					{
+						Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
+						if(vObj != null)
+						{
+							v = (Vehicle)vObj;
+							if(v.isActive() && v.getActiveStatus().equals(VehicleStatusEnum.ACTIVE.getStatus()))
+							{
+								v.setActiveStatus(VehicleStatusEnum.BOOKED_FOR_TRIP.getStatus());
+								getTrip().setVehicle(v);
+								
+								body.append("<p>Resources for your trip: -</p>");
+								body.append("<p>Vehicle: ").append(v.getRegistrationNo()).append("<br/>");
+								
+								PartnerDriver pd = null;
+								Object dObj = gDAO.find(PartnerDriver.class, getDriver_id());
+								if(dObj != null)
+									pd = (PartnerDriver)dObj;
+								
+								if(pd != null)
+								{
+									getTrip().setDriver(pd);
+									body.append("Driver: ").append(getTrip().getDriver().getPersonel().getFirstname()).append(" ").append(getTrip().getDriver().getPersonel().getLastname()).append("</p>");
+									valid = true;
+								}
+								else
+								{
+									valid = false;
+									msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please select a valid driver for the trip!");
+									FacesContext.getCurrentInstance().addMessage(null, msg);
+								}
+							}
+							else
+							{
+								valid = false;
+								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "In-active vehicle selected!");
+								FacesContext.getCurrentInstance().addMessage(null, msg);
+							}
+						}
+						else
+						{
+							// invalid vehicle selected
+							valid = false;
+							msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Unknown vehicle selected!");
+							FacesContext.getCurrentInstance().addMessage(null, msg);
+						}
+					}
+					else
+					{
+						// must select a vehicle after approval for the trip
+						valid = false;
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Vehicle must be selected for a trip approval!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+				}
+				body.append("<p>Your request was attended to by: -</p>");
+				body.append("<p>").append(getTrip().getApproveUser2().getPersonel().getFirstname()).append(" ").append(getTrip().getApproveUser2().getPersonel().getLastname()).append("</p>");
+				body.append("<p>Regards</br>Sattrak FMS Portal</p>");
+				body.append("</body></html>");
+				
+				if(valid)
+				{
+					gDAO.startTransaction();
+					boolean ret = gDAO.update(getTrip());
+					if(ret)
+					{
+						gDAO.save(notif);
+						if(v != null)
+							gDAO.update(v);
+						gDAO.commit();
+						
+						final String email = getTrip().getStaff().getEmail();
+						final String apStatus = getTrip().getApprovalStatus2();
+						
+						setTrip(null);
+						setPendingTrips(null);
+						setOngoingTrips(null);
+						
+						Thread notifyThread = new Thread()
+						{
+							public void run()
+							{
+								try
+								{
+									if(email != null)
+										Emailer.sendEmail("fms@sattrakservices.com", new String[]{email}, "FMS - Trip Request - " + apStatus + " - Fleet Manager", body.toString());
+								}
+								catch(Exception ex)
+								{
+									ex.printStackTrace();
+								}
+							}
+						};
+						notifyThread.start();
+						
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Trip attended to successfully!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+					else
+					{
+						gDAO.rollback();
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Error occurred during save: " + gDAO.getMessage());
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+					}
+				}
+				
+				gDAO.destroy();
+			}
 		}
 		else
 		{
@@ -423,6 +521,7 @@ public class CorporateTripMBean implements Serializable
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void saveTripRequest()
 	{
 		if(getPartner() != null && getTrip().getDepartureDateTime() != null && getTrip().getDepartureLocation() != null &&
@@ -433,14 +532,112 @@ public class CorporateTripMBean implements Serializable
 			{
 				if(getTrip().getDepartureDateTime().before(getTrip().getEstimatedArrivalDateTime()))
 				{
+					GeneralDAO gDAO = new GeneralDAO();
+					PartnerUser userToNotif = null;
+					Object objs = null;
+					
 					getTrip().setPartner(getPartner());
 					getTrip().setCreatedBy(dashBean.getUser());
 					getTrip().setCrt_dt(new Date());
 					getTrip().setStaff(dashBean.getUser().getPersonel());
 					getTrip().setApprovalStatus("PENDING");
+					getTrip().setApprovalStatus2("PENDING");
 					
-					GeneralDAO gDAO = new GeneralDAO();
+					if(dashBean.getUser().getPersonel().getUnit() != null)
+					{
+						if(dashBean.getUser().getPersonel().isUnitHead())
+						{
+							getTrip().setApprovalStatus("APPROVED");
+							getTrip().setApprovalReason("Approved automatically by platform.");
+							getTrip().setAttendedDate(new Date());
+							getTrip().setApproveUser(dashBean.getUser());
+							
+							getTrip().setApprovalStatus2("PENDING");
+							
+							Query q = gDAO.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.fleetManager=:fleetManager");
+							q.setParameter("partner", dashBean.getUser().getPartner());
+							q.setParameter("active", true);
+							q.setParameter("fleetManager", true);
+							
+							objs = gDAO.search(q, 0);
+						}
+						else
+						{
+							Query q = gDAO.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.unit=:unit and e.personel.unitHead=:unitHead");
+							q.setParameter("partner", dashBean.getUser().getPartner());
+							q.setParameter("active", true);
+							q.setParameter("unit", dashBean.getUser().getPersonel().getUnit());
+							q.setParameter("unitHead", true);
+							
+							objs = gDAO.search(q, 0);
+							if(objs == null) // since no unit head, send to fleet manager directly, bypass the first level of approval
+							{
+								q = gDAO.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.fleetManager=:fleetManager");
+								q.setParameter("partner", dashBean.getUser().getPartner());
+								q.setParameter("active", true);
+								q.setParameter("fleetManager", true);
+								
+								objs = gDAO.search(q, 0);
+								if(objs != null)
+								{
+									getTrip().setApprovalStatus("APPROVED");
+									getTrip().setApprovalReason("Approved automatically by platform.");
+									getTrip().setAttendedDate(new Date());
+									getTrip().setApproveUser(dashBean.getUser());
+									
+									getTrip().setApprovalStatus2("PENDING");
+								}
+							}
+						}
+					}
+					else
+					{
+						getTrip().setApprovalStatus("APPROVED");
+						getTrip().setApprovalReason("User has no unit so approved automatically by platform.");
+						getTrip().setAttendedDate(new Date());
+						getTrip().setApproveUser(dashBean.getUser());
+						
+						getTrip().setApprovalStatus2("PENDING");
+						
+						Query q = gDAO.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.fleetManager=:fleetManager");
+						q.setParameter("partner", dashBean.getUser().getPartner());
+						q.setParameter("active", true);
+						q.setParameter("fleetManager", true);
+						
+						objs = gDAO.search(q, 0);
+					}
+					
+					if(objs != null)
+					{
+						Vector<PartnerUser> usrs = (Vector<PartnerUser>)objs;
+						for(PartnerUser e : usrs)
+							userToNotif = e;
+					}
+					
+					if(dashBean.getUser().getPersonel().isFleetManager())
+					{
+						getTrip().setApprovalStatus("APPROVED");
+						getTrip().setApprovalReason("Approved automatically by platform.");
+						getTrip().setAttendedDate(new Date());
+						getTrip().setApproveUser(dashBean.getUser());
+						
+						getTrip().setApprovalStatus2("PENDING");
+					}
+					
 					gDAO.startTransaction();
+					
+					if(userToNotif != null)
+					{
+						Notification notif = new Notification();
+						notif.setCrt_dt(new Date());
+						notif.setNotified(false);
+						notif.setUser(userToNotif);
+						notif.setPage_url("attend_trips");
+						notif.setSubject("Trip Request By " + getTrip().getStaff().getFirstname() + " " + getTrip().getStaff().getLastname());
+						notif.setMessage("You have a new trip request with Departure Time: " + getTrip().getDepartureDateTime() + " and Destignation: " + getTrip().getArrivalLocation());
+						gDAO.save(notif);
+					}
+					
 					if(gDAO.save(getTrip()))
 					{
 						System.out.println("Source Personel Size: " + getPersonelsList().getSource().size());
@@ -581,35 +778,53 @@ public class CorporateTripMBean implements Serializable
 
 	@SuppressWarnings("unchecked")
 	public Vector<CorporateTrip> getPendingTrips() {
-		boolean research = true;
-		if(pendingTrips == null || pendingTrips.size() == 0)
-			research = true;
-		else if(pendingTrips.size() > 0)
+		if(dashBean.getUser().getPersonel().isUnitHead() || dashBean.getUser().getPersonel().isFleetManager())
 		{
-			if(getPartner() != null)
+			boolean research = true;
+			if(pendingTrips == null || pendingTrips.size() == 0)
+				research = true;
+			else if(pendingTrips.size() > 0)
 			{
-				if(pendingTrips.get(0).getPartner().getId() == getPartner().getId())
-					research = false;
-			}
-		}
-		if(research)
-		{
-			pendingTrips = null;
-			if(getPartner() != null)
-			{
-				GeneralDAO gDAO = new GeneralDAO();
-				
-				Query q = gDAO.createQuery("Select e from CorporateTrip e where e.partner=:partner and e.approvalStatus=:approvalStatus and e.departureDateTime > :nowDateTime");
-				q.setParameter("partner", getPartner());
-				q.setParameter("approvalStatus", "PENDING");
-				q.setParameter("nowDateTime", new Date());
-				
-				Object tripsObj = gDAO.search(q, 0);
-				if(tripsObj != null)
+				if(getPartner() != null)
 				{
-					pendingTrips = (Vector<CorporateTrip>)tripsObj;
+					if(pendingTrips.get(0).getPartner().getId() == getPartner().getId())
+						research = false;
 				}
-				gDAO.destroy();
+			}
+			if(research)
+			{
+				pendingTrips = null;
+				if(getPartner() != null)
+				{
+					GeneralDAO gDAO = new GeneralDAO();
+					Object tripsObj = null;
+					if(dashBean.getUser().getPersonel().isUnitHead())
+					{
+						Query q = gDAO.createQuery("Select e from CorporateTrip e where e.partner=:partner and e.staff.unit=:myunit and e.approvalStatus=:approvalStatus and e.departureDateTime > :nowDateTime");
+						q.setParameter("partner", getPartner());
+						q.setParameter("myunit", dashBean.getUser().getPersonel().getUnit());
+						q.setParameter("approvalStatus", "PENDING");
+						q.setParameter("nowDateTime", new Date());
+						
+						tripsObj = gDAO.search(q, 0);
+					}
+					else if(dashBean.getUser().getPersonel().isFleetManager())
+					{
+						Query q = gDAO.createQuery("Select e from CorporateTrip e where e.partner=:partner and e.approvalStatus2=:approvalStatus2 and e.approvalStatus=:approvalStatus and e.departureDateTime > :nowDateTime");
+						q.setParameter("partner", getPartner());
+						q.setParameter("approvalStatus", "APPROVED");
+						q.setParameter("approvalStatus2", "PENDING");
+						q.setParameter("nowDateTime", new Date());
+						
+						tripsObj = gDAO.search(q, 0);
+					}
+					
+					if(tripsObj != null)
+					{
+						pendingTrips = (Vector<CorporateTrip>)tripsObj;
+					}
+					gDAO.destroy();
+				}
 			}
 		}
 		return pendingTrips;

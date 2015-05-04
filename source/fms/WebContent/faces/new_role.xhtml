@@ -11,15 +11,14 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Roles" action="#{dashboardBean.gotoPage('manage_roles', false)}" ajax="false" />
     			<p:menuitem value="New Role" action="#{dashboardBean.gotoPage('new_role', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -65,6 +64,18 @@
 			
 				<p:selectBooleanCheckbox value="#{obj.selected}" />
 				<h:outputText value="#{obj.title} (#{obj.module})" />
+			
+			</p:dataGrid>
+			
+			<h:outputLabel for="rldahs" value="Role dash(s): " />
+			<p:dataGrid id="rldahs" var="obj" value="#{userBean.partnerDashs}"
+				columns="1">
+				<f:facet name="header">
+					Available dash(s) for partner
+				</f:facet>
+			
+				<p:selectBooleanCheckbox value="#{obj.selected}" />
+				<h:outputText value="#{obj.name} (#{obj.description})" />
 			
 			</p:dataGrid>
 			

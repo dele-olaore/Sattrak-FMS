@@ -11,14 +11,17 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Application Types" action="#{dashboardBean.gotoPage('manage_app_types', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
+		
+			<span style="float:right">
 			<p:commandLink value="New Application Type" onclick="apptdlg.show();"/><!-- <p:commandLink value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" /> onclick="dlg.show();" -->
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -102,12 +105,12 @@
 						On: <h:outputText value="#{obj4.crt_dt}" /><br/>
 						By: <h:outputText value="#{obj4.createdBy.personel.firstname} #{obj4.createdBy.personel.lastname}" /><br/>
 					</p:column>
-					<p:column headerText="Modules and Reports" style="width: 10%">
-						<p:commandLink ajax="false" value="#{obj4.modules.size()} module(s) and #{obj4.reports.size()} report(s) [Edit]" action="#{appTypeBean.initAppTypeEdit}">
+					<p:column headerText="Modules, Reports, Dashs" style="width: 10%">
+						<p:commandLink ajax="false" value="#{obj4.modules.size()} module(s), #{obj4.reports.size()} report(s), #{obj4.dashs.size()} dash(s) [Edit]" action="#{appTypeBean.initAppTypeVersionEdit}">
 							<f:setPropertyActionListener value="#{obj4}" target="#{appTypeBean.appTypeVersion}" />
 						</p:commandLink>
 					</p:column>
-					<p:column headerText="" style="width: 6%">
+					<p:column headerText="" style="width: 3%">
 						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
@@ -176,7 +179,20 @@
   			</f:facet>
   			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
   				<p:selectBooleanCheckbox value="#{mdule.selected}" />
-  				<h:outputText value="#{mdule.title})" />  
+  				<h:outputText value="#{mdule.title}" />  
+        	</p:panelGrid>
+  			
+  		</p:dataGrid>
+  		
+  		<h:outputLabel for="aptdashs" value="Dashs: " />
+  		<p:dataGrid id="aptdashs" var="mdash" value="#{appTypeBean.dashs}" columns="2"
+  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+  			rowsPerPageTemplate="20,40,60">
+  			<f:facet name="header">
+  			</f:facet>
+  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+  				<p:selectBooleanCheckbox value="#{mdash.selected}" />
+  				<h:outputText value="#{mdash.name}(#{mdash.description})" />  
         	</p:panelGrid>
   			
   		</p:dataGrid>

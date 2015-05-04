@@ -27,8 +27,12 @@ public class VehicleRoutineMaintenanceSetup implements Serializable
 	@ManyToOne
 	private Vehicle vehicle;
 	
-	private BigDecimal odometer;
-	private BigDecimal alert_odometer;
+	private BigDecimal last_m_odometer; // the last odometer the routine maintenance was done
+	private BigDecimal interval_odometer; // eg. at every 5000 KM
+	private BigDecimal alert_interval_odometer; // eg. at every 4500 KM
+	
+	private BigDecimal odometer; // the next odometer the routine maintenance should be done
+	private BigDecimal alert_odometer; // alert when the vehicles odometer gets to or greater than this value
 	
 	private boolean active;
 	
@@ -55,6 +59,30 @@ public class VehicleRoutineMaintenanceSetup implements Serializable
 
 	public void setVehicle(Vehicle vehicle) {
 		this.vehicle = vehicle;
+	}
+
+	public BigDecimal getLast_m_odometer() {
+		return last_m_odometer;
+	}
+
+	public void setLast_m_odometer(BigDecimal last_m_odometer) {
+		this.last_m_odometer = last_m_odometer;
+	}
+
+	public BigDecimal getInterval_odometer() {
+		return interval_odometer;
+	}
+
+	public void setInterval_odometer(BigDecimal interval_odometer) {
+		this.interval_odometer = interval_odometer;
+	}
+
+	public BigDecimal getAlert_interval_odometer() {
+		return alert_interval_odometer;
+	}
+
+	public void setAlert_interval_odometer(BigDecimal alert_interval_odometer) {
+		this.alert_interval_odometer = alert_interval_odometer;
 	}
 
 	public BigDecimal getOdometer() {

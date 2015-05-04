@@ -48,6 +48,26 @@
 			<from-outcome>pwreset</from-outcome>
 			<to-view-id>/faces/changePassword.xhtml</to-view-id>
 		</navigation-case>
+		
+		<navigation-case>
+		    <from-view-id>/faces/dashboard.xhtml</from-view-id>
+		    <action>dashboardBean.onDashLocSelect</action>
+			<from-outcome>dashboardBean.onDashLocSelect</from-outcome>
+			<to-view-id>/faces/dashboard.xhtml</to-view-id>
+		</navigation-case>
+		<navigation-case>
+		    <from-view-id>/faces/dashboard.xhtml</from-view-id>
+		    <action>dashboardBean.onDashDelSelect</action>
+			<from-outcome>dashboardBean.onDashDelSelect</from-outcome>
+			<to-view-id>/faces/dashboard.xhtml</to-view-id>
+		</navigation-case>
+		<navigation-case>
+		    <from-view-id>/faces/manage_v_locationinfo.xhtml</from-view-id>
+		    <action>fleetBean.onLocSelect</action>
+			<from-outcome>fleetBean.onLocSelect</from-outcome>
+			<to-view-id>/faces/manage_v_locationinfo.xhtml</to-view-id>
+		</navigation-case>
+		
 	</navigation-rule>
 	
 	<!-- Message.property file config -->

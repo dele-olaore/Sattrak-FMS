@@ -11,15 +11,14 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Personels" action="#{dashboardBean.gotoPage('manage_staffs', false)}" ajax="false" />
     			<p:menuitem value="Update Personel" action="#{dashboardBean.gotoPage('edit_staff', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -39,10 +38,26 @@
 			<p:selectOneMenu id="staffdept" value="#{userBean.personel_dept_id}">
 				<f:selectItem itemLabel="-- All --" itemValue="0" />
 	  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffunit" />
 	  		</p:selectOneMenu>
 	  		
 	  		<h:outputText value="Department does not exist?" />
 	  		<p:commandLink id="newdplink" value="New Department" onclick="deptdlg.show();" />
+	  		
+	  		<h:outputLabel for="staffunit" value="Unit: " />
+			<p:selectOneMenu id="staffunit" value="#{userBean.personel_unit_id}">
+				<f:selectItem itemLabel="" itemValue="0" />
+	  			<f:selectItems value="#{userBean.deptUnits}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffrto" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputText value="Unit does not exist?" />
+	  		<p:commandLink id="newutlink" value="New Unit" onclick="unitdlg.show();" />
+	  		
+	  		<h:outputLabel for="staffisuthead" value="Is Unit Head?: " />
+			<p:selectBooleanCheckbox id="staffisuthead" value="#{userBean.personel.unitHead}">
+				<p:ajax update="staffrto" />
+			</p:selectBooleanCheckbox>
 	  		
 	  		<h:outputLabel for="staffrg" value="Region: " />
 			<p:selectOneMenu id="staffrg" value="#{userBean.personel_region_id}">
@@ -65,8 +80,8 @@
 			<h:outputLabel for="staffphoto" value="Photo: " />
 			<p:fileUpload id="staffphoto" value="#{userBean.partnerPersonelPhoto}" mode="simple" />
 			
-			<h:outputLabel for="staffage" value="Age: " />
-			<p:inputText id="staffage" value="#{userBean.personel.age}" />
+			<h:outputLabel for="staffdob" value="Date of birth: " />
+			<p:calendar id="staffdob" value="#{userBean.personel.dob}" showOn="button" />
 			
 			<h:outputLabel for="staffphone" value="Phone: " />
 			<p:inputText id="staffphone" value="#{userBean.personel.phone}" />
@@ -88,6 +103,21 @@
 			
 			<h:outputLabel for="staffhdate" value="Hired date: " />
 			<p:calendar id="staffhdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.personel.hiredDate}" showOn="button" />
+			
+			<h:outputLabel for="staffrto" value="Reports To: " />
+			<p:selectOneMenu id="staffrto" value="#{userBean.reportsTo_id}">
+	  			<f:selectItems value="#{userBean.unitHead}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+			
+			<h:outputLabel for="staffas" value="Availability Status: " />
+			<p:selectOneMenu id="staffas" value="#{userBean.personel.availabilityStatus}">
+				<f:selectItem itemLabel="AVAILABLE" itemValue="AVAILABLE" />
+	  			<f:selectItem itemLabel="ON LEAVE" itemValue="ON LEAVE" />
+	  			<f:selectItem itemLabel="SUSPENDED" itemValue="SUSPENDED" />
+	  			<f:selectItem itemLabel="NOT AVAILABLE" itemValue="NOT AVAILABLE" />
+	  			<f:selectItem itemLabel="SACKED" itemValue="SACKED" />
+	  			<f:selectItem itemLabel="RESIGNED" itemValue="RESIGNED" />
+	  		</p:selectOneMenu>
 			
 			<h:outputLabel for="staffnok" value="Next of Kin: " />
 			<p:panelGrid id="staffnok" columns="2" cellpadding="5" >

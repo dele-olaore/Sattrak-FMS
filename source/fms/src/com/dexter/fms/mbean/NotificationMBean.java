@@ -72,7 +72,7 @@ public class NotificationMBean implements Serializable
 		
 		if(!subFunction)
 			dashBean.setFunction_page(page);
-		return page;
+		return page+"?faces-redirect=true";
 	}
 	
 	public void resetNotifications()

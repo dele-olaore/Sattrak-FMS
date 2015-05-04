@@ -71,7 +71,7 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 		<p:dialog modal="true" widgetVar="statusDialog" header="Status" draggable="false" closable="false" showEffect="explode" hideEffect="explode">
 			<p:graphicImage value="/resources/images/ajax-loader.gif" />
 		</p:dialog>
-		
+		<ui:include src="/WEB-INF/layout/sessionTimeout.xhtml" />
 		<table width="100%">
 		<tr valign="top"><td height="600px">
 		<!-- Begin of #height-wrapper -->
@@ -83,7 +83,7 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 				<div id="header_toolbar">
 					<div class="container_12">
 						<h1 class="grid_8"><!--<img src="#{request.contextPath}/resources/images/satraklogo.jpg" alt="" width="212" height="51" /> - Fleet Management System-->
-							<img src="#{request.contextPath}/imageservlet/#{partnerBean.setting.id}:partner:#{appBean.randomNumber}" width="212" height="51" alt="logo" /> - #{dashboardBean.user.partner.name}
+							<img src="#{request.contextPath}/imageservlet/#{partnerBean.setting.id}-partner-#{appBean.randomNumber}" width="212" height="51" alt="logo" /> - #{dashboardBean.user.partner.name}
 						</h1>
 						<!-- Start of right part -->
 						<div class="grid_4">
@@ -131,12 +131,12 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 							<!-- End of small toolbar button -->
 							
 							<p:menubar rendered="#{dashboardBean.user != null and (dashboardBean.otherModulesKeys != null and dashboardBean.otherModulesKeys.size() > 0)}">
-								<p:submenu label="Other Modules">
+								<p:submenu label="More Modules">
 								<c:forEach items="${dashboardBean.otherModulesKeys.toArray()}" var="mdule">
 									<span>
 									<p:submenu label="#{dashboardBean.getModuleDisplayName(mdule)}">
 										<c:forEach items="${dashboardBean.getModuleFunctions(mdule).toArray()}" var="mfunc">
-											<p:menuitem value="#{mfunc.name}"  action="#{dashboardBean.gotoPage(mfunc.page_url, false)}" rendered="#{dashboardBean.user != null}" />
+											<p:menuitem value="#{mfunc.name}" ajax="false" action="#{dashboardBean.gotoPage(mfunc.page_url, false)}" rendered="#{dashboardBean.user != null}" />
 										</c:forEach>
 									</p:submenu>
 									</span>
@@ -148,7 +148,7 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 							<div class="toolbar_large">
 								<div class="toolbutton">
 									<div class="toolicon">
-										<img src="#{request.contextPath}/imageservlet/#{dashboardBean.user.id}:photo:#{appBean.randomNumber}" width="16" height="16" alt="user" />
+										<img src="#{request.contextPath}/imageservlet/#{dashboardBean.user.id}-photo-#{appBean.randomNumber}" width="16" height="16" alt="user" />
 										<!-- <img src="#{request.contextPath}/resources/img/icons/16x16/user.png" width="16" height="16" alt="user"/> -->
 									</div>
 									<div class="toolmenu">
@@ -214,7 +214,7 @@ paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 		<footer>
 			<div class="container_12">
 				<img src="#{request.contextPath}/resources/images/satraklogo.jpg" alt="" width="212" height="51" /> - Fleet Management System.
-				Copyright #{appBean.year}. Powered by Sattrak. All rights reserved.
+				Copyright #{appBean.year}. Powered by Sattrak. All rights reserved. Developed by IOX Technologies Ltd.
 				<div id="button_bar">
 					<ul>
 						<li>

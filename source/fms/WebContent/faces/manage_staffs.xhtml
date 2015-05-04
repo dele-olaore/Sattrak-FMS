@@ -11,16 +11,19 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Personels" action="#{dashboardBean.gotoPage('manage_staffs', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
+		
+			<span style="float:right">
 			<p:commandLink value="New Personel" action="#{dashboardBean.gotoPage('new_staff', true)}" ajax="false" />
 			<h:outputText value=" | " />
 			<p:commandLink value="Batch Load Personel" action="#{dashboardBean.gotoPage('batchload_personel', true)}" ajax="false" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -59,7 +62,7 @@
 			</f:facet>
 			
 			<p:column headerText="">
-				<img src="#{request.contextPath}/imageservlet/#{obj.id}:personel:#{appBean.randomNumber}" width="50" height="50" alt="personel" />
+				<img src="#{request.contextPath}/imageservlet/#{obj.id}-personel-#{appBean.randomNumber}" width="50" height="50" alt="personel" />
 			</p:column>
 			<p:column sortBy="#{obj.lastname}" headerText="Last name" filterBy="#{obj.lastname}" filterMatchMode="contains">
 				<h:outputText value="#{obj.lastname}" />
@@ -81,6 +84,9 @@
 			</p:column>
 			<p:column sortBy="#{obj.region.name}" headerText="Region" filterBy="#{obj.region.name}" filterMatchMode="contains" style="width: 5%">
 				<h:outputText value="#{obj.region.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.availabilityStatus}" headerText="Avail. Status" filterBy="#{obj.availabilityStatus}" filterMatchMode="contains">
+				<h:outputText value="#{obj.availabilityStatus}" />
 			</p:column>
 			<p:column sortBy="#{obj.hasUser}" headerText="User" style="width: 6%">
 				<h:outputText value="Yes" rendered="#{obj.hasUser}" />

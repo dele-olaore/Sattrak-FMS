@@ -1049,7 +1049,7 @@ public class ReportsMBean implements Serializable
 		setReport_page("/faces/"+page+".xhtml");
 		if(!subFunction)
 			dashBean.setFunction_page(page);
-		return "reports";
+		return "reports?faces-redirect=true";
 	}
 	
 	public Partner getPartner() {

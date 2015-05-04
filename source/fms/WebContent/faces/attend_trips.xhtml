@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
-			<p:breadCrumb>  
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Attend to Trips" action="#{dashboardBean.gotoPage('attend_trips', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -56,7 +55,7 @@
 							</p:column>
 							
 							<p:column headerText="Manifest" style="width:5%;">
-								<p:commandButton value="View" />
+								<p:commandButton value="View" onclick="alert('Under construction!');return false;" />
 							</p:column>
 							
 							<p:column headerText="" style="width:5%;">
@@ -111,7 +110,7 @@
 							
 						</p:dataTable>
 					</p:tab>
-					<p:tab id="completionTab" title="Completion request(s) [#{ctripBean.completionTripRequests.size()}]">
+					<p:tab id="completionTab" title="Completion request(s) [#{ctripBean.completionTripRequests.size()}]" rendered="#{dashboardBean.user.personel.fleetManager}">
 						<p:dataTable id="completionreqsTable" var="obj" value="#{ctripBean.completionTripRequests}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
@@ -151,6 +150,10 @@
 							</p:column>
 							
 							<p:column headerText="" style="width:5%;">
+								<p:commandButton value="Locate" onclick="alert('Under Construction!');return false;" />
+							</p:column>
+							
+							<p:column headerText="" style="width:5%;">
 								<p:commandButton value="Complete" action="#{ctripBean.completeTrip}" onclick="return confirm('Are you sure?');" update="completionreqsTable">
 									<f:setPropertyActionListener value="#{obj}" target="#{ctripBean.trip}" />
 								</p:commandButton>
@@ -174,6 +177,7 @@
 		<p:panelGrid id="display" columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">Request by: <h:outputText value="#{ctripBean.trip.staff.firstname} #{ctripBean.trip.staff.lastname}" /></f:facet>
 		
+		<p:panelGrid id="display1" columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.personel.unitHead and not dashboardBean.user.personel.fleetManager}">
 		<h:outputLabel for="appr" value="Approval type: *" />
   		<p:selectOneMenu id="appr" value="#{ctripBean.trip.approvalStatus}">
   			<f:selectItem itemLabel="APPROVE" itemValue="APPROVED" />
@@ -183,6 +187,21 @@
   		<h:outputLabel for="apprcmt" value="Approval comment: *" />
   		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
   		<p:inputTextarea id="apprcmt" value="#{ctripBean.trip.approvalReason}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		</p:panelGrid>
+  		
+  		<p:panelGrid id="display2" columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.personel.fleetManager}">
+		<h:outputLabel for="appr2" value="Approval type: *" />
+  		<p:selectOneMenu id="appr2" value="#{ctripBean.trip.approvalStatus2}">
+  			<f:selectItem itemLabel="APPROVE" itemValue="APPROVED" />
+  			<f:selectItem itemLabel="DECLINE" itemValue="DECLINED" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="apprcmt2" value="Approval comment: *" />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="apprcmt2" value="#{ctripBean.trip.approvalReason2}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
   		<h:outputText id="counter" />
   		</p:panelGrid>
   		
@@ -213,6 +232,8 @@
 		<p:selectOneMenu id="tdriver" value="#{ctripBean.driver_id}">
 			<f:selectItems value="#{ddBean.getPartnerDrivers(dashBean.user.partner.id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
 		</p:selectOneMenu>
+		
+  		</p:panelGrid>
   		
   		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{ctripBean.attendToTrip}" value="Save" icon="ui-icon-disk" style="margin:0"/>

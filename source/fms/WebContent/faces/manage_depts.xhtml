@@ -4,21 +4,24 @@
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/layout/other_layout.xhtml">
-<ui:define name="title">Manage Departments</ui:define>
+<ui:define name="title">Regions, Subsidiaries, Divisions, Departments and Units</ui:define>
 <ui:define name="content">
 	<br/><br/>
 	<h:form id="form">
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
-    			<p:menuitem value="Manage Departments" action="#{dashboardBean.gotoPage('manage_depts', false)}" ajax="false" />
+    			<p:menuitem value="Regions, Subsidiaries, Divisions, Departments and Units" action="#{dashboardBean.gotoPage('manage_depts', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			<p:commandLink value="New Department" onclick="dlg.show();" />
+		
+			<span style="float:right">
+			<p:commandLink value="New Region" onclick="regdlg.show();" /> | <p:commandLink value="New Subsidiary" onclick="subdlg.show();" /> | <p:commandLink value="New Division" onclick="divdlg.show();" /> | <p:commandLink value="New Department" onclick="dlg.show();" /> | <p:commandLink value="New Unit" onclick="unitdlg.show();" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -32,40 +35,185 @@
 	  		</p:selectOneMenu>
 	  		
 	  		<f:facet name="footer">
-	  			<p:commandButton ajax="true" update="deptsTable,:messages3" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  			<p:commandButton ajax="true" update=":form,:messages3" value="Search" icon="ui-icon-search" style="margin:0"/>
 	  		</f:facet>
 		</p:panelGrid>
-		<p:dataTable id="deptsTable" var="obj" value="#{userBean.depts}"
-			paginator="true" rows="10"
-			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
-			<f:facet name="header">
-				Available departments
-			</f:facet>
-			<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
-        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
-			
-			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
-				<p:cellEditor>
-					<f:facet name="output">
-						<h:outputText value="#{obj.name}" />
+		<p:tabView id="tabs" dynamic="true" cache="false">
+			<p:tab id="regTab" title="Regions [#{userBean.regions.size()}]">
+				<p:dataTable id="regionsTable" var="obj" value="#{userBean.regions}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available regions
 					</f:facet>
-					<f:facet name="input">
-						<p:inputText value="#{obj.name}" />
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+		        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:tab>
+			<p:tab id="divsTab" title="Divisions [#{userBean.divisions.size()}]">
+				<p:dataTable id="divsTable" var="obj" value="#{userBean.divisions}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available divisions
 					</f:facet>
-				</p:cellEditor>
-			</p:column>
-			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
-				<h:outputText value="#{obj.partner.name}" />
-			</p:column>
-			<p:column headerText="Created">
-				On: <h:outputText value="#{obj.crt_dt}" /><br/>
-				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
-			</p:column>
-			<p:column headerText="" style="width: 6%">
-				<p:rowEditor />
-			</p:column>
-		</p:dataTable>
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+		        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:tab>
+			<p:tab id="subsTab" title="Subsidiaries [#{userBean.subsidiaries.size()}]">
+				<p:dataTable id="subsTable" var="obj" value="#{userBean.subsidiaries}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available subsidiaries
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+		        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:tab>
+			<p:tab id="deptsTab" title="Departments [#{userBean.depts.size()}]">
+				<p:dataTable id="deptsTable" var="obj" value="#{userBean.depts}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available departments
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+		        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.division.name}" headerText="Division" filterBy="#{obj.division.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.division.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.subsidiary.name}" headerText="Subsidiary" filterBy="#{obj.subsidiary.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.subsidiary.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:tab>
+			<p:tab id="unitsTab" title="Units [#{userBean.units.size()}]">
+				<p:dataTable id="unitsTable" var="obj" value="#{userBean.units}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					<f:facet name="header">
+						Available units
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
+		        	<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+								<h:outputText value="#{obj.name}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.name}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.department.name}" headerText="Department" filterBy="#{obj.department.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.department.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.partner.name}" />
+					</p:column>
+					<p:column headerText="Created">
+						On: <h:outputText value="#{obj.crt_dt}" /><br/>
+						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+					</p:column>
+					<p:column headerText="" style="width: 6%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+			</p:tab>
+		</p:tabView>
 		</p:panel>
 		</td>
 		</tr>
@@ -77,9 +225,16 @@
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
-		<h:outputLabel for="deptptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
-		<p:selectOneMenu id="deptptn" value="#{userBean.partner_id2}" rendered="#{dashboardBean.user.partner.sattrak}">
-  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		<h:outputLabel for="divsel" value="Division: " />
+		<p:selectOneMenu id="divsel" value="#{userBean.division_id}">
+			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+  			<f:selectItems value="#{userBean.divisions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="subsel" value="Subsidiary: " />
+		<p:selectOneMenu id="subsel" value="#{userBean.subsidiary_id}">
+			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+  			<f:selectItems value="#{userBean.subsidiaries}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
   		</p:selectOneMenu>
   		
   		<h:outputLabel for="deptname" value="Name: *" />
@@ -92,6 +247,68 @@
 		</p:panelGrid>
 	</p:dialog>
 	
+	<p:dialog id="newSubDialog" header="New Subsidiary" widgetVar="subdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="subname" value="Name: *" />
+		<p:inputText id="subname" value="#{userBean.subsidiary.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(10)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newDivDialog" header="New Division" widgetVar="divdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="divname" value="Name: *" />
+		<p:inputText id="divname" value="#{userBean.division.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(11)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newUnitDialog" header="New Unit" widgetVar="unitdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="udept" value="Department: *" />
+		<p:selectOneMenu id="udept" value="#{userBean.department_id}">
+  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="utname" value="Name: *" />
+		<p:inputText id="utname" value="#{userBean.unit.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(12)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="newRegionDialog" header="New Region" widgetVar="regdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="regname" value="Name: *" />
+		<p:inputText id="regname" value="#{userBean.region.name}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(2)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
 	</h:form>
+	
 </ui:define>
 </ui:composition>

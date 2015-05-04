@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Setup Routine Maintenace" action="#{dashboardBean.gotoPage('setup_v_rmaintenance', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -70,15 +69,17 @@
 				<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
 					<h:outputText value="#{obj.partner.name}" />
 				</p:column>
+				<p:column headerText="Last Maint. Odometer">
+					<p:inputText value="#{obj.rout_setup.last_m_odometer}" />
+				</p:column>
+				<p:column headerText="Maint. Interval">
+					<p:inputText value="#{obj.rout_setup.interval_odometer}" />
+				</p:column>
+				<p:column headerText="Alert Interval">
+					<p:inputText value="#{obj.rout_setup.alert_interval_odometer}" />
+				</p:column>
 			</p:dataTable>
 			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-				
-				<h:outputLabel for="odom" value="Odometer: *" />
-				<p:inputText id="odom" value="#{fleetBean.routineSetup.odometer}" />
-				
-				<h:outputLabel for="alodom" value="Alert Odometer: *" />
-				<p:inputText id="alodom" value="#{fleetBean.routineSetup.alert_odometer}" />
-			
 				<f:facet name="footer">
 		  			<p:commandButton ajax="false" action="#{fleetBean.setupRMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 		  		</f:facet>

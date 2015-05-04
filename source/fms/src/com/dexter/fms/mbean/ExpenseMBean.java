@@ -2,6 +2,7 @@ package com.dexter.fms.mbean;
 
 import java.io.InputStream;
 import java.io.Serializable;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
@@ -15,6 +16,7 @@ import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
 import javax.persistence.Query;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 import org.primefaces.event.RowEditEvent;
 import org.primefaces.model.DefaultStreamedContent;
@@ -67,6 +69,9 @@ public class ExpenseMBean implements Serializable
 	private Vector<ExpenseRequest> myExpRequests, mySubExpRequests, pendingExpRequests;
 	private String approvalStatus; // PENDING, APPROVED, DENIED
 	private String approvalComment; // comment for approval status
+	
+	private Vector<PartnerPersonel> staffs;
+	private Vector<Vehicle> vehicles;
 	
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
@@ -146,6 +151,8 @@ public class ExpenseMBean implements Serializable
 	@SuppressWarnings("deprecation")
 	public void saveBatchExpRequest()
 	{
+		HttpServletRequest origRequest = (HttpServletRequest)FacesContext.getCurrentInstance().getExternalContext().getRequest();
+		
 		if(getMyExpRequests() != null && getMyExpRequests().size() > 0)
 		{
 			ArrayList<String> emails = new ArrayList<String>(), usernames = new ArrayList<String>();
@@ -193,7 +200,54 @@ public class ExpenseMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense request(s) save successfully!");
 				
-				if(emails.size() > 0)
+				if(usernames.size() > 0)
+				{
+					for(String username : usernames)
+					{
+						String firstname = "", table = "<table><tr><th>Type</th><th>Description</th><th>Amount</th><th>Expense Date</th><th>Request Date</th><th>Action</th></tr>";
+						String email = "";
+						for(ExpenseRequest expR : getMyExpRequests())
+						{
+							if(username.equals(expR.getApprovalUser().getUsername()))
+							{
+								firstname = expR.getApprovalUser().getPersonel().getFirstname();
+								email = expR.getApprovalUser().getPersonel().getEmail();
+								table += "<tr><td>" + expR.getType().getName() + "</td><td>" + expR.getRemarks() + "</td>";
+								table += "<td>" + NumberFormat.getNumberInstance().format(expR.getAmount()) + "</td>";
+								table += "<td>" + expR.getExpense_dt().toLocaleString() + "</td>";
+								table += "<td>" + expR.getRequest_dt().toLocaleString() + "</td>";
+								table += "<td><a href=\"" + origRequest.getContextPath() + "/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=1\">Approve</a> | <a href=\"" + origRequest.getContextPath() + "/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=0\">Deny</a></td></tr>";
+							}
+						}
+						table += "</table>";
+						
+						String html = "<html><body>";
+						
+						html += "<p><strong>Dear " + firstname + "</strong>";
+						html += "<p>Please be informed that personel: '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "' just submitted a batch expense request which requires your approval. You can approve or deny these requests below or log in to the FMS platform to provide more comments along with your decision.</p>";
+						html += "<p>" + table + "</p>";
+						html += "<p>Regards<br/>FMS Team</p>";
+						
+						html += "</body></html>";
+						final String[] to = new String[1];
+						to[0] = email;
+						final String subject = "Expense Request - Batch";
+						final String body = html;
+						Thread t = new Thread()
+						{
+							public void run()
+							{
+								try
+								{
+									Emailer.sendEmail("fms@sattrakservices.com", to, subject, body);
+								} catch(Exception ex){}
+							}
+						};
+						t.start();
+					}
+				}
+				
+				/*if(emails.size() > 0)
 				{
 					final String[] to = new String[emails.size()];
 					for(int i=0; i<to.length; i++)
@@ -217,7 +271,7 @@ public class ExpenseMBean implements Serializable
 						}
 					};
 					t.start();
-				}
+				}*/
 				
 				setMyExpRequests(null);
 				setPendingExpRequests(null);
@@ -1114,6 +1168,56 @@ public class ExpenseMBean implements Serializable
 
 	public StreamedContent getExpensesExcelTemplate() {
 		return expensesExcelTemplate;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerPersonel> getStaffs() {
+		if(staffs == null)
+		{
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				
+				Object vhsObj = gDAO.search("PartnerPersonel", params);
+				if(vhsObj != null)
+					staffs = (Vector<PartnerPersonel>)vhsObj;
+				
+				gDAO.destroy();
+			}
+		}
+		return staffs;
+	}
+
+	public void setStaffs(Vector<PartnerPersonel> staffs) {
+		this.staffs = staffs;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Vehicle> getVehicles() {
+		if(vehicles == null)
+		{
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				
+				Object vhsObj = gDAO.search("Vehicle", params);
+				if(vhsObj != null)
+					vehicles = (Vector<Vehicle>)vhsObj;
+				
+				gDAO.destroy();
+			}
+		}
+		return vehicles;
+	}
+
+	public void setVehicles(Vector<Vehicle> vehicles) {
+		this.vehicles = vehicles;
 	}
 
 	public DashboardMBean getDashBean() {

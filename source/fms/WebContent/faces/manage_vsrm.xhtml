@@ -1,0 +1,130 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Standard Routine Maintenance</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<p:dialog modal="true" widgetVar="statusDialog" header="Status" draggable="false" closable="false" resizable="false">
+		<p:graphicImage value="/resources/images/ajaxloadingbar.gif" />
+	</p:dialog>
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Standard Routine Maintenance" action="#{dashboardBean.gotoPage('manage_vsrm', false)}" ajax="false" />
+    		</p:breadCrumb>
+			
+			<span style="float:right">
+			<p:commandLink value="Insert VSRM" onclick="vsrmdlg.show();" />
+			<h:outputText value=" | " />
+			<p:commandLink value="Batch Load VSRM" action="#{dashboardBean.gotoPage('batchload_vsrms', true)}" ajax="false" />
+			<h:outputText value=" | " />
+			<p:commandLink value="Upload VSRM Manual" action="#{dashboardBean.gotoPage('upload_vsrms_manual', true)}" onclick="alert('Under Construction!');return false;" ajax="false" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vsrmList}"
+				paginator="true" rows="20"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+				<f:facet name="header">
+					Available Standard Routine Maintenance
+				</f:facet>
+				<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
+        		<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
+				
+				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.model.name} (#{obj.model.year})" />
+				</p:column>
+				<p:column sortBy="#{obj.odometer}" headerText="Odometer">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.odometer}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{obj.odometer}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column headerText="Maintenance Summary">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.description}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+					  		<p:inputTextarea value="#{obj.description}" rows="10" cols="70" counter="counter2" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
+					  		<h:outputText id="counter2" />
+					  		</p:panelGrid>
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column headerText="Created">
+					On: <h:outputText value="#{obj.crt_dt}" /><br/>
+					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+				</p:column>
+				<p:column headerText="" style="width: 3%">
+					<p:rowEditor />
+				</p:column>
+			</p:dataTable>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newVSRMDialog" header="Insert Vehicle Standard Routine Maintenance" widgetVar="vsrmdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel for="rlvmodel" value="Vehicle Model: *"/>
+		<p:selectOneMenu id="rlvmodel" value="#{fleetBean.vehicleModel_id}">
+			<f:selectItems value="#{fleetBean.allvmodels}" var="it" itemLabel="#{it.name} (#{it.year})" itemValue="#{it.id}" />
+  		</p:selectOneMenu>
+		
+  		<h:outputLabel for="vsrmodo" value="Odometer: *" />
+  		<p:inputText id="vsrmodo" value="#{fleetBean.vsrm.odometer}" />
+  		
+  		<h:outputLabel for="vsrmdesc" value="Maintenance Summary: *" />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="vsrmdesc" value="#{fleetBean.vsrm.description}" rows="10" cols="70" counter="counter" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.save(4)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

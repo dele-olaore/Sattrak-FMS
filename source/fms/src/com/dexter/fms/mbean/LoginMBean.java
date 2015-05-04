@@ -19,8 +19,10 @@ import javax.servlet.http.HttpServletRequest;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Audit;
+import com.dexter.fms.model.MDashRole;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
+import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
@@ -102,7 +104,7 @@ public class LoginMBean implements Serializable
 	
 	public String logout()
 	{
-		String ret = "index";
+		String ret = "index?faces-redirect=true";
 		
 		FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
 		
@@ -190,7 +192,7 @@ public class LoginMBean implements Serializable
 							
 							for(PartnerUserRole pur : dashBean.getUserRoles())
 							{
-								Query q = gDAO.createQuery("Select e from MRoleFunction e where e.role = :role order by e.function.displayIndex, e.function.name");
+								Query q = gDAO.createQuery("Select e from MRoleFunction e where e.role = :role and e.function.active=true order by e.function.displayIndex, e.function.name");
 								q.setParameter("role", pur.getRole());
 								//Hashtable<String, Object> params3 = new Hashtable<String, Object>();
 								//params3.put("role", pur.getRole());
@@ -214,6 +216,21 @@ public class LoginMBean implements Serializable
 										dashBean.setRolesReports(rflist);
 									else
 										dashBean.getRolesReports().addAll(rflist);
+								}
+								
+								Hashtable<String, Object> params4 = new Hashtable<String, Object>();
+								params4.put("role", pur.getRole());
+								params4.put("dash.active", true);
+								Object foundRoleDashs = gDAO.search("MDashRole", params4);
+								if(foundRoleDashs != null)
+								{
+									Vector<MDashRole> rflist = (Vector<MDashRole>)foundRoleDashs;
+									if(dashBean.getRolesDashs() == null)
+										dashBean.setRolesDashs(rflist);
+									else
+										dashBean.getRolesDashs().addAll(rflist);
+									
+									dashBean.updateDashsToShow();
 								}
 							}
 							
@@ -240,13 +257,26 @@ public class LoginMBean implements Serializable
 									dashBean.setPartnerLicense(e);
 							}
 							
+							if(foundUser.getPersonel().isHasDriver())
+							{
+								params2 = new Hashtable<String, Object>();
+								params2.put("personel", foundUser.getPersonel());
+								Object foundDrvs = gDAO.search("PartnerDriver", params2);
+								if(foundDrvs != null)
+								{
+									Vector<PartnerDriver> drvlist = (Vector<PartnerDriver>)foundDrvs;
+									for(PartnerDriver e : drvlist)
+										dashBean.setDriver(e);
+								}
+							}
+							
 							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Authentication successful!");
 							FacesContext.getCurrentInstance().addMessage(null, msg);
 							saveAudit("LOGIN: Authentication successful for user: " + getUsername() + ", Partner: " + foundUser.getPartner().getName());
 						
 							if(foundUser.isActivated())
 							{
-								ret = "dashboard";
+								ret = "dashboard?faces-redirect=true";
 							}
 							else
 							{

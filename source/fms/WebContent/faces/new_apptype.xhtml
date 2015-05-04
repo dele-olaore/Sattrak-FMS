@@ -11,30 +11,29 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Application Types" action="#{dashboardBean.gotoPage('manage_app_types', false)}" ajax="false" />
     			<p:menuitem value="New Application Type" action="#{dashboardBean.gotoPage('new_apptype', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
 		<td colspan="2">
 			<p:outputPanel id="OPanel">
 				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-					<f:facet name="header"></f:facet>
+					<f:facet name="header">New Version for ${appTypeBean.appType.name}</f:facet>
 					
-			  		<h:outputLabel for="aptname" value="Name: *" />
-			  		<p:inputText id="aptname" value="#{appTypeBean.appType.name}" />
+			  		<h:outputLabel for="aptvname" value="Version Name: *" />
+			  		<p:inputText id="aptvname" value="#{appTypeBean.appTypeVersion.versionName}" />
 			  		
-			  		<h:outputLabel for="aptdesc" value="Description: " />
+			  		<h:outputLabel for="aptvdesc" value="Description: " />
 			  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-			  		<p:inputTextarea id="aptdesc" value="#{appTypeBean.appType.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
-			  		<h:outputText id="counter" />
+			  		<p:inputTextarea id="aptvdesc" value="#{appTypeBean.appTypeVersion.description}" rows="3" cols="30" counter="counter3" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+			  		<h:outputText id="counter3" />
 			  		</p:panelGrid>
 			  		
 			  		<h:outputLabel for="aptmodules" value="Modules: " />
@@ -82,8 +81,20 @@
 			        	</p:panelGrid>
 			  		</p:dataGrid>
 			  		
+			  		<h:outputLabel for="aptdashs" value="Dashs: " />
+			  		<p:dataGrid id="aptdashs" var="dash" value="#{appTypeBean.dashs}" columns="2"
+			  			paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" 
+			  			rowsPerPageTemplate="20,40,60">
+			  			<f:facet name="header">
+			  			</f:facet>
+			  			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+			  				<p:selectBooleanCheckbox value="#{dash.selected}" />
+			  				<h:outputText value="#{dash.name} (#{dash.description})" />  
+			        	</p:panelGrid>
+			  		</p:dataGrid>
+			  		
 			  		<f:facet name="footer">
-			  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppType}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+			  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{appTypeBean.saveAppTypeVersion}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 			  		</f:facet>
 		  		</p:panelGrid>
 			</p:outputPanel>

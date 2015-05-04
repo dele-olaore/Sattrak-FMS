@@ -41,6 +41,8 @@ public class MRole implements Serializable
 	@Transient
 	private List<Report> reports;
 	@Transient
+	private List<MDash> dashs;
+	@Transient
 	private boolean selected;
 	
 	public MRole()
@@ -100,6 +102,14 @@ public class MRole implements Serializable
 
 	public void setReports(List<Report> reports) {
 		this.reports = reports;
+	}
+
+	public List<MDash> getDashs() {
+		return dashs;
+	}
+
+	public void setDashs(List<MDash> dashs) {
+		this.dashs = dashs;
 	}
 
 	public Date getCrt_dt() {

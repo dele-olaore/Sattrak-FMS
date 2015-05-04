@@ -8,15 +8,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.model.Advert;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerUser;
@@ -30,9 +29,7 @@ public class ImagesServlet extends HttpServlet
 {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String PERSISTENCE_UNIT_NAME = "fms";
-    private static EntityManagerFactory factory;
-    private EntityManager em;
+	//private final String PERSISTENCE_UNIT_NAME = "fms";
     
     final Logger logger = Logger.getLogger("fms-ImagesServlet");
 	
@@ -52,13 +49,20 @@ public class ImagesServlet extends HttpServlet
 	{
 		try
 		{
-			factory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
-			em = factory.createEntityManager();
-			
 			String details = String.valueOf(request.getPathInfo().substring(1)); // Gets string that goes after "/imageservlet/".
 			
-			String r_id = details.split(":")[0];
-			String photo = details.split(":")[1];
+			String r_id = "", photo="";
+			if(details.indexOf(":")>=0)
+			{
+				r_id = details.split(":")[0];
+				photo = details.split(":")[1];
+			}
+			else if(details.indexOf("-")>=0)
+			{
+				r_id = details.split("-")[0];
+				photo = details.split("-")[1];
+			}
+			
 			Long id = 0L;
 			try
 			{
@@ -71,32 +75,75 @@ public class ImagesServlet extends HttpServlet
 				
 				byte[] data = null;
 				
+				GeneralDAO gDAO = new GeneralDAO();
 				if(photo.equalsIgnoreCase("photo"))
 				{
-					PartnerUser u = em.find(PartnerUser.class, id);
-					if(u != null && u.getPersonel() != null && u.getPersonel().getPhoto() != null)
+					try
 					{
-						data = u.getPersonel().getPhoto();
-					}
+						Object obj = gDAO.find(PartnerUser.class, id);
+						if(obj != null)
+						{
+							PartnerUser u = (PartnerUser)obj;
+							if(u != null && u.getPersonel() != null && u.getPersonel().getPhoto() != null)
+							{
+								data = u.getPersonel().getPhoto();
+							}
+						}
+					} catch(Exception ex){}
 				}
 				else if(photo.equalsIgnoreCase("personel"))
 				{
-					PartnerPersonel pp = em.find(PartnerPersonel.class, id);
-					if(pp != null && pp.getPhoto() != null)
-						data = pp.getPhoto();
+					try
+					{
+						Object obj = gDAO.find(PartnerPersonel.class, id);
+						if(obj != null)
+						{
+							PartnerPersonel pp = (PartnerPersonel)obj;
+							if(pp != null && pp.getPhoto() != null)
+								data = pp.getPhoto();
+						}
+					} catch(Exception ex){}
 				}
 				else if(photo.equalsIgnoreCase("vparam"))
 				{
-					VehicleParameters vps = em.find(VehicleParameters.class, id);
-					if(vps != null && vps.getPhoto() != null)
-						data = vps.getPhoto();
+					try
+					{
+						Object obj = gDAO.find(VehicleParameters.class, id);
+						if(obj != null)
+						{
+							VehicleParameters vps = (VehicleParameters)obj;
+							if(vps != null && vps.getPhoto() != null)
+								data = vps.getPhoto();
+						}
+					} catch(Exception ex){}
 				}
 				else if(photo.equalsIgnoreCase("partner"))
 				{
-					PartnerSetting ps = em.find(PartnerSetting.class, id);
-						if(ps != null && ps.getLogo() != null)
-							data = ps.getLogo();
+					try
+					{
+						Object obj = gDAO.find(PartnerSetting.class, id);
+						if(obj != null)
+						{
+							PartnerSetting ps = (PartnerSetting)obj;
+								if(ps != null && ps.getLogo() != null)
+									data = ps.getLogo();
+						}
+					} catch(Exception ex){}
 				}
+				else if(photo.equalsIgnoreCase("advert"))
+				{
+					try
+					{
+						Object obj = gDAO.find(Advert.class, id);
+						if(obj != null)
+						{
+							Advert ad = (Advert)obj;
+							if(ad != null && ad.getContent() != null)
+								data = ad.getContent();
+						}
+					} catch(Exception ex){}
+				}
+				gDAO.destroy();
 				
 				if(data != null)
 				{
@@ -131,6 +178,10 @@ public class ImagesServlet extends HttpServlet
 						response.setHeader("Content-Type", getServletContext().getMimeType("image/jpg"));
 				        response.setHeader("Content-Disposition", "inline; filename=\"logo\"");
 					}
+					else if(photo.equalsIgnoreCase("advert"))
+					{
+						// TODO: Maybe we should put a default advert here
+					}
 					else
 					{
 						defaultIcon = new File(request.getRealPath("/resources/img/icons/16x16/user.png"));
@@ -162,9 +213,6 @@ public class ImagesServlet extends HttpServlet
 			{
 				ex.printStackTrace();
 			}
-			
-			em.flush();
-			em.close();
 		}
 		catch(Exception e){}
 	}

@@ -27,6 +27,8 @@ public class VehicleRoutineMaintenance implements Serializable
 	
 	@ManyToOne
 	private Vehicle vehicle;
+	@ManyToOne
+	private WorkOrder workOrder;
 	
 	private BigDecimal odometer;
 	
@@ -68,6 +70,14 @@ public class VehicleRoutineMaintenance implements Serializable
 
 	public void setVehicle(Vehicle vehicle) {
 		this.vehicle = vehicle;
+	}
+
+	public WorkOrder getWorkOrder() {
+		return workOrder;
+	}
+
+	public void setWorkOrder(WorkOrder workOrder) {
+		this.workOrder = workOrder;
 	}
 
 	public BigDecimal getOdometer() {

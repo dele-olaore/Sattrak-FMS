@@ -1,6 +1,7 @@
 package com.dexter.fms.model.app;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -47,6 +48,7 @@ public class VehicleAccident implements Serializable
 	private Date dateReported;
 	@Temporal(TemporalType.DATE)
 	private Date dateReleased;
+	private BigDecimal policeReportCost;
 	
 	private boolean active;
 	
@@ -61,7 +63,7 @@ public class VehicleAccident implements Serializable
 	private PartnerUser approvalUser;
 	
 	private byte[] accidentPhoto;
-	private byte[] document;
+	private byte[] document, document2, document3;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -184,6 +186,14 @@ public class VehicleAccident implements Serializable
 		this.dateReleased = dateReleased;
 	}
 
+	public BigDecimal getPoliceReportCost() {
+		return policeReportCost;
+	}
+
+	public void setPoliceReportCost(BigDecimal policeReportCost) {
+		this.policeReportCost = policeReportCost;
+	}
+
 	public boolean isActive() {
 		return active;
 	}
@@ -262,6 +272,22 @@ public class VehicleAccident implements Serializable
 
 	public void setDocument(byte[] document) {
 		this.document = document;
+	}
+
+	public byte[] getDocument2() {
+		return document2;
+	}
+
+	public void setDocument2(byte[] document2) {
+		this.document2 = document2;
+	}
+
+	public byte[] getDocument3() {
+		return document3;
+	}
+
+	public void setDocument3(byte[] document3) {
+		this.document3 = document3;
 	}
 
 	public Date getCrt_dt() {

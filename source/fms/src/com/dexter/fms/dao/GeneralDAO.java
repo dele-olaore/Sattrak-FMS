@@ -9,6 +9,9 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
 
+import org.eclipse.persistence.config.HintValues;
+import org.eclipse.persistence.config.QueryHints;
+
 public class GeneralDAO
 {
 	private static final String PERSISTENCE_UNIT_NAME = "fms";
@@ -79,6 +82,7 @@ public class GeneralDAO
 	public Object findAll(String classname)
 	{
 		Query q = em.createQuery("Select e from " + classname + " e");
+		q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		return q.getResultList();
 	}
 	
@@ -89,19 +93,30 @@ public class GeneralDAO
 	
 	public Object search(Query q, int count)
 	{
-		if(count > 0)
+		Object ret = null;
+		try
 		{
-			if(count == 1)
-				return q.getSingleResult();
+			q.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			if(count > 0)
+			{
+				if(count == 1)
+					ret = q.getSingleResult();
+				else
+					ret = q.setMaxResults(count).getResultList();
+			}
 			else
-				return q.setMaxResults(count).getResultList();
+				ret = q.getResultList();
 		}
-		else
-			return q.getResultList();
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return ret;
 	}
 	
 	public Object search(String classname, Hashtable<String, Object> params)
 	{
+		Object ret = null;
 		StringBuilder strBuilder = new StringBuilder("Select e from " + classname + " e");
 		if(params.size() > 0)
 		{
@@ -126,12 +141,23 @@ public class GeneralDAO
 				i+=1;
 			}
 		}
-		return q.getResultList();
+		try
+		{
+			q.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			ret = q.getResultList();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		return ret;
 	}
 	
 	public Object runQuery(String query)
 	{
 		Query q = em.createQuery(query);
+		q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		return q.getResultList();
 	}
 	

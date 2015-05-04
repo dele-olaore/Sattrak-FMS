@@ -22,10 +22,12 @@ import org.primefaces.model.UploadedFile;
 import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.model.ApplicationTypeDash;
 import com.dexter.fms.model.ApplicationTypeFunction;
 import com.dexter.fms.model.ApplicationTypeModule;
 import com.dexter.fms.model.ApplicationTypeReport;
 import com.dexter.fms.model.ApplicationTypeVersion;
+import com.dexter.fms.model.MDashRole;
 import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
@@ -37,6 +39,7 @@ import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
 import com.dexter.fms.model.app.Fleet;
+import com.dexter.fms.model.ref.Division;
 
 @ManagedBean(name = "partnerBean")
 @SessionScoped
@@ -262,6 +265,7 @@ public class PartnerMBean implements Serializable
 						setAppTypeVersion_id(null);
 						setSubStdt(null);
 						setPartners(null);
+						setSubscription(null);
 					}
 					else
 					{
@@ -338,6 +342,70 @@ public class PartnerMBean implements Serializable
 							for(MRoleReport e : mrrList)
 							{
 								gDAO.remove(e);
+							}
+						}
+						// clear the previous dashs attached to the main role of the partner
+						params = new Hashtable<String, Object>();
+						params.put("role", role.getRole());
+						Object mdrObj = gDAO.search("MDashRole", params);
+						if(mdrObj != null)
+						{
+							Vector<MDashRole> mdrList = (Vector<MDashRole>)mdrObj;
+							for(MDashRole e : mdrList)
+							{
+								gDAO.remove(e);
+							}
+						}
+						
+						// now attach the dashs from the subscription's app type version to the role
+						params = new Hashtable<String, Object>();
+						params.put("appTypeVersion", sub.getAppTypeVersion());
+						Object asrObj2 = gDAO.search("ApplicationTypeDash", params);
+						if(asrObj2 != null)
+						{
+							Vector<ApplicationTypeDash> mdsList = (Vector<ApplicationTypeDash>)asrObj2;
+							for(ApplicationTypeDash e : mdsList)
+							{
+								MDashRole mrr = new MDashRole();
+								mrr.setCreatedBy(sub.getCreatedBy());
+								mrr.setCrt_dt(new Date());
+								mrr.setDash(e.getDash());
+								mrr.setRole(role.getRole());
+								
+								gDAO.save(mrr);
+							}
+							
+							Vector<MRole> prolesList = new Vector<MRole>();
+							params = new Hashtable<String, Object>();
+							params.put("partner", sub.getPartner());
+							Object prolesObj = gDAO.search("MRole", params);
+							if(prolesObj != null)
+								prolesList = (Vector<MRole>)prolesObj;
+							for(MRole mr : prolesList)
+							{
+								if(mr.getId() == role.getRole().getId())
+									continue;
+								params = new Hashtable<String, Object>();
+								params.put("role", mr);
+								Object mrrsObj = gDAO.search("MDashRole", params);
+								if(mrrsObj != null)
+								{
+									Vector<MDashRole> mrrsList = (Vector<MDashRole>)mrrsObj;
+									for(MDashRole mrr : mrrsList)
+									{
+										boolean exist = false;
+										for(ApplicationTypeDash f : mdsList)
+										{
+											if(f.getDash().getId().longValue() == mrr.getDash().getId().longValue())
+											{
+												exist = true;
+												break;
+											}
+										}
+										if(!exist)
+											gDAO.remove(mrr);
+									}
+								}
 							}
 						}
 						
@@ -553,6 +621,7 @@ public class PartnerMBean implements Serializable
 					{
 						getPartnerPersonel().setPhoto(getPartnerUserPhoto().getContents());
 					}
+					getPartnerPersonel().setHasUser(true);
 					ret = gDAO.save(getPartnerPersonel());
 					
 					getPartnerUser().setPersonel(getPartnerPersonel());

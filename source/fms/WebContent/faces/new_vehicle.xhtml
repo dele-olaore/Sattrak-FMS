@@ -11,15 +11,14 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Vehicles" action="#{dashboardBean.gotoPage('manage_vehicles', false)}" ajax="false" />
     			<p:menuitem value="New Vehicle" action="#{dashboardBean.gotoPage('new_vehicle', true)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -90,6 +89,11 @@
 		  		<p:panelGrid id="rlpanel2" columns="2" cellpadding="5" style="margin-bottom:10px;">
 				<f:facet name="header">Other parameters</f:facet>
 		  		
+		  		<h:outputLabel for="vassignee" value="Assignee: " />
+				<p:selectOneMenu id="vassignee" value="#{fleetBean.assignee_id}">
+					<f:selectItems value="#{fleetBean.personels}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
 		  		<h:outputLabel for="vparamphoto" value="Photo: " />
 		  		<p:fileUpload id="vparamphoto" value="#{fleetBean.vehiclePhoto}" mode="simple" />
 		  		
@@ -120,7 +124,7 @@
 				<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelCompKML}" />
 				
 				<h:outputLabel for="vparam100kml" value="Fuel Consumption(100KM/L): " />
-				<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
+				<p:inputText id="vparam100kml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
 				
 				<h:outputLabel for="vparamtankc2" value="Calibrated Capacity: " />
 				<p:inputText id="vparamtankc2" value="#{fleetBean.vehicleParam.calibratedcapacity}" />
@@ -132,9 +136,12 @@
 				<p:inputText id="vparamsimno" value="#{fleetBean.vehicleParam.simno}" />
 				
 				<h:outputLabel for="vparamunitm" value="Unit of measurement: " />
-				<p:inputText id="vparamunitm" value="#{fleetBean.vehicleParam.unitofmeasure}" />
+				<p:selectOneMenu id="vparamunitm" value="#{fleetBean.vehicleParam.unitofmeasure}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="" />
+					<f:selectItem itemLabel="KM/h" itemValue="KM/h" />
+				</p:selectOneMenu>
 				
-				<h:outputLabel for="vparamcardno" value="Card No: " />
+				<h:outputLabel for="vparamcardno" value="Fuel Card Number: " />
 				<p:inputText id="vparamcardno" value="#{fleetBean.vehicleParam.cardno}" />
 				
 				</p:panelGrid>

@@ -26,13 +26,13 @@ public class VehicleTrackerData implements Serializable
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date captured_dt;
-	
+	// address,distance,longitude,latitude,battery_voltage,engine_hours,speed,heading,hdop,status
+	private String address;
 	private double odometer;
-	private double fuelLevel;
-	
 	private double lon;
 	private double lat;
-	
+	private double batteryVoltage;
+	private double engineHours;
 	private double speed;
 	private int heading;
 	private int hdop;
@@ -68,20 +68,20 @@ public class VehicleTrackerData implements Serializable
 		this.captured_dt = captured_dt;
 	}
 
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
 	public double getOdometer() {
 		return odometer;
 	}
 
 	public void setOdometer(double odometer) {
 		this.odometer = odometer;
-	}
-
-	public double getFuelLevel() {
-		return fuelLevel;
-	}
-
-	public void setFuelLevel(double fuelLevel) {
-		this.fuelLevel = fuelLevel;
 	}
 
 	public double getLon() {
@@ -98,6 +98,22 @@ public class VehicleTrackerData implements Serializable
 
 	public void setLat(double lat) {
 		this.lat = lat;
+	}
+
+	public double getBatteryVoltage() {
+		return batteryVoltage;
+	}
+
+	public void setBatteryVoltage(double batteryVoltage) {
+		this.batteryVoltage = batteryVoltage;
+	}
+
+	public double getEngineHours() {
+		return engineHours;
+	}
+
+	public void setEngineHours(double engineHours) {
+		this.engineHours = engineHours;
 	}
 
 	public double getSpeed() {

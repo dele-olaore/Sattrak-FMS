@@ -11,14 +11,13 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Accidents" action="#{dashboardBean.gotoPage('manage_v_accidents', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
-			
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -106,8 +105,17 @@
 				  		<h:outputLabel for="acdpeddt" value="Date released from station: " />
 						<p:calendar id="acdpeddt" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.accident.dateReleased}" />
 						
-						<h:outputLabel for="acdphoto2" value="Additional document: " />
+						<h:outputLabel for="plrcost" value="Police Report Cost: " />
+						<p:inputText id="plrcost" value="#{fleetBean.accident.policeReportCost}" />
+						
+						<h:outputLabel for="acdphoto2" value="Additional document 1: " />
 				  		<p:fileUpload id="acdphoto2" value="#{fleetBean.accidentDocument}" mode="simple" />
+				  		
+				  		<h:outputLabel for="acdphoto3" value="Additional document 2: " />
+				  		<p:fileUpload id="acdphoto3" value="#{fleetBean.accidentDocument2}" mode="simple" />
+				  		
+				  		<h:outputLabel for="acdphoto4" value="Additional document 3: " />
+				  		<p:fileUpload id="acdphoto4" value="#{fleetBean.accidentDocument3}" mode="simple" />
 					</p:panelGrid>
 				  	
 				  	<p:panelGrid columns="2">

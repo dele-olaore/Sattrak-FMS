@@ -47,6 +47,13 @@ public class CorporateTrip implements Serializable
 	@ManyToOne
 	private PartnerUser approveUser;
 	
+	private String approvalStatus2; // PENDING, APPROVED, DECLINED, NOT_ATTENDED
+	private String approvalReason2; // Reason for the approval or decline
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date attendedDate2;
+	@ManyToOne
+	private PartnerUser approveUser2;
+	
 	private String tripStatus; // AWAITING, ON_TRIP, SHOULD_BE_COMPLETED, COMPLETION_REQUEST, COMPLETED, CANCELED
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date completeRequestDateTime;
@@ -161,6 +168,38 @@ public class CorporateTrip implements Serializable
 
 	public void setApproveUser(PartnerUser approveUser) {
 		this.approveUser = approveUser;
+	}
+
+	public String getApprovalStatus2() {
+		return approvalStatus2;
+	}
+
+	public void setApprovalStatus2(String approvalStatus2) {
+		this.approvalStatus2 = approvalStatus2;
+	}
+
+	public String getApprovalReason2() {
+		return approvalReason2;
+	}
+
+	public void setApprovalReason2(String approvalReason2) {
+		this.approvalReason2 = approvalReason2;
+	}
+
+	public Date getAttendedDate2() {
+		return attendedDate2;
+	}
+
+	public void setAttendedDate2(Date attendedDate2) {
+		this.attendedDate2 = attendedDate2;
+	}
+
+	public PartnerUser getApproveUser2() {
+		return approveUser2;
+	}
+
+	public void setApproveUser2(PartnerUser approveUser2) {
+		this.approveUser2 = approveUser2;
 	}
 
 	public String getTripStatus() {

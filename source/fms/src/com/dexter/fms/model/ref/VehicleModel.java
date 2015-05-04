@@ -47,6 +47,8 @@ public class VehicleModel implements Serializable
 	
 	@Transient
 	private Vector<Vehicle> vehicles;
+	@Transient
+	private boolean selected;
 	
 	public VehicleModel()
 	{}
@@ -121,6 +123,14 @@ public class VehicleModel implements Serializable
 
 	public void setVehicles(Vector<Vehicle> vehicles) {
 		this.vehicles = vehicles;
+	}
+
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
 	}
 	
 }

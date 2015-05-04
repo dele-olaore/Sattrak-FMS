@@ -1,6 +1,7 @@
 package com.dexter.fms.model;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -14,6 +15,7 @@ import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.ref.Department;
 import com.dexter.fms.model.ref.Region;
+import com.dexter.fms.model.ref.Unit;
 
 @Entity
 public class PartnerPersonel implements Serializable
@@ -41,9 +43,18 @@ public class PartnerPersonel implements Serializable
 	@ManyToOne
 	private Department department;
 	@ManyToOne
+	private Unit unit;
+	private boolean unitHead;
+	private boolean fleetManager;
+	@ManyToOne
 	private Region region;
 	
+	@ManyToOne
+	private PartnerPersonel reportsTo;
+	
 	private String fileno;
+	@Temporal(TemporalType.DATE)
+	private Date dob;
 	private int age;
 	private String position;
 	@Temporal(TemporalType.DATE)
@@ -52,6 +63,8 @@ public class PartnerPersonel implements Serializable
 	
 	private boolean hasUser;
 	private boolean hasDriver;
+	
+	private String availabilityStatus; // AVAILABLE, ON LEAVE, SUSPENDED, NOT-AVAILABLE, SACKED, RESIGNED
 	
 	@ManyToOne
 	private Partner partner;
@@ -164,6 +177,30 @@ public class PartnerPersonel implements Serializable
 		this.department = department;
 	}
 
+	public boolean isUnitHead() {
+		return unitHead;
+	}
+
+	public void setUnitHead(boolean unitHead) {
+		this.unitHead = unitHead;
+	}
+
+	public boolean isFleetManager() {
+		return fleetManager;
+	}
+
+	public void setFleetManager(boolean fleetManager) {
+		this.fleetManager = fleetManager;
+	}
+
+	public PartnerPersonel getReportsTo() {
+		return reportsTo;
+	}
+
+	public void setReportsTo(PartnerPersonel reportsTo) {
+		this.reportsTo = reportsTo;
+	}
+
 	public Region getRegion() {
 		return region;
 	}
@@ -185,7 +222,7 @@ public class PartnerPersonel implements Serializable
 	}
 
 	public void setAge(int age) {
-		this.age = age;
+		//this.age = age;
 	}
 
 	public String getPosition() {
@@ -228,6 +265,14 @@ public class PartnerPersonel implements Serializable
 		this.hasDriver = hasDriver;
 	}
 
+	public String getAvailabilityStatus() {
+		return availabilityStatus;
+	}
+
+	public void setAvailabilityStatus(String availabilityStatus) {
+		this.availabilityStatus = availabilityStatus;
+	}
+
 	public Partner getPartner() {
 		return partner;
 	}
@@ -258,6 +303,34 @@ public class PartnerPersonel implements Serializable
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	public Unit getUnit() {
+		return unit;
+	}
+
+	public void setUnit(Unit unit) {
+		this.unit = unit;
+	}
+
+	public Date getDob() {
+		return dob;
+	}
+
+	public void setDob(Date dob) {
+		this.dob = dob;
+		if(dob != null)
+		{
+			try
+			{
+				Calendar cdob = Calendar.getInstance(), cnow = Calendar.getInstance();
+				cdob.setTime(dob);
+				long ayearInMillis = 1000L*60L*60L*24L*365L;
+				long ageInMillis = cnow.getTimeInMillis() - cdob.getTimeInMillis();
+				long ageL = ageInMillis/ayearInMillis;
+				age = Integer.parseInt(String.valueOf(ageL));
+			} catch(Exception ex){}
+		}
 	}
 	
 }

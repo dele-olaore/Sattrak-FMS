@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.List;
@@ -19,6 +20,8 @@ import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.persistence.Query;
 
+import org.primefaces.context.RequestContext;
+import org.primefaces.event.map.OverlaySelectEvent;
 import org.primefaces.model.DashboardColumn;
 import org.primefaces.model.DashboardModel;
 import org.primefaces.model.DefaultDashboardColumn;
@@ -32,25 +35,31 @@ import org.primefaces.model.map.Marker;
 
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.dao.ReportDAO;
+import com.dexter.fms.model.MDashRole;
 import com.dexter.fms.model.MFunction;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Module;
+import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
 import com.dexter.fms.model.PartnerUserSetting;
 import com.dexter.fms.model.Report;
+import com.dexter.fms.model.app.Budget;
 import com.dexter.fms.model.app.DashboardVehicle;
 import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.Expense;
 import com.dexter.fms.model.app.ExpenseType;
 import com.dexter.fms.model.app.Vehicle;
 import com.dexter.fms.model.app.VehicleAdHocMaintenanceRequest;
+import com.dexter.fms.model.app.VehicleDriver;
 import com.dexter.fms.model.app.VehicleLicense;
 import com.dexter.fms.model.app.VehicleLocationData;
 import com.dexter.fms.model.app.VehicleRoutineMaintenanceSetup;
+import com.dexter.fms.model.app.VehicleTrackerData;
 
 @ManagedBean(name = "dashboardBean")
 @SessionScoped
@@ -65,9 +74,11 @@ public class DashboardMBean implements Serializable
 	private PartnerSubscription subscription;
 	private PartnerLicense partnerLicense;
 	private PartnerUser user;
+	private PartnerDriver driver;
 	private Vector<PartnerUserRole> userRoles;
 	private Vector<MRoleFunction> rolesFunctions;
 	private Vector<MRoleReport> rolesReports;
+	private Vector<MDashRole> rolesDashs;
 	
 	private Hashtable<String, Vector<MFunction>> userModulesFunctions;
 	
@@ -99,26 +110,21 @@ public class DashboardMBean implements Serializable
 	private String expsBack;
 	
 	private double minY = 0, maxY = 100;
-	private CartesianChartModel expsLinearModel;
+	private CartesianChartModel expsLinearModel, expsBudgetModel;
 	
 	private Vector<String[]> upcomingAndRecentExpirations;
 	private Vector<String[]> upcomingMaintenances;
+	
+	private PartnerDriver bestDriver;
+	private Vector<PartnerDriver> bestDrivers, worstDrivers;
+	
+	private VehicleTrackerData markerTrackerData = null;
 	
 	public DashboardMBean()
 	{
 		model = new DefaultDashboardModel();
 		
-		DashboardColumn column1 = new DefaultDashboardColumn();
-		
-        column1.addWidget("trackv");
-		column1.addWidget("duelics");
-		column1.addWidget("duemaints");
-        column1.addWidget("recentexpenses");
-        column1.addWidget("bookings");
-        
-        model.addColumn(column1);
-        
-        vtrackpollinterval = 120;
+		vtrackpollinterval = 120;
         defaultCenterCoor = "6.427887,3.4287645";
         centerCoor = defaultCenterCoor;
         
@@ -126,6 +132,107 @@ public class DashboardMBean implements Serializable
         
         theme = "aristo";
         headercolor = "header_main";
+	}
+	
+	public void keepSessionAlive()
+	{
+		System.out.println("Keeping session alive for user: " + getUser().getUsername());
+	}
+	
+	public void updateDashsToShow()
+	{
+		DashboardColumn column1 = new DefaultDashboardColumn();
+		column1.addWidget("shortcuts");
+		
+		if(getRolesDashs() != null && getRolesDashs().size() > 0)
+		{
+			for(MDashRole mdr : getRolesDashs())
+			{
+				column1.addWidget(mdr.getDash().getName());
+			}
+			model.addColumn(column1);
+		}
+        /*column1.addWidget("trackv");
+		column1.addWidget("duelics");
+		column1.addWidget("duemaints");
+        column1.addWidget("recentexpenses");
+        column1.addWidget("bookings");*/
+	}
+	
+	public long getVehiclesWithoutDriversCount()
+	{
+		return new ReportDAO().getVehiclesWithoutDriversCount(getUser().getPartner().getId());
+	}
+	public long getDriversWithoutLicenseCount()
+	{
+		return new ReportDAO().getDriversWithoutLicenseCount(getUser().getPartner().getId());
+	}
+	public long getDriversWithoutVehiclesCount()
+	{
+		return new ReportDAO().getDriversWithoutVehiclesCount(getUser().getPartner().getId());
+	}
+	public long getPendingOvertimeRequestCount()
+	{
+		return new ReportDAO().getPendingOvertimeRequestCount(getUser().getPartner().getId());
+	}
+	
+	public long getExpiredLicenseCount()
+	{
+		long count = 0;
+		for(String[] e : getUpcomingAndRecentExpirations())
+		{
+			if(e[4] != null && e[4].equalsIgnoreCase("Expired"))
+				count++;
+		}
+		return count;
+	}
+	public long getSoonToExpireLicenseCount()
+	{
+		long count = 0;
+		for(String[] e : getUpcomingAndRecentExpirations())
+		{
+			if(e[4] != null && e[4].equalsIgnoreCase("Soon to Expire"))
+				count++;
+		}
+		return count;
+	}
+	public long getExpiringLicenseCount()
+	{
+		long count = 0;
+		for(String[] e : getUpcomingAndRecentExpirations())
+		{
+			if(e[4] != null && e[4].equalsIgnoreCase("Expiring"))
+				count++;
+		}
+		return count;
+	}
+	public long getTotalDueRoutineMaint()
+	{
+		long count = 0;
+		for(String[] e : getUpcomingMaintenances())
+		{
+			if(e[0] != null && e[0].equalsIgnoreCase("Routine"))
+				count++;
+		}
+		return count;
+	}
+	public long getTotalUpcomingAndDueAdHocMaint()
+	{
+		long count = 0;
+		for(String[] e : getUpcomingMaintenances())
+		{
+			if(e[0] != null && e[0].equalsIgnoreCase("AdHoc"))
+				count++;
+		}
+		return count;
+	}
+	public long getPendingFuelingRequestCount()
+	{
+		return new ReportDAO().getPendingFuelingRequestCount(getUser().getId());
+	}
+	public long getPendingExpenseRequestCount()
+	{
+		return new ReportDAO().getPendingExpenseRequestCount(getUser().getId());
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -181,9 +288,7 @@ public class DashboardMBean implements Serializable
 	            ec.redirect(url);
 	        } 
 	        catch (IOException ex)
-	        {
-	            //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
-	        }
+	        {}
 	    }
 
 	 /*
@@ -197,9 +302,7 @@ public class DashboardMBean implements Serializable
 			 fc.getExternalContext().dispatch(url);
 		 } 
 		 catch (Exception ex) 
-		 {
-			 //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
-		 }
+		 {}
 	 }
 
 	public String gotoPage(String page, boolean subFunction)
@@ -207,12 +310,41 @@ public class DashboardMBean implements Serializable
 		if(!subFunction)
 			function_page = page;
 		
-		//HttpServletRequest hs = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
-		//FacesContext.getCurrentInstance().getExternalContext().invalidateSession();
-		//String gotoPage = hs.getContextPath() + "/faces/" + page + ".xhtml";
-		//redirector(gotoPage);
-		
-		return page;
+		return page+"?faces-redirect=true";
+	}
+	
+	@SuppressWarnings("unchecked")
+	public String getScrollMessage()
+	{
+		String ret = "";
+		if(function_page != null)
+		{
+			if(function_page.equalsIgnoreCase("dashboard"))
+				ret = "Welcome to the Dashboard...";
+			else if(function_page.equalsIgnoreCase("faq"))
+				ret = "Frequently asked questions...";
+			else
+			{
+				MFunction func = null;
+				GeneralDAO gDAO = new GeneralDAO();
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("page_url", function_page);
+				Object mf = gDAO.search("MFunction", params);
+				if(mf != null)
+				{
+					Vector<MFunction> mfs = (Vector<MFunction>)mf;
+					for(MFunction e : mfs)
+					{
+						func = e;
+					}
+				}
+				if(func != null)
+				{
+					ret = func.getModule().getDescription() + "... " + func.getDescription();
+				}
+			}
+		}
+		return ret;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -264,7 +396,7 @@ public class DashboardMBean implements Serializable
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Password change successful.");
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 						
-						ret = "dashboard";
+						ret = "dashboard?faces-redirect=true";
 					}
 					else
 					{
@@ -363,6 +495,14 @@ public class DashboardMBean implements Serializable
 		this.user = user;
 	}
 
+	public PartnerDriver getDriver() {
+		return driver;
+	}
+
+	public void setDriver(PartnerDriver driver) {
+		this.driver = driver;
+	}
+
 	public Vector<PartnerUserRole> getUserRoles() {
 		return userRoles;
 	}
@@ -385,6 +525,14 @@ public class DashboardMBean implements Serializable
 
 	public void setRolesReports(Vector<MRoleReport> rolesReports) {
 		this.rolesReports = rolesReports;
+	}
+
+	public Vector<MDashRole> getRolesDashs() {
+		return rolesDashs;
+	}
+
+	public void setRolesDashs(Vector<MDashRole> rolesDashs) {
+		this.rolesDashs = rolesDashs;
 	}
 
 	public String getModuleDisplayName(String mdule)
@@ -622,20 +770,95 @@ public class DashboardMBean implements Serializable
 	public DashboardModel getModel() {
 		return model;
 	}
-
-	public MapModel getVtrackingModel() {
-		vtrackingModel = new DefaultMapModel();
-		
+	
+	@SuppressWarnings("unchecked")
+	public void onMarkerSelect(OverlaySelectEvent event)
+	{
+		try
+		{
+			marker = (Marker) event.getOverlay();
+			markerTrackerData = null;
+			if(marker != null)
+			{
+				String regNum = marker.getTitle();
+				GeneralDAO gDAO = new GeneralDAO();
+				Query q = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle.registrationNo = :regNum");
+				q.setParameter("regNum", regNum);
+				Object listObj = gDAO.search(q, 0);
+				if(listObj != null)
+				{
+					List<VehicleTrackerData> list = (List<VehicleTrackerData>)listObj;
+					for(VehicleTrackerData e : list)
+						markerTrackerData = e;
+				}
+				gDAO.destroy();
+			}
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	public void updateMarkers()
+	{
+		DashboardVehicle dv = getSelectedDashVehicle();
+		int center_index = 0;
 		for(VehicleLocationData vld : getDashVehiclesLocs())
 		{
-			try
+			boolean exists = false;
+			if(getVtrackingModel().getMarkers() != null)
 			{
-				LatLng coord1 = new LatLng(vld.getLat(), vld.getLon());
-				//Basic marker
-				vtrackingModel.addOverlay(new Marker(coord1, vld.getVehicle().getRegistrationNo()));
+				for(int i = 0; i < getVtrackingModel().getMarkers().size(); i++)
+				{
+					if(getVtrackingModel().getMarkers().get(i).getTitle().equalsIgnoreCase(vld.getVehicle().getRegistrationNo()))
+					{
+						exists = true;
+						getVtrackingModel().getMarkers().get(i).setLatlng(new LatLng(vld.getLat(), vld.getLon()));
+						// this is the selected vehicle, try to make the map follow it to whereever it's going
+						if(dv != null && dv.getVehicle().getId().longValue() == vld.getVehicle().getId().longValue())
+						{
+							setCenterCoor(vld.getLat() + "," + vld.getLon());
+							center_index = i;
+						}
+						break;
+					}
+				}
 			}
-			catch(Exception ex)
-			{}
+			if(!exists)
+			{
+				try
+				{
+					LatLng coord1 = new LatLng(vld.getLat(), vld.getLon());
+					//Basic marker
+					Marker marker = new Marker(coord1, vld.getVehicle().getRegistrationNo());
+					getVtrackingModel().addOverlay(marker);
+				}
+				catch(Exception ex)
+				{}
+			}
+		}
+		
+		if(getVtrackingModel().getMarkers() != null)
+		{
+			for(int i = 0; i < getVtrackingModel().getMarkers().size(); i++)
+			{
+				RequestContext.getCurrentInstance().addCallbackParam("marker" + i, getVtrackingModel().getMarkers().get(i));
+				RequestContext.getCurrentInstance().addCallbackParam("position" + i, getVtrackingModel().getMarkers().get(i).getLatlng());
+				
+				if(i == center_index)
+				{
+					RequestContext.getCurrentInstance().addCallbackParam("centerposition" + i, getVtrackingModel().getMarkers().get(i).getLatlng());
+				}
+			}
+		}
+	}
+	
+	public MapModel getVtrackingModel() {
+		if(vtrackingModel == null)
+		{
+			vtrackingModel = new DefaultMapModel();
+			updateMarkers();
 		}
 		
 		return vtrackingModel;
@@ -684,6 +907,28 @@ public class DashboardMBean implements Serializable
 		this.selectedDashVehicle = selectedDashVehicle;
 	}
 	
+	public void onDashDelSelect()
+	{
+		DashboardVehicle dv = getSelectedDashVehicle();
+		if(dv != null)
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			gDAO.remove(dv);
+			
+			try
+			{
+				gDAO.commit();
+			}
+			catch(Exception ex){
+				gDAO.rollback();
+			}
+			gDAO.destroy();
+			
+			reloadVTrack();
+		}
+	}
+	
 	public void onDashLocSelect()
 	{
 		try
@@ -719,19 +964,21 @@ public class DashboardMBean implements Serializable
 				Vector<DashboardVehicle> dvsList = getDashVehicles();
 				for(DashboardVehicle dv : dvsList)
 				{
-					Hashtable<String, Object> params = new Hashtable<String, Object>();
-					params.put("active", true);
-					params.put("vehicle", dv.getVehicle());
-					Object vlocObj = gDAO.search("VehicleLocationData", params);
-					if(vlocObj != null)
+					if(dv != null && dv.getVehicle() != null)
 					{
-						Vector<VehicleLocationData> vloc = (Vector<VehicleLocationData>)vlocObj;
-						if(vloc.size() > 0)
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("active", true);
+						params.put("vehicle", dv.getVehicle());
+						Object vlocObj = gDAO.search("VehicleLocationData", params);
+						if(vlocObj != null)
 						{
-							dashVehiclesLocs.add(vloc.get(0));
+							Vector<VehicleLocationData> vloc = (Vector<VehicleLocationData>)vlocObj;
+							if(vloc.size() > 0)
+							{
+								dashVehiclesLocs.add(vloc.get(0));
+							}
 						}
 					}
-					
 				}
 			}
 		}
@@ -760,7 +1007,7 @@ public class DashboardMBean implements Serializable
 	{
 		setDashVehiclesLocs(null);
 		setDashVehicles(null);
-		setSelectedDashVehicle(null);
+		updateMarkers();
 	}
 
 	public int getVtrackpollinterval() {
@@ -1012,6 +1259,74 @@ public class DashboardMBean implements Serializable
 		return expsLinearModel;
 	}
 	
+	public void resetBudgetExpenses()
+	{
+		expsBudgetModel = null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public CartesianChartModel getExpsBudgetModel() {
+		if(expsBudgetModel == null)
+		{
+			ChartSeries etSeries = new ChartSeries(), bgSeries = new ChartSeries();
+			etSeries.setLabel("Expense Type");
+			bgSeries.setLabel("Budget");
+			
+			for(ExpenseType et : getExpTypes())
+			{
+				Budget b = null;
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getUser().getPartner());
+				params.put("active", true);
+				params.put("type", et);
+				
+				Object drvs = gDAO.search("Budget", params);
+				if(drvs != null)
+				{
+					Vector<Budget> budgets = (Vector<Budget>)drvs;
+					for(Budget budget : budgets)
+						b = budget;
+				}
+				
+				if(b != null)
+				{
+					if(b.getAmount().doubleValue() > getMaxY())
+						setMaxY(b.getAmount().doubleValue()+10);
+					
+					Query q = gDAO.createQuery("Select e from Expense e where e.partner=:partner and e.type=:type and (e.expense_dt between :dt and :dt2)");
+					q.setParameter("partner", getUser().getPartner());
+					q.setParameter("type", et);
+					q.setParameter("dt", b.getStart_dt());
+					q.setParameter("dt2", b.getEnd_dt());
+					
+					Object objs = gDAO.search(q, 0);
+					BigDecimal sum = new BigDecimal(0.00);
+					if(objs != null)
+					{
+						Vector<Expense> etVals = (Vector<Expense>)objs;
+						for(Expense e : etVals)
+						{
+							sum = sum.add(new BigDecimal(e.getAmount()));
+						}
+						
+						if(sum.doubleValue() > getMaxY())
+							setMaxY(sum.doubleValue()+10);
+					}
+					
+					etSeries.set(et.getName(), sum.doubleValue());
+					bgSeries.set(et.getName(), b.getAmount().doubleValue());
+				}
+			}
+			
+			expsBudgetModel = new CartesianChartModel();
+			expsBudgetModel.addSeries(bgSeries);
+			expsBudgetModel.addSeries(etSeries);
+		}
+		return expsBudgetModel;
+	}
+
 	public void resetExpLicenses()
 	{
 		setUpcomingAndRecentExpirations(null);
@@ -1029,7 +1344,7 @@ public class DashboardMBean implements Serializable
 			
 			Calendar c = Calendar.getInstance();
 			Calendar c2 = Calendar.getInstance();
-			c.add(Calendar.DAY_OF_MONTH, -30);
+			c.add(Calendar.DAY_OF_MONTH, -60); // expired 2 months back
 			
 			Query q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
@@ -1057,6 +1372,7 @@ public class DashboardMBean implements Serializable
 			
 			c = Calendar.getInstance();
 			c2 = Calendar.getInstance();
+			c.add(Calendar.DAY_OF_MONTH, 15);
 			c2.add(Calendar.DAY_OF_MONTH, 30);
 			
 			q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
@@ -1085,7 +1401,35 @@ public class DashboardMBean implements Serializable
 			
 			c = Calendar.getInstance();
 			c2 = Calendar.getInstance();
-			c.add(Calendar.DAY_OF_MONTH, -30);
+			c2.add(Calendar.DAY_OF_MONTH, 15);
+			
+			q = gDAO.createQuery("Select e from VehicleLicense e where e.vehicle.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			q.setParameter("partner", getUser().getPartner());
+			q.setParameter("expired", false);
+			q.setParameter("active", true);
+			q.setParameter("start_dt", c.getTime());
+			q.setParameter("end_date", c2.getTime());
+			
+			licsObj = gDAO.search(q, 0);
+			if(licsObj != null)
+			{
+				Vector<VehicleLicense> lics = (Vector<VehicleLicense>)licsObj;
+				for(VehicleLicense e : lics)
+				{
+					String[] str = new String[5];
+					str[0] = "Vehicle License";
+					str[1] = e.getVehicle().getRegistrationNo();
+					str[2] = e.getLicType().getName() + " | " + e.getSubLicType();
+					str[3] = dtf.format(e.getLic_end_dt());
+					str[4] = "Expiring";
+					
+					upcomingAndRecentExpirations.add(str);
+				}
+			}
+			
+			c = Calendar.getInstance();
+			c2 = Calendar.getInstance();
+			c.add(Calendar.DAY_OF_MONTH, -60); // 2 months
 			
 			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
 			q.setParameter("partner", getUser().getPartner());
@@ -1113,6 +1457,7 @@ public class DashboardMBean implements Serializable
 			
 			c = Calendar.getInstance();
 			c2 = Calendar.getInstance();
+			c.add(Calendar.DAY_OF_MONTH, 15);
 			c2.add(Calendar.DAY_OF_MONTH, 30);
 			
 			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
@@ -1134,6 +1479,34 @@ public class DashboardMBean implements Serializable
 					str[2] = "Driver's License";
 					str[3] = dtf.format(e.getLic_end_dt());
 					str[4] = "Soon to Expire";
+					
+					upcomingAndRecentExpirations.add(str);
+				}
+			}
+			
+			c = Calendar.getInstance();
+			c2 = Calendar.getInstance();
+			c2.add(Calendar.DAY_OF_MONTH, 15);
+			
+			q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.expired=:expired and e.active=:active and (e.lic_end_dt > :start_dt and e.lic_end_dt < :end_date)");
+			q.setParameter("partner", getUser().getPartner());
+			q.setParameter("expired", false);
+			q.setParameter("active", true);
+			q.setParameter("start_dt", c.getTime());
+			q.setParameter("end_date", c2.getTime());
+			
+			licsObj = gDAO.search(q, 0);
+			if(licsObj != null)
+			{
+				Vector<DriverLicense> lics = (Vector<DriverLicense>)licsObj;
+				for(DriverLicense e : lics)
+				{
+					String[] str = new String[5];
+					str[0] = "Vehicle License";
+					str[1] = e.getDriver().getPersonel().getFirstname() + " " + e.getDriver().getPersonel().getLastname();
+					str[2] = "Driver's License";
+					str[3] = dtf.format(e.getLic_end_dt());
+					str[4] = "Expiring";
 					
 					upcomingAndRecentExpirations.add(str);
 				}
@@ -1173,7 +1546,7 @@ public class DashboardMBean implements Serializable
 				for(Vehicle v : vehicles)
 				{
 					double currentOdometer = 0;
-					// TODO: Get the current odometer reading
+					// Get the current odometer reading
 					Query q = gDAO.createQuery("Select MAX(e.odometer) from VehicleOdometerData e where e.vehicle=:vehicle");
 					q.setParameter("vehicle", v);
 					
@@ -1192,7 +1565,7 @@ public class DashboardMBean implements Serializable
 					
 					if(currentOdometer > 0)
 					{
-						// TODO: Get the current routine setup that is still active, that means its not done
+						// Get the current routine setup that is still active, that means its not done
 						params = new Hashtable<String, Object>();
 						params.put("vehicle", v);
 						params.put("active", true);
@@ -1252,6 +1625,134 @@ public class DashboardMBean implements Serializable
 
 	public void setUpcomingMaintenances(Vector<String[]> upcomingMaintenances) {
 		this.upcomingMaintenances = upcomingMaintenances;
+	}
+
+	private Calendar lastUpdatedDate = Calendar.getInstance();
+	public PartnerDriver getBestDriver() {
+		Calendar now = Calendar.getInstance();
+		if(bestDriver == null || (now.get(Calendar.MONTH) != lastUpdatedDate.get(Calendar.MONTH)))
+		{
+			Vector<PartnerDriver> list = getBestDrivers();
+			if(list != null && list.size() > 0)
+				bestDriver = list.get(0);
+		}
+		return bestDriver;
+	}
+
+	public void setBestDriver(PartnerDriver bestDriver) {
+		this.bestDriver = bestDriver;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriver> getBestDrivers() {
+		Calendar now = Calendar.getInstance();
+		if(bestDrivers == null || (now.get(Calendar.MONTH) != lastUpdatedDate.get(Calendar.MONTH)))
+		{
+			now.add(Calendar.MONTH, -1);
+			now.set(Calendar.HOUR_OF_DAY, now.getMinimum(Calendar.HOUR_OF_DAY));
+			now.set(Calendar.MINUTE, now.getMinimum(Calendar.MINUTE));
+			now.set(Calendar.SECOND, now.getMinimum(Calendar.SECOND));
+			Date start_dt = now.getTime();
+			now.set(Calendar.HOUR_OF_DAY, now.getMaximum(Calendar.HOUR_OF_DAY));
+			now.set(Calendar.MINUTE, now.getMaximum(Calendar.MINUTE));
+			now.set(Calendar.SECOND, now.getMaximum(Calendar.SECOND));
+			Date end_dt = now.getTime();
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			ReportDAO rDAO = new ReportDAO();
+			Vector<String[]> list = rDAO.getBestDrivers(3, getUser().getPartner().getId().longValue(), start_dt, end_dt);
+			if(list != null && list.size() > 0)
+			{
+				bestDrivers = new Vector<PartnerDriver>();
+				for(String[] e : list)
+				{
+					try
+					{
+						Object pdObj = gDAO.find(PartnerDriver.class, Long.parseLong(e[0]));
+						if(pdObj != null)
+						{
+							PartnerDriver pd = (PartnerDriver)pdObj;
+							try
+							{
+								pd.setScore(Integer.parseInt(e[1]));
+							} catch(Exception ex){}
+							
+							Hashtable<String, Object> param = new Hashtable<String, Object>();
+							param.put("driver", pd);
+							param.put("active", true);
+							Object vdObj = gDAO.search("VehicleDriver", param);
+							if(vdObj != null)
+							{
+								Vector<VehicleDriver> vd = (Vector<VehicleDriver>)vdObj;
+								if(vd != null && vd.size() > 0)
+									pd.setVehicle(vd.get(0).getVehicle());
+							}
+							
+							bestDrivers.add(pd);
+						}
+					} catch(Exception ex){}
+				}
+			}
+		}
+		
+		return bestDrivers;
+	}
+
+	public void setBestDrivers(Vector<PartnerDriver> bestDrivers) {
+		this.bestDrivers = bestDrivers;
+	}
+
+	public Vector<PartnerDriver> getWorstDrivers() {
+		Calendar now = Calendar.getInstance();
+		if(worstDrivers == null || (now.get(Calendar.MONTH) != lastUpdatedDate.get(Calendar.MONTH)))
+		{
+			now.add(Calendar.MONTH, -1);
+			now.set(Calendar.HOUR_OF_DAY, now.getMinimum(Calendar.HOUR_OF_DAY));
+			now.set(Calendar.MINUTE, now.getMinimum(Calendar.MINUTE));
+			now.set(Calendar.SECOND, now.getMinimum(Calendar.SECOND));
+			Date start_dt = now.getTime();
+			now.set(Calendar.HOUR_OF_DAY, now.getMaximum(Calendar.HOUR_OF_DAY));
+			now.set(Calendar.MINUTE, now.getMaximum(Calendar.MINUTE));
+			now.set(Calendar.SECOND, now.getMaximum(Calendar.SECOND));
+			Date end_dt = now.getTime();
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			ReportDAO rDAO = new ReportDAO();
+			Vector<String[]> list = rDAO.getWorstDrivers(3, getUser().getPartner().getId().longValue(), start_dt, end_dt);
+			if(list != null && list.size() > 0)
+			{
+				worstDrivers = new Vector<PartnerDriver>();
+				for(String[] e : list)
+				{
+					try
+					{
+						Object pdObj = gDAO.find(PartnerDriver.class, Long.parseLong(e[0]));
+						if(pdObj != null)
+						{
+							PartnerDriver pd = (PartnerDriver)pdObj;
+							try
+							{
+								pd.setScore(Integer.parseInt(e[1]));
+							} catch(Exception ex){}
+							worstDrivers.add(pd);
+						}
+					} catch(Exception ex){}
+				}
+			}
+		}
+		return worstDrivers;
+	}
+
+	public void setWorstDrivers(Vector<PartnerDriver> worstDrivers) {
+		this.worstDrivers = worstDrivers;
+	}
+
+	public VehicleTrackerData getMarkerTrackerData() {
+		return markerTrackerData;
+	}
+
+	public void setMarkerTrackerData(VehicleTrackerData markerTrackerData) {
+		this.markerTrackerData = markerTrackerData;
 	}
 	
 }

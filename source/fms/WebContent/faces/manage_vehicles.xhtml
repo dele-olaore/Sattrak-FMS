@@ -11,16 +11,19 @@
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Vehicles" action="#{dashboardBean.gotoPage('manage_vehicles', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
+		
+			<span style="float:right">
 			<p:commandLink value="New Vehicle" action="#{dashboardBean.gotoPage('new_vehicle', true)}" ajax="false" />
 			<h:outputText value=" | " />
 			<p:commandLink value="Batch Load Vehicles" action="#{dashboardBean.gotoPage('batchload_vehicles', true)}" ajax="false" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -44,10 +47,11 @@
 		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
 		  		</f:facet>
 			</p:panelGrid>
+			<p:scrollPanel mode="native" style="width:100%;height:500px">
 			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
 				paginator="true" rows="10"
 				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+				rowsPerPageTemplate="10,20,50" style="width:150%" resizableColumns="true" editable="true">
 				<f:facet name="header">
 					Available vehicle(s)
 				</f:facet>
@@ -129,13 +133,43 @@
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
+				<p:column headerText="Dispose">
+					<p:commandButton update=":form:vdisPanel" oncomplete="vdisdlg.show();" icon="ui-icon-remove" value="Dispose" title="Submit disposal request for this vehicle">
+						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
+					</p:commandButton>
+				</p:column>
 			</p:dataTable>
+			</p:scrollPanel>
 		</p:outputPanel>
 		</td>
 		</tr>
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="vDisDialog" header="Vehicle Disposal Request" widgetVar="vdisdlg" modal="true" dynamic="true">
+		<p:panelGrid id="vdisPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+			<f:facet name="header">Disposal Request for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+			
+			<h:outputLabel for="netbookVal" value="Netbook Value: *" />
+	  		<p:inputText id="netbookVal" value="#{fleetBean.vdisposal.netbookVal}" />
+	  		
+	  		<h:outputLabel for="negoVal" value="Negotiated Value: *" />
+	  		<p:inputText id="negoVal" value="#{fleetBean.vdisposal.negoVal}" />
+	  		
+	  		<h:outputLabel for="soldTo" value="Sold To: *" />
+	  		<p:inputText id="soldTo" value="#{fleetBean.vdisposal.soldTo}" />
+	  		
+	  		<h:outputLabel for="apvu2" value="Approval User: *" />
+			<p:selectOneMenu id="apvu2" value="#{fleetBean.approvalUser_id}">
+	  			<f:selectItems value="#{ddBean.getUsersWithFunction(fleetBean.partner.id, 'approve_vdisposal')}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.saveVehicleDisposeRequest}" value="Send Disposal Request" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
 	
 	<p:dialog id="viewVDocsDialog" header="Vehicle Documents" widgetVar="vdocsdlg" modal="true" dynamic="true">
 		<p:panelGrid id="vdocsPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
@@ -188,11 +222,10 @@
 	</p:dialog>
 	
 	<p:dialog id="newVParamsDialog" header="New Vehicle Parameters" widgetVar="vparamsdlg2" modal="true" dynamic="true">
-		<p:panelGrid id="vparamsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<p:panelGrid id="vparamsPanel2" columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">New Parameters for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
 			
-			<h:outputLabel for="vparamphoto" value="Photo: " />
-	  		<p:fileUpload id="vparamphoto" value="#{fleetBean.vehiclePhoto}" mode="simple" />
+			<!-- There was a file uploader here which was giving issues so we had to remove it. But we need to find a way to upload the vehicle photo -->
 	  		
 	  		<h:outputLabel for="vparamdept" value="Department: " />
 			<p:selectOneMenu id="vparamdept" value="#{fleetBean.department_id}">
@@ -221,7 +254,7 @@
 			<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelCompKML}" />
 			
 			<h:outputLabel for="vparam100kml" value="Fuel Consumption(100KM/L): " />
-			<p:inputText id="vparamkml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
+			<p:inputText id="vparam100kml" value="#{fleetBean.vehicleParam.fuelComp100KML}" />
 			
 			<h:outputLabel for="vparamtankc2" value="Calibrated Capacity: " />
 			<p:inputText id="vparamtankc2" value="#{fleetBean.vehicleParam.calibratedcapacity}" />
@@ -257,7 +290,7 @@
 				</f:facet>
 				
 				<p:column headerText="">
-					<img src="#{request.contextPath}/imageservlet/#{vpr.id}:vparam:#{appBean.randomNumber}" width="50" height="50" alt="photo" />
+					<img src="#{request.contextPath}/imageservlet/#{vpr.id}-vparam-#{appBean.randomNumber}" width="50" height="50" alt="photo" />
 				</p:column>
 				<p:column sortBy="#{vpr.dept.name}" headerText="Department" filterBy="#{vpr.dept.name}" filterMatchMode="contains">
 					<h:outputText value="#{vpr.dept.name}" rendered="#{vpr.dept != null}" />

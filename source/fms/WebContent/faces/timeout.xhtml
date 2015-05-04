@@ -1,0 +1,23 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/index_layout.xhtml">
+<ui:define name="content">
+	<div class="content">
+		<h1>Fleet Management System | Login</h1>
+		<div class="background"></div>
+		<div class="wrapper">
+			<div class="box">
+	        <h:form id="loginForm">
+	        	<div class="header grey"><h3>Session Timed Out!!!</h3></div>
+	        	<div class="content no-padding">
+					<p:button outcome="index" ajax="false" value="Start New Session" styleClass="btn btn-primary" />
+				</div>
+	        </h:form>
+	        </div>
+	    </div>
+	</div>
+</ui:define>
+</ui:composition>

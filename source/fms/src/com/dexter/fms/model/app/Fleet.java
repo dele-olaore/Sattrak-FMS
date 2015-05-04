@@ -32,7 +32,7 @@ public class Fleet implements Serializable
 	
 	private String name;
 	private String description;
-	
+	private int vehiclesActiveMonths;
 	private boolean defaultFleet;
 	
 	@ManyToOne
@@ -79,6 +79,14 @@ public class Fleet implements Serializable
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public int getVehiclesActiveMonths() {
+		return vehiclesActiveMonths;
+	}
+
+	public void setVehiclesActiveMonths(int vehiclesActiveMonths) {
+		this.vehiclesActiveMonths = vehiclesActiveMonths;
 	}
 
 	public boolean isDefaultFleet() {

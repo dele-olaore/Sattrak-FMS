@@ -9,6 +9,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerUser;
@@ -53,6 +54,7 @@ public class VehicleFuelingRequest implements Serializable
 	@ManyToOne
 	private PartnerUser createdBy;
 	
+	@Transient
 	private boolean selected;
 	
 	public VehicleFuelingRequest()

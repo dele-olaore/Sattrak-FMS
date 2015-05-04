@@ -7,18 +7,21 @@
 <ui:define name="title">Manage Partners Subscriptions</ui:define>
 <ui:define name="content">
 	<br/><br/>
-	<h:form id="form" enctype="multipart/form-data">
+	<h:form id="form">
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
-		<td align="left" width="50%">
+		<td align="left" colspan="2">
 			<p:breadCrumb>  
     			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
     			<p:menuitem value="Manage Partners Subscriptions" action="#{dashboardBean.gotoPage('manage_partner_subs', false)}" ajax="false" />
     		</p:breadCrumb>
-		</td>
-		<td align="right">
+		
+			<span style="float:right">
 			<p:commandLink value="New Subscription" onclick="dlg.show();" /> | <p:commandLink value="Add License" onclick="addlicdlg.show();" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
 		</td>
 		</tr>
 		<tr>
@@ -125,8 +128,8 @@
 	</div>
 	</h:form>
 	
-	<p:dialog id="addLicDialog" header="Add License" widgetVar="addlicdlg" modal="true" dynamic="true">
-		<h:form id="form2">
+	<p:dialog id="addLicDialog" header="Add License" widgetVar="addlicdlg" modal="true">
+		<h:form>
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
@@ -149,8 +152,8 @@
   		</h:form>
   	</p:dialog>
 	
-	<p:dialog id="newSubDialog" header="New Subscription" widgetVar="dlg" modal="true" dynamic="true">
-		<h:form id="form3">
+	<p:dialog id="newSubDialog" header="New Subscription" widgetVar="dlg" modal="true">
+		<h:form>
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
 		
