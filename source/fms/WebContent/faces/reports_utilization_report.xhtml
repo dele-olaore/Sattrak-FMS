@@ -125,18 +125,6 @@
 						</f:facet>
 						<h:outputText value="#{obj.actualWorkingTime}" />
 					</p:column>
-					<p:column sortBy="#{obj.standardEngineHours}">
-						<f:facet name="header">
-							 <h:outputText value="Standard Engine Hours" />  
-						</f:facet>
-						<h:outputText value="#{obj.standardEngineHours}" />
-					</p:column>
-					<p:column sortBy="#{obj.actualEngineHours}">
-						<f:facet name="header">
-							 <h:outputText value="Actual Engine Hours" />  
-						</f:facet>
-						<h:outputText value="#{obj.actualEngineHours}" />
-					</p:column>
 					<p:column sortBy="#{obj.tripsCount}">
 						<f:facet name="header">
 							 <h:outputText value="No. of Trips" />  
@@ -148,6 +136,18 @@
 							 <h:outputText value="Distance" />  
 						</f:facet>
 						<h:outputText value="#{obj.distanceCovered}" />
+					</p:column>
+					<p:column sortBy="#{obj.currentOdometer}">
+						<f:facet name="header">
+							 <h:outputText value="Current Odometer" />  
+						</f:facet>
+						<h:outputText value="#{obj.currentOdometer}" />
+					</p:column>
+					<p:column sortBy="#{obj.fuelConsumption}">
+						<f:facet name="header">
+							 <h:outputText value="Fuel Consumed" />  
+						</f:facet>
+						<h:outputText value="#{obj.fuelConsumption}" />
 					</p:column>
 					<p:column sortBy="#{obj.percentUtil}">
 						<f:facet name="header">

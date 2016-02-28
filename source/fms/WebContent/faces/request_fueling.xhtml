@@ -102,7 +102,7 @@
 						  		<p:dataGrid id="apvu2" var="it" columns="1" value="#{ddBean.getApprovingUsers(fleetBean.partner.id, fleetBean.fuelingRequest.amt, 'Fueling')}">
 						  			<f:facet name="header"></f:facet>
 						  			<p:selectBooleanCheckbox value="#{it.selected}" />
-									<h:outputText value="#{it.personel.firstname} #{it.personel.lastname}" />
+									<h:outputText value="#{it.firstname} #{it.lastname}" />
 						  		</p:dataGrid>
 							</p:panelGrid>
 							</p:outputPanel>

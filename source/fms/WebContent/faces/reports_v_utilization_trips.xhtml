@@ -126,6 +126,18 @@
 						</f:facet>
 						<h:outputText value="#{obj.distance}" />
 					</p:column>
+					<p:column sortBy="#{obj.maint_odometer}">
+						<f:facet name="header">
+							 <h:outputText value="Current Odometer" />  
+						</f:facet>
+						<h:outputText value="#{obj.maint_odometer}" />
+					</p:column>
+					<p:column sortBy="#{obj.age}">
+						<f:facet name="header">
+							 <h:outputText value="Age (in years)" />  
+						</f:facet>
+						<h:outputText value="#{obj.age}" />
+					</p:column>
 					<p:column sortBy="#{obj.working_time}">
 						<f:facet name="header">
 							 <h:outputText value="Work Time (hours)" />  

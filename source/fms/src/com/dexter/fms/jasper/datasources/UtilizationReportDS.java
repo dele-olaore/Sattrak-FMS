@@ -11,7 +11,7 @@ public class UtilizationReportDS {
 		private String vehicleReg;
 		private int tripsCount;
 		private double standardWorktime, actualWorkingTime, standardEngineHours, actualEngineHours, drivingTime, distanceCovered, noOfVehicles, costPerKm, percentUtil;
-		private double currentOdometer;
+		private double currentOdometer, fuelConsumption;
 		public Entry() {}
 		public String getVehicleReg() {
 			return vehicleReg;
@@ -84,6 +84,12 @@ public class UtilizationReportDS {
 		}
 		public void setCurrentOdometer(double currentOdometer) {
 			this.currentOdometer = currentOdometer;
+		}
+		public double getFuelConsumption() {
+			return fuelConsumption;
+		}
+		public void setFuelConsumption(double fuelConsumption) {
+			this.fuelConsumption = fuelConsumption;
 		}
 	}
 	

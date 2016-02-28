@@ -40,7 +40,6 @@
 					<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
 						<f:selectItem itemLabel="-- All --" itemValue="0" />
 			  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-			  			<p:ajax update="vch1" />
 			  		</p:selectOneMenu>
 			  		
 			  		<f:facet name="footer">

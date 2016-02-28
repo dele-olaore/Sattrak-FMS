@@ -1075,12 +1075,12 @@ public class ReportsMBean implements Serializable
 						daysCount += 1;
 					start_can.add(Calendar.DATE, 1);
 				}
-				double standardWorktime = 12*daysCount, standardEngineHours = 12*daysCount;
+				double standardWorktime = 12*daysCount;
 				int noOfVehicles = vpList.size();
 				utilazationReport.setNoOfAssets(noOfVehicles);
 				for(VehicleParameters vp : vpList) {
 					int tripsCount = 0;
-					double actualWorkingTime = 0, actualEngineHours = 0, drivingTime = 0, distanceCovered = 0, costPerKm = 0;
+					double actualWorkingTime = 0, drivingTime = 0, distanceCovered = 0, costPerKm = 0;
 					// vehicle % utilization= standard worktime/actual worktime*100
 					Query q = gDAO.createQuery("Select e from CorporateTrip e where e.vehicle.id = :vehicle_id and (e.departureDateTime between :st_dt and :ed_dt) and (e.tripStatus = 'ON_TRIP' or e.tripStatus = 'SHOULD_BE_COMPLETED' or e.tripStatus = 'COMPLETION_REQUEST' or e.tripStatus = 'COMPLETED')");
 					q.setParameter("vehicle_id", vp.getVehicle().getId());
@@ -1112,22 +1112,18 @@ public class ReportsMBean implements Serializable
 					q.setParameter("ed_dt", getEnd_dt());
 					Object listObj = gDAO.search(q, 0);
 					if(listObj != null) {
-						double start_odometer = 0, end_odometer = 0, start_enginehours = 0, end_enginehours = 0;
+						double start_odometer = 0, end_odometer = 0;
 						boolean start = true;
 						Vector<VehicleOdometerData> list = (Vector<VehicleOdometerData>)listObj;
 						for(VehicleOdometerData e : list) {
 							end_odometer = e.getOdometer();
-							end_enginehours = e.getEngineHours();
 							if(start) {
 								start = false;
 								start_odometer = e.getOdometer();
-								start_enginehours = e.getEngineHours();
 							}
 						}
 						double mymileage_consumption = Math.abs(end_odometer-start_odometer);
-						double myenginehours = Math.abs(end_enginehours-start_enginehours);
 						distanceCovered += mymileage_consumption;
-						actualEngineHours += myenginehours;
 					}
 					double currentOdometer = 0;
 					q = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle.id = :v_id");
@@ -1137,6 +1133,23 @@ public class ReportsMBean implements Serializable
 						Vector<VehicleTrackerData> list = (Vector<VehicleTrackerData>)listObj;
 						for(VehicleTrackerData e : list)
 							currentOdometer = e.getOdometer();
+					}
+					
+					double myfuel_consumption = 0;
+					q = gDAO.createQuery("Select e from VehicleFuelData e where e.vehicle.id = :v_id and (e.captured_dt between :st_dt and :ed_dt) order by e.captured_dt");
+					q.setParameter("v_id", vp.getVehicle().getId());
+					q.setParameter("st_dt", getStart_dt());
+					q.setParameter("ed_dt", getEnd_dt());
+					listObj = gDAO.search(q, 0);
+					if(listObj != null) {
+						double last_fuel_level = 0;
+						Vector<VehicleFuelData> list = (Vector<VehicleFuelData>)listObj;
+						for(VehicleFuelData e : list) {
+							if(last_fuel_level > e.getFuelLevel()) {
+								myfuel_consumption += last_fuel_level - e.getFuelLevel();
+							}
+							last_fuel_level = e.getFuelLevel();
+						}
 					}
 					
 					String key = null;
@@ -1159,7 +1172,7 @@ public class ReportsMBean implements Serializable
 						for(UtilizationReportDS.Entry e : groupList) {
 							if(e.getVehicleReg().equals(key)) {
 								e.setCurrentOdometer(currentOdometer);
-								e.setActualEngineHours(e.getActualEngineHours()+actualEngineHours);
+								e.setFuelConsumption(myfuel_consumption);
 								e.setActualWorkingTime(e.getActualWorkingTime()+actualWorkingTime);
 								e.setCostPerKm(e.getCostPerKm()+costPerKm);
 								e.setDistanceCovered(e.getDistanceCovered()+distanceCovered);
@@ -1180,9 +1193,8 @@ public class ReportsMBean implements Serializable
 							UtilizationReportDS.Entry entry = utilazationReport.new Entry();
 							entry.setVehicleReg(key);
 							entry.setCurrentOdometer(currentOdometer);
-							entry.setStandardEngineHours(standardEngineHours);
+							entry.setFuelConsumption(myfuel_consumption);
 							entry.setStandardWorktime(standardWorktime);
-							entry.setActualEngineHours(actualEngineHours);
 							entry.setActualWorkingTime(actualWorkingTime);
 							entry.setCostPerKm(costPerKm);
 							entry.setDistanceCovered(distanceCovered);
@@ -1432,6 +1444,29 @@ public class ReportsMBean implements Serializable
 			gDAO.destroy();
 			
 			if(getFleetCost() != null && getFleetCost().size() > 0) {
+				if(getPieModel() == null)
+					createPieModel();
+				
+				for(FuelConsumption v : getFleetCost()) {
+					double totalCost = v.getFuelCost() + v.getDriverCost() + v.getMaintCost() + v.getLicenseCost() + v.getOtherCost();
+					getPieModel().set(v.getRegNo(), totalCost);
+				}
+				
+				if(barModel == null)
+					createBarModel();
+				maxY = 0;
+				ChartSeries distanceCoveredSeries = new ChartSeries();
+				distanceCoveredSeries.setLabel("Distance covered");
+				for(FuelConsumption v : getFleetCost()) {
+					if(v.getDistance() > 0) {
+						distanceCoveredSeries.set(v.getRegNo(), v.getDistance());
+						if(v.getDistance() > maxY)
+							maxY = new BigDecimal(v.getDistance()).longValue() + 5;
+					} else
+						distanceCoveredSeries.set(v.getRegNo(), 0);
+				}
+				barModel.addSeries(distanceCoveredSeries);
+				
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getFleetCost().size() + " record(s) found!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			} else {
@@ -1931,10 +1966,15 @@ public class ReportsMBean implements Serializable
 						v.setNo_of_trips(list.size());
 						corporateTripsSummary.setNo_of_trips(corporateTripsSummary.getNo_of_trips() + v.getNo_of_trips());
 						Vector<String> driverIds = new Vector<String>();
+						long trips_duration = 0;
 						for(CorporateTrip ct : list) {
 							if(ct.getDriver() != null && !driverIds.contains(""+ct.getDriver().getId().longValue())) {
 								driverIds.add(""+ct.getDriver().getId().longValue());
 							}
+							Date end_trip = new Date();
+							if(ct.getCompletedDateTime() != null)
+								end_trip = ct.getCompletedDateTime();
+							trips_duration += Math.abs(end_trip.getTime() - ct.getDepartureDateTime().getTime());
 							q = gDAO.createQuery("Select e from CorporateTripPassenger e where e.trip.id = :trip_id");
 							q.setParameter("trip_id", ct.getId());
 							Object ctpObj = gDAO.search(q, 0);
@@ -1946,6 +1986,15 @@ public class ReportsMBean implements Serializable
 						}
 						v.setNo_of_drivers(driverIds.size());
 						corporateTripsSummary.setNo_of_drivers(corporateTripsSummary.getNo_of_drivers() + v.getNo_of_drivers());
+						if(trips_duration > 0) {
+							try {
+								BigDecimal timemilli = new BigDecimal(trips_duration).divide(new BigDecimal(3600000));
+								timemilli = timemilli.setScale(2);
+								v.setWorking_time(timemilli.doubleValue());
+								corporateTripsSummary.setWorking_time(corporateTripsSummary.getWorking_time() + v.getWorking_time());
+							} catch(Exception ex) {}
+						} else
+							v.setWorking_time(0);
 					}
 					
 					BigDecimal topSpeed = new BigDecimal(0), totalSpeed = new BigDecimal(0), speedEntryCount = new BigDecimal(0), avgSpeed = new BigDecimal(0);
@@ -1992,6 +2041,17 @@ public class ReportsMBean implements Serializable
 						corporateTripsSummary.setDistance(corporateTripsSummary.getDistance() + v.getDistance());
 					}
 					
+					q = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle.id = :vehicle_id");
+					q.setParameter("vehicle_id", v.getId());
+					obj = gDAO.search(q, 0);
+					if(obj != null) {
+						Vector<VehicleTrackerData> objList = (Vector<VehicleTrackerData>)obj;
+						for(VehicleTrackerData vtd : objList) {
+							// This is used to represent the vehicle's current odometer
+							v.setMaint_odometer(new BigDecimal(vtd.getOdometer()));
+						}
+					}
+					
 					q = gDAO.createQuery("Select e from VehicleFueling e where e.vehicle.id = :vehicle_id and (e.captured_dt between :st_dt and :ed_dt) order by e.captured_dt");
 					q.setParameter("vehicle_id", v.getId());
 					q.setParameter("st_dt", getStart_dt());
@@ -2016,44 +2076,6 @@ public class ReportsMBean implements Serializable
 								v.setKm_per_liter(oneLiter.doubleValue());
 								corporateTripsSummary.setKm_per_liter(corporateTripsSummary.getKm_per_liter() + v.getKm_per_liter());
 							} catch(Exception ex) {}
-						}
-					}
-					
-					q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt) order by e.captured_dt");
-					q.setParameter("vehicle_id", v.getId());
-					q.setParameter("st_dt", getStart_dt());
-					q.setParameter("ed_dt", getEnd_dt());
-					obj = gDAO.search(q, 0);
-					if(obj != null) { // 
-						Vector<VehicleTrackerEventData> objList = (Vector<VehicleTrackerEventData>)obj;
-						if(objList != null && objList.size() > 0) {
-							long timeInMilli = 0;
-							Date switchOnTime = null, switchOffTime = null;
-							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
-							for(VehicleTrackerEventData vted : objList) {
-								if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition On")) {
-									try {
-										switchOnTime = sdf.parse(vted.getEvent_time());
-										switchOffTime = null;
-									} catch(Exception ex) {}
-								} else if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition Off")) {
-									try {
-										switchOffTime = sdf.parse(vted.getEvent_time());
-										if(switchOnTime != null) {
-											timeInMilli += Math.abs(switchOffTime.getTime() - switchOnTime.getTime());
-										}
-									} catch(Exception ex) {}
-								}
-							}
-							if(timeInMilli > 0) {
-								try {
-									BigDecimal timemilli = new BigDecimal(timeInMilli).divide(new BigDecimal(3600000));
-									timemilli = timemilli.setScale(3);
-									v.setWorking_time(timemilli.doubleValue());
-									corporateTripsSummary.setWorking_time(corporateTripsSummary.getWorking_time() + v.getWorking_time());
-								} catch(Exception ex) {}
-							} else
-								v.setWorking_time(0);
 						}
 					}
 				}
@@ -2239,6 +2261,16 @@ public class ReportsMBean implements Serializable
 						distanceDeci = distanceDeci.setScale(2, RoundingMode.HALF_UP);
 						double distance = distanceDeci.doubleValue();
 						v.setDistance_covered(new BigDecimal(distance).setScale(2, RoundingMode.HALF_UP).doubleValue());
+					}
+					
+					q = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle.id = :vehicle_id");
+					q.setParameter("vehicle_id", v.getId());
+					obj = gDAO.search(q, 0);
+					if(obj != null) {
+						Vector<VehicleTrackerData> objList = (Vector<VehicleTrackerData>)obj;
+						for(VehicleTrackerData vtd : objList) {
+							v.setDistance(vtd.getOdometer());
+						}
 					}
 					
 					q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt)");

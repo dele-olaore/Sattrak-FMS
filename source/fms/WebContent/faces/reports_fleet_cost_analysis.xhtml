@@ -134,10 +134,24 @@
 						</p:commandLink>
 					</p:panel>
 				</h:panelGrid>
+				
+				<h:panelGrid columns="2" rendered="#{reportsBean.fleetCost != null and reportsBean.fleetCost.size() > 0}">
+					<p:pieChart id="pie"
+	                    value="#{reportsBean.pieModel}"
+	                    legendPosition="w"
+	                    title="Efficient Cost Chart"
+	                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}" />
+                    
+                    <p:barChart id="bar" value="#{reportsBean.barModel}" legendPosition="ne" xaxisLabel="Vehicle" yaxisLabel="Distance covered"
+                    	title="Efficient Distance Covered Chart" min="0" max="#{reportsBean.maxY}" style="height:300px"
+                    	rendered="#{reportsBean.barModel != null}" />
+                </h:panelGrid>
+				
 				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.fleetCost}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.fleetCost != null and reportsBean.fleetCost.size() > 0}">
 					<f:facet name="header">
 						Found fleet costing(s)
 					</f:facet>

@@ -140,17 +140,11 @@
 						</f:facet>
 						<h:outputText value="#{obj.distance_covered}" />
 					</p:column>
-					<p:column sortBy="#{obj.average_speed}">
+					<p:column sortBy="#{obj.distance}">
 						<f:facet name="header">
-							 <h:outputText value="Avg. Speed" />  
+							 <h:outputText value="Current Odometer" />  
 						</f:facet>
-						<h:outputText value="#{obj.average_speed}" />
-					</p:column>
-					<p:column sortBy="#{obj.max_speed}">
-						<f:facet name="header">
-							 <h:outputText value="Top Speed" />  
-						</f:facet>
-						<h:outputText value="#{obj.max_speed}" />
+						<h:outputText value="#{obj.distance}" />
 					</p:column>
 					
 				</p:dataTable>

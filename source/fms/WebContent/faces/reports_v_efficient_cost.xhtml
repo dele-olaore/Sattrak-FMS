@@ -85,7 +85,8 @@
 	                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}" />
                     
                     <p:barChart id="bar" value="#{reportsBean.barModel}" legendPosition="ne" xaxisLabel="Vehicle" yaxisLabel="Distance covered"
-                    	title="Efficient Distance Covered Chart" min="0" max="#{reportsBean.maxY}" style="height:300px" />
+                    	title="Efficient Distance Covered Chart" min="0" max="#{reportsBean.maxY}" style="height:300px"
+                    	rendered="#{reportsBean.barModel != null}" />
                 </h:panelGrid>
 				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.vehicleCostEfficientSummary.vehicles}"
 					paginator="true" rows="50"
