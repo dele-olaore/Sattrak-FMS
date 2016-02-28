@@ -24,6 +24,9 @@ public class ExpenseType implements Serializable
     @GeneratedValue
 	private Long id;
 	
+	@ManyToOne
+	private ExpenseHeader expenseHeader;
+	
 	private String name;
 	private String description;
 	
@@ -47,6 +50,14 @@ public class ExpenseType implements Serializable
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public ExpenseHeader getExpenseHeader() {
+		return expenseHeader;
+	}
+
+	public void setExpenseHeader(ExpenseHeader expenseHeader) {
+		this.expenseHeader = expenseHeader;
 	}
 
 	public String getName() {

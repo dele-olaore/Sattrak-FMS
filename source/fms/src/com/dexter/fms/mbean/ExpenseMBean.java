@@ -16,7 +16,6 @@ import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
 import javax.persistence.Query;
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import org.primefaces.event.RowEditEvent;
 import org.primefaces.model.DefaultStreamedContent;
@@ -31,9 +30,12 @@ import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.Budget;
 import com.dexter.fms.model.app.Expense;
+import com.dexter.fms.model.app.ExpenseHeader;
 import com.dexter.fms.model.app.ExpenseRequest;
 import com.dexter.fms.model.app.ExpenseType;
 import com.dexter.fms.model.app.Vehicle;
+import com.dexter.fms.model.ref.Department;
+import com.dexter.fms.model.ref.Unit;
 
 @ManagedBean(name = "expenseBean")
 @SessionScoped
@@ -48,25 +50,29 @@ public class ExpenseMBean implements Serializable
 	private Long partner_id;
 	private Partner partner;
 	
+	private ExpenseHeader expHeader;
+	private Vector<ExpenseHeader> expHeaders;
+	
 	private ExpenseType expType;
 	private Vector<ExpenseType> expTypes;
 	
 	private Budget budget;
 	private Vector<Budget> setupbudgets, budgets;
 	
-	private Long vehicle_id;
-	private Long staff_id;
+	private Long fleet_id, vehicle_id;
+	private Long division_id, division_id2, department_id, department_id2, unit_id, unit_id2, staff_id;
 	
-	private Long expType_id;
+	private Long expHeader_id, editExpHeader_id, expType_id;
 	private Expense exp;
 	private Vector<Expense> exps;
 	private Date start_dt, end_dt;
 	private StreamedContent expensesExcelTemplate;
 	private UploadedFile expensesBatchExcel;
 	
-	private Long approvalUser_id;
+	private Long approvalUser_id, expRequest_id;
 	private ExpenseRequest expRequest;
-	private Vector<ExpenseRequest> myExpRequests, mySubExpRequests, pendingExpRequests;
+	private Vector<ExpenseRequest> myExpRequests, mySubExpRequests, myAllSubExpRequests, pendingExpRequests, myAttendedExpRequests;
+	private Vector<ExpenseRequest> approvedRequests;
 	private String approvalStatus; // PENDING, APPROVED, DENIED
 	private String approvalComment; // comment for approval status
 	
@@ -86,6 +92,7 @@ public class ExpenseMBean implements Serializable
 	{
 		if(getPendingExpRequests() != null && getPendingExpRequests().size() > 0)
 		{
+			String naration = "Attend to expense request";
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -93,6 +100,7 @@ public class ExpenseMBean implements Serializable
 			{
 				if(expR.isSelected())
 				{
+					naration += ", " + expR.getType().getName() + "(" + expR.getAmount() + ") :" + expR.getApprovalStatus();
 					expR.setApprovalComment(getApprovalComment());
 					expR.setApprovalStatus(getApprovalStatus());
 					expR.setApproval_dt(new Date());
@@ -102,9 +110,16 @@ public class ExpenseMBean implements Serializable
 						break;
 					else
 					{
-						if(getApprovalStatus().equalsIgnoreCase("APPROVED"))
-						{
-							Expense exp = new Expense();
+						if(getApprovalStatus().equalsIgnoreCase("APPROVED")) {
+							String email_message = "<html><body><p><strong>Dear " + expR.getCreatedBy().getPersonel().getFirstname() + ", </strong></p>";
+							email_message += "<p>Your expense request for \"" + expR.getType().getName() + ": " + expR.getRemarks() + "\" has been approved! You can now make the expense and capture it on the platform.</p>";
+							email_message += "<p>Regards<br/>FMS</p></body></html>";
+							
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{expR.getCreatedBy().getPersonel().getEmail()}, "Expense Approved", email_message);
+							} catch(Exception ex){}
+							
+							/*Expense exp = new Expense();
 							exp.setAmount(expR.getAmount());
 							exp.setCreatedBy(expR.getCreatedBy());
 							exp.setCrt_dt(new Date());
@@ -122,7 +137,15 @@ public class ExpenseMBean implements Serializable
 								ret = gDAO.update(expR);
 								if(!ret)
 									break;
-							}
+							}*/
+						} else if(getApprovalStatus().equalsIgnoreCase("DENIED")) {
+							String email_message = "<html><body><p><strong>Dear " + expR.getCreatedBy().getPersonel().getFirstname() + ", </strong></p>";
+							email_message += "<p>Your expense request for \"" + expR.getType().getName() + ": " + expR.getRemarks() + "\" has been <font color=red>denied!</font></p>";
+							email_message += "<p>Regards<br/>FMS</p></body></html>";
+							
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{expR.getCreatedBy().getPersonel().getEmail()}, "Expense Denied", email_message);
+							} catch(Exception ex){}
 						}
 					}
 				}
@@ -132,14 +155,19 @@ public class ExpenseMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense request(s) attended to successfully!");
 				
+				naration += ", Status: Success";
+				
 				setPendingExpRequests(null);
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -151,16 +179,17 @@ public class ExpenseMBean implements Serializable
 	@SuppressWarnings("deprecation")
 	public void saveBatchExpRequest()
 	{
-		HttpServletRequest origRequest = (HttpServletRequest)FacesContext.getCurrentInstance().getExternalContext().getRequest();
+		//HttpServletRequest origRequest = (HttpServletRequest)FacesContext.getCurrentInstance().getExternalContext().getRequest();
 		
-		if(getMyExpRequests() != null && getMyExpRequests().size() > 0)
-		{
+		if(getMyExpRequests() != null && getMyExpRequests().size() > 0) {
+			String naration = "Saving batch expense requests:";
 			ArrayList<String> emails = new ArrayList<String>(), usernames = new ArrayList<String>();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
 			for(ExpenseRequest expR : getMyExpRequests())
 			{
+				naration += expR.getType().getName() + "(" + expR.getAmount() + "), ";
 				ret = gDAO.save(expR);
 				if(ret)
 				{
@@ -200,6 +229,8 @@ public class ExpenseMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense request(s) save successfully!");
 				
+				naration += " Status: Success";
+				
 				if(usernames.size() > 0)
 				{
 					for(String username : usernames)
@@ -216,7 +247,7 @@ public class ExpenseMBean implements Serializable
 								table += "<td>" + NumberFormat.getNumberInstance().format(expR.getAmount()) + "</td>";
 								table += "<td>" + expR.getExpense_dt().toLocaleString() + "</td>";
 								table += "<td>" + expR.getRequest_dt().toLocaleString() + "</td>";
-								table += "<td><a href=\"" + origRequest.getContextPath() + "/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=1\">Approve</a> | <a href=\"" + origRequest.getContextPath() + "/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=0\">Deny</a></td></tr>";
+								table += "<td><a href=\"http://sattrakservices.com/fms/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=1\">Approve</a> | <a href=\"http://sattrakservices.com/fms/approvalservlet?expId=" + expR.getId().longValue() + "&usrId=" + expR.getApprovalUser().getId().longValue() + "&apv=0\">Deny</a></td></tr>";
 							}
 						}
 						table += "</table>";
@@ -280,8 +311,12 @@ public class ExpenseMBean implements Serializable
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				
+				naration += " Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -289,6 +324,7 @@ public class ExpenseMBean implements Serializable
 		}
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
+	@SuppressWarnings("unchecked")
 	public void addExpRequestToBatch()
 	{
 		if(getPartner() != null)
@@ -304,39 +340,55 @@ public class ExpenseMBean implements Serializable
 					ExpenseType et = (ExpenseType)expType;
 					if(!et.isSystemObj())
 					{
-						Object approvalUObj = gDAO.find(PartnerUser.class, getApprovalUser_id());
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("personel.id", getApprovalUser_id());
+						Object approvalUObj = gDAO.search("PartnerUser", params);
 						if(approvalUObj != null)
 						{
-							PartnerUser approveUser = (PartnerUser)approvalUObj;
-							Vehicle vehicle = null;
-							if(getVehicle_id() != null)
-							{
-								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
-								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+							PartnerUser approveUser = null;
+							Vector<PartnerUser> puList = (Vector<PartnerUser>)approvalUObj;
+							for(PartnerUser pu : puList)
+								approveUser = pu;
+							if(approveUser != null) {
+								Vehicle vehicle = null;
+								if(getVehicle_id() != null) {
+									Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
+									if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+								}
+								PartnerPersonel staff = null;
+								if(getStaff_id() != null) {
+									Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
+									if(staffObj != null) staff = (PartnerPersonel)staffObj;
+								}
+								if(getDepartment_id2() != null && getDepartment_id2() > 0) {
+									Object obj = gDAO.find(Department.class, getDepartment_id2());
+									if(obj != null) getExpRequest().setMisDepartment((Department)obj);
+								}
+								if(getUnit_id2() != null && getUnit_id2() > 0) {
+									Object obj = gDAO.find(Unit.class, getUnit_id2());
+									if(obj != null) getExpRequest().setMisUnit((Unit)obj);
+								}
+								
+								getExpRequest().setVehicle(vehicle);
+								getExpRequest().setPersonel(staff);
+								getExpRequest().setType(et);
+								getExpRequest().setCreatedBy(dashBean.getUser());
+								getExpRequest().setCrt_dt(new Date());
+								getExpRequest().setPartner(getPartner());
+								getExpRequest().setApprovalUser(approveUser);
+								getExpRequest().setApprovalStatus("PENDING");
+								getExpRequest().setRequest_dt(new Date());
+								
+								if(getMyExpRequests() == null)
+									setMyExpRequests(new Vector<ExpenseRequest>());
+								getMyExpRequests().add(getExpRequest());
+								
+								setExpRequest(null);
+								
+								msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request added to batch successfully.");
+							} else {
+								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Unknown approval user selected.");
 							}
-							PartnerPersonel staff = null;
-							if(getStaff_id() != null)
-							{
-								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
-								if(staffObj != null) staff = (PartnerPersonel)staffObj;
-							}
-							getExpRequest().setVehicle(vehicle);
-							getExpRequest().setPersonel(staff);
-							getExpRequest().setType(et);
-							getExpRequest().setCreatedBy(dashBean.getUser());
-							getExpRequest().setCrt_dt(new Date());
-							getExpRequest().setPartner(getPartner());
-							getExpRequest().setApprovalUser(approveUser);
-							getExpRequest().setApprovalStatus("PENDING");
-							getExpRequest().setRequest_dt(new Date());
-							
-							if(getMyExpRequests() == null)
-								setMyExpRequests(new Vector<ExpenseRequest>());
-							getMyExpRequests().add(getExpRequest());
-							
-							setExpRequest(null);
-							
-							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request added to batch successfully.");
 						}
 						else
 						{
@@ -396,6 +448,7 @@ public class ExpenseMBean implements Serializable
 					getExpRequest().getExpense_dt() != null && getExpType_id() != null && getExpType_id() > 0 &&
 					getApprovalUser_id() != null)
 			{
+				String naration = "Create expense request for ";
 				GeneralDAO gDAO = new GeneralDAO();
 				Object expType = gDAO.find(ExpenseType.class, getExpType_id());
 				if(expType != null)
@@ -413,12 +466,14 @@ public class ExpenseMBean implements Serializable
 							{
 								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
 								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+								naration += " Vehicle: " + vehicle.getRegistrationNo();
 							}
 							PartnerPersonel staff = null;
 							if(getStaff_id() != null)
 							{
 								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
 								if(staffObj != null) staff = (PartnerPersonel)staffObj;
+								naration += " Staff: " + staff.getFirstname() + " " + staff.getLastname();
 							}
 							getExpRequest().setPersonel(staff);
 							getExpRequest().setVehicle(vehicle);
@@ -429,6 +484,8 @@ public class ExpenseMBean implements Serializable
 							getExpRequest().setApprovalUser(approveUser);
 							getExpRequest().setApprovalStatus("PENDING");
 							getExpRequest().setRequest_dt(new Date());
+							
+							naration += " Item: " + getExpRequest().getType().getName() + ", Amount: " + getExpRequest().getAmount();
 							
 							gDAO.startTransaction();
 							boolean ret = gDAO.save(getExpRequest());
@@ -446,6 +503,8 @@ public class ExpenseMBean implements Serializable
 								gDAO.save(n);
 								
 								gDAO.commit();
+								
+								naration += ", Status: Success";
 								
 								if(approveUser.getPersonel().getEmail() != null && approveUser.getPersonel().getEmail().trim().length() > 0)
 								{
@@ -481,6 +540,8 @@ public class ExpenseMBean implements Serializable
 							{
 								gDAO.rollback();
 								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+								
+								naration += ", Status: Failed: " + gDAO.getMessage();
 							}
 						}
 						else
@@ -498,6 +559,8 @@ public class ExpenseMBean implements Serializable
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid expense type selected!");
 				}
 				gDAO.destroy();
+				
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -515,25 +578,41 @@ public class ExpenseMBean implements Serializable
 	{
 		if(getBudget().getId() != null)
 		{
+			String naration = "Delete budget: " + getBudget().getType().getName() + " " + getBudget().getStart_dt() + "-" + getBudget().getEnd_dt();
 			GeneralDAO gDAO = new GeneralDAO();
-			gDAO.startTransaction();
-			boolean ret = gDAO.remove(getBudget());
-			if(ret)
-			{
-				gDAO.commit();
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Budget deleted successfully.");
+			Budget b = null;
+			Object bobj = gDAO.find(Budget.class, getBudget().getId());
+			if(bobj != null) {
+				b = (Budget)bobj;
+			}
+			if(b != null) {
+				gDAO.startTransaction();
+				boolean ret = gDAO.remove(b);
+				if(ret) {
+					gDAO.commit();
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Budget deleted successfully.");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					
+					naration += ", Status: Success";
+					
+					setBudget(null);
+					setBudgets(null);
+				} else {
+					gDAO.rollback();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to delete budget. " + gDAO.getMessage());
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					
+					naration += ", Status: Failed: " + gDAO.getMessage();
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Budget not found!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
-				setBudget(null);
-				setBudgets(null);
-			}
-			else
-			{
-				gDAO.rollback();
-				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to delete budget. " + gDAO.getMessage());
-				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += ", Status: Failed: Budget not found!";
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -547,6 +626,16 @@ public class ExpenseMBean implements Serializable
 		GeneralDAO gDAO = new GeneralDAO();
 		boolean ret = false;
 		Object eventSource = event.getObject();
+		
+		if(eventSource instanceof ExpenseType) {
+			ExpenseType et = (ExpenseType)eventSource;
+			if(getEditExpHeader_id() != null && getEditExpHeader_id().longValue() > 0) {
+				Object obj = gDAO.find(ExpenseHeader.class, getEditExpHeader_id());
+				if(obj != null)
+					et.setExpenseHeader((ExpenseHeader)obj);
+			}
+			eventSource = et;
+		}
 		
 		gDAO.startTransaction();
 		ret = gDAO.update(eventSource);
@@ -574,69 +663,57 @@ public class ExpenseMBean implements Serializable
 	
 	public void saveExp()
 	{
-		if(getPartner() != null)
-		{
+		if(getPartner() != null) {
 			if(getExp().getAmount() > 0 &&
-					getExp().getExpense_dt() != null && getExpType_id() != null && getExpType_id() > 0)
-			{
+					getExp().getExpense_dt() != null && getExp().getType() != null) {
+				String naration = "Create expense ";
 				GeneralDAO gDAO = new GeneralDAO();
-				Object expType = gDAO.find(ExpenseType.class, getExpType_id());
-				if(expType != null)
-				{
-					if(getExp().getExpense_dt().after(new Date()))
+				if(getExp().getExpense_dt().after(new Date())) {
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Future date selected. Not allowed!");
+				} else {
+					ExpenseType et = getExp().getType();
+					if(!et.isSystemObj())
 					{
-						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Future date selected. Not allowed!");
-					}
-					else
-					{
-						ExpenseType et = (ExpenseType)expType;
-						if(!et.isSystemObj())
-						{
-							Vehicle vehicle = null;
-							if(getVehicle_id() != null)
-							{
-								Object vehicleObj = gDAO.find(Vehicle.class, getVehicle_id());
-								if(vehicleObj != null) vehicle = (Vehicle)vehicleObj;
+						naration += " Type: " + et.getName();
+						
+						getExp().setCreatedBy(dashBean.getUser());
+						getExp().setCrt_dt(new Date());
+						
+						naration += " Amount: " + getExp().getAmount();
+						
+						gDAO.startTransaction();
+						boolean ret = gDAO.save(getExp());
+						if(ret) {
+							if(getExp().getExpR() != null) {
+								getExp().getExpR().setApprovalStatus("APPROVED and PROCESSED");
+								gDAO.update(getExp().getExpR());
 							}
-							PartnerPersonel staff = null;
-							if(getStaff_id() != null)
-							{
-								Object staffObj = gDAO.find(PartnerPersonel.class, getStaff_id());
-								if(staffObj != null) staff = (PartnerPersonel)staffObj;
-							}
-							getExp().setVehicle(vehicle);
-							getExp().setPersonel(staff);
-							getExp().setType(et);
-							getExp().setCreatedBy(dashBean.getUser());
-							getExp().setCrt_dt(new Date());
-							getExp().setPartner(getPartner());
 							
-							gDAO.startTransaction();
-							boolean ret = gDAO.save(getExp());
-							if(ret)
-							{
-								gDAO.commit();
-								msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense save successfully!");
-								setExp(null);
-								setExpType_id(null);
-								setExps(null);
-								dashBean.resetExps();
-							}
-							else
-							{
-								gDAO.rollback();
-								msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
-							}
+							gDAO.commit();
+							
+							naration += ", Status: Success";
+							
+							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense save successfully!");
+							setExp(null);
+							setExpType_id(null);
+							setExps(null);
+							dashBean.resetExps();
 						}
 						else
 						{
-							msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Can't manually insert expense data for a system expense type.");
+							gDAO.rollback();
+							msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+							
+							naration += ", Status: Failed: " + gDAO.getMessage();
 						}
+						gDAO.destroy();
+						
+						dashBean.saveAudit(naration, "", null);
 					}
-				}
-				else
-				{
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid expense type selected!");
+					else
+					{
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Can't manually insert expense data for a system expense type.");
+					}
 				}
 			}
 			else
@@ -659,6 +736,7 @@ public class ExpenseMBean implements Serializable
 		{
 			if(getBudget().getStart_dt().before(getBudget().getEnd_dt()))
 			{
+				String naration = "Setup budget";
 				GeneralDAO gDAO = new GeneralDAO();
 				gDAO.startTransaction();
 				boolean ret = false;
@@ -712,6 +790,8 @@ public class ExpenseMBean implements Serializable
 							b.setRemarks(getBudget().getRemarks());
 							b.setActive(true);
 							
+							naration += ", Type:" + b.getType().getName() + " Amount: " + b.getAmount() + " Start: " + b.getStart_dt() + " End: " + b.getEnd_dt();
+							
 							ret = gDAO.save(b);
 							if(!ret)
 								break;
@@ -726,6 +806,8 @@ public class ExpenseMBean implements Serializable
 						gDAO.commit();
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Budget setup successfully.");
 						
+						naration += ", Status: Success";
+						
 						setBudget(null);
 						setSetupbudgets(null);
 					}
@@ -733,13 +815,19 @@ public class ExpenseMBean implements Serializable
 					{
 						gDAO.rollback();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during setup: " + gDAO.getMessage());
+						
+						naration += ", Status: Failed: " + gDAO.getMessage();
 					}
 				}
 				else
 				{
 					gDAO.rollback();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No entry could be processed. Please input valid amounts for the expense types and ensure the budgets do not already exist.");
+					naration += ", Status: Failed: No entry could be processed. Please input valid amounts for the expense types and ensure the budgets do not already exist.";
 				}
+				gDAO.destroy();
+				
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -753,31 +841,97 @@ public class ExpenseMBean implements Serializable
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void saveExpType()
 	{
-		if(getExpType().getName() != null && getPartner() != null)
+		if(getExpType().getName() != null && getPartner() != null && getExpHeader_id() != null)
 		{
+			String naration = "Create expense type: " + getExpType().getName();
 			getExpType().setCreatedBy(dashBean.getUser());
 			getExpType().setCrt_dt(new Date());
 			getExpType().setPartner(getPartner());
 			getExpType().setSystemObj(false);
 			
 			GeneralDAO gDAO = new GeneralDAO();
+			Object expHeader_obj = gDAO.find(ExpenseHeader.class, getExpHeader_id());
+			if(expHeader_obj != null)
+				getExpType().setExpenseHeader((ExpenseHeader)expHeader_obj);
+			
+			boolean exists = false;
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", getPartner());
+			params.put("name", getExpType().getName());
+			Object exObj = gDAO.search("ExpenseType", params);
+			if(exObj != null) {
+				Vector<ExpenseType> exList = (Vector<ExpenseType>)exObj;
+				if(exList.size() > 0)
+					exists = true;
+			}
+			if(!exists) {
+				gDAO.startTransaction();
+				boolean ret = gDAO.save(getExpType());
+				if(ret) {
+					gDAO.commit();
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense type created successfully.");
+					
+					naration += ", Status: Success";
+					
+					setExpType(null);
+					setExpTypes(null);
+				} else {
+					gDAO.rollback();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create expense type: " + gDAO.getMessage());
+					
+					naration += ", Status: Failed: " + gDAO.getMessage();
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Expense type with same name already exists!");
+				naration += ", Status: Failed: Expense type with same name already exists!";
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "All fields with the '*' sign are required!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void saveExpHeader()
+	{
+		if(getExpHeader().getName() != null && getPartner() != null)
+		{
+			String naration = "Create expense header: " + getExpHeader().getName();
+			getExpHeader().setCreatedBy(dashBean.getUser());
+			getExpHeader().setCrt_dt(new Date());
+			getExpHeader().setPartner(getPartner());
+			getExpHeader().setSystemObj(false);
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
 			gDAO.startTransaction();
-			boolean ret = gDAO.save(getExpType());
+			boolean ret = gDAO.save(getExpHeader());
 			if(ret)
 			{
 				gDAO.commit();
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense type created successfully.");
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Expense header created successfully.");
 				
-				setExpType(null);
-				setExpTypes(null);
+				naration += ", Status: Success";
+				
+				setExpHeader(null);
+				setExpHeaders(null);
 			}
 			else
 			{
 				gDAO.rollback();
-				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create expense type: " + gDAO.getMessage());
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create expense header: " + gDAO.getMessage());
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -813,6 +967,69 @@ public class ExpenseMBean implements Serializable
 		this.partner = partner;
 	}
 
+	public ExpenseHeader getExpHeader() {
+		if(expHeader == null)
+			expHeader = new ExpenseHeader();
+		return expHeader;
+	}
+
+	public void setExpHeader(ExpenseHeader expHeader) {
+		this.expHeader = expHeader;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<ExpenseHeader> getExpHeaders() {
+		boolean research = true;
+		if(expHeaders == null || expHeaders.size() == 0)
+			research = true;
+		else if(expHeaders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(expHeaders.get(0).getPartner() != null && expHeaders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			expHeaders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				params.put("systemObj", false);
+				
+				Object drvs = gDAO.search("ExpenseHeader", params);
+				if(drvs != null)
+				{
+					expHeaders = (Vector<ExpenseHeader>)drvs;
+				}
+				
+				params = new Hashtable<String, Object>();
+				params.put("systemObj", true);
+				drvs = gDAO.search("ExpenseHeader", params);
+				if(drvs != null)
+				{
+					if(expHeaders == null)
+						expHeaders = new Vector<ExpenseHeader>();
+					Vector<ExpenseHeader> drvsList = (Vector<ExpenseHeader>)drvs;
+					for(ExpenseHeader e : drvsList)
+					{
+						expHeaders.add(e);
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return expHeaders;
+	}
+
+	public void setExpHeaders(Vector<ExpenseHeader> expHeaders) {
+		this.expHeaders = expHeaders;
+	}
+
 	public ExpenseType getExpType() {
 		if(expType == null)
 			expType = new ExpenseType();
@@ -825,6 +1042,7 @@ public class ExpenseMBean implements Serializable
 
 	public void resetExpTypes()
 	{
+		setExpHeaders(null);
 		setExpTypes(null);
 	}
 	
@@ -837,7 +1055,7 @@ public class ExpenseMBean implements Serializable
 		{
 			if(getPartner() != null)
 			{
-				if(expTypes.get(0).getPartner() != null && expTypes.get(0).getPartner().getId() == getPartner().getId())
+				if(expTypes.get(0).getPartner() != null && expTypes.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
@@ -871,6 +1089,7 @@ public class ExpenseMBean implements Serializable
 						expTypes.add(e);
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return expTypes;
@@ -958,6 +1177,7 @@ public class ExpenseMBean implements Serializable
 				{
 					budgets = (Vector<Budget>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return budgets;
@@ -965,6 +1185,14 @@ public class ExpenseMBean implements Serializable
 
 	public void setBudgets(Vector<Budget> budgets) {
 		this.budgets = budgets;
+	}
+
+	public Long getFleet_id() {
+		return fleet_id;
+	}
+
+	public void setFleet_id(Long fleet_id) {
+		this.fleet_id = fleet_id;
 	}
 
 	public Long getVehicle_id() {
@@ -975,12 +1203,76 @@ public class ExpenseMBean implements Serializable
 		this.vehicle_id = vehicle_id;
 	}
 
+	public Long getDivision_id() {
+		return division_id;
+	}
+
+	public void setDivision_id(Long division_id) {
+		this.division_id = division_id;
+	}
+
+	public Long getDivision_id2() {
+		return division_id2;
+	}
+
+	public void setDivision_id2(Long division_id2) {
+		this.division_id2 = division_id2;
+	}
+
+	public Long getDepartment_id() {
+		return department_id;
+	}
+
+	public void setDepartment_id(Long department_id) {
+		this.department_id = department_id;
+	}
+
+	public Long getDepartment_id2() {
+		return department_id2;
+	}
+
+	public void setDepartment_id2(Long department_id2) {
+		this.department_id2 = department_id2;
+	}
+
+	public Long getUnit_id() {
+		return unit_id;
+	}
+
+	public void setUnit_id(Long unit_id) {
+		this.unit_id = unit_id;
+	}
+
+	public Long getUnit_id2() {
+		return unit_id2;
+	}
+
+	public void setUnit_id2(Long unit_id2) {
+		this.unit_id2 = unit_id2;
+	}
+
 	public Long getStaff_id() {
 		return staff_id;
 	}
 
 	public void setStaff_id(Long staff_id) {
 		this.staff_id = staff_id;
+	}
+
+	public Long getExpHeader_id() {
+		return expHeader_id;
+	}
+
+	public void setExpHeader_id(Long expHeader_id) {
+		this.expHeader_id = expHeader_id;
+	}
+
+	public Long getEditExpHeader_id() {
+		return editExpHeader_id;
+	}
+
+	public void setEditExpHeader_id(Long editExpHeader_id) {
+		this.editExpHeader_id = editExpHeader_id;
 	}
 
 	public Long getExpType_id() {
@@ -1037,6 +1329,7 @@ public class ExpenseMBean implements Serializable
 					{
 						exps = (Vector<Expense>)drvs;
 					}
+					gDAO.destroy();
 				}
 			}
 		}
@@ -1079,6 +1372,37 @@ public class ExpenseMBean implements Serializable
 		this.approvalUser_id = approvalUser_id;
 	}
 
+	public Long getExpRequest_id() {
+		return expRequest_id;
+	}
+
+	public void setExpRequest_id(Long expRequest_id) {
+		this.expRequest_id = expRequest_id;
+		if(expRequest_id != null) {
+			for(ExpenseRequest e : approvedRequests) {
+				if(e.getId().longValue() == expRequest_id.longValue()) {
+					getExp().setExpR(e);
+					getExp().setType(e.getType());
+					getExp().setAmount(e.getAmount());
+					getExp().setMisDepartment(e.getMisDepartment());
+					getExp().setMisUnit(e.getMisUnit());
+					getExp().setPartner(e.getPartner());
+					getExp().setPersonel(e.getPersonel());
+					getExp().setVehicle(e.getVehicle());
+					
+					if(e.getType() != null)
+						setExpType_id(e.getType().getId());
+					if(getExp().getExpense_dt() == null)
+						getExp().setExpense_dt(e.getExpense_dt());
+					if(getExp().getRemarks() == null)
+						getExp().setRemarks(e.getRemarks());
+					
+					break;
+				}
+			}
+		}
+	}
+
 	public ExpenseRequest getExpRequest() {
 		if(expRequest == null)
 			expRequest = new ExpenseRequest();
@@ -1117,12 +1441,41 @@ public class ExpenseMBean implements Serializable
 			{
 				mySubExpRequests = (Vector<ExpenseRequest>)retObj;
 			}
+			gDAO.destroy();
 		}
 		return mySubExpRequests;
 	}
 
 	public void setMySubExpRequests(Vector<ExpenseRequest> mySubExpRequests) {
 		this.mySubExpRequests = mySubExpRequests;
+	}
+
+	public void resetMyAllSubExpRequests() {
+		setMyAllSubExpRequests(null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<ExpenseRequest> getMyAllSubExpRequests() {
+		if(myAllSubExpRequests == null) {
+			if(getStart_dt() != null && getEnd_dt() != null) {
+				GeneralDAO gDAO = new GeneralDAO();
+				Query q = gDAO.createQuery("Select e from ExpenseRequest e where e.createdBy=:createdBy and e.request_dt between :st and :ed order by e.request_dt desc");
+				q.setParameter("createdBy", dashBean.getUser());
+				q.setParameter("st", getStart_dt());
+				q.setParameter("ed", getEnd_dt());
+				Object retObj = gDAO.search(q, 0);
+				if(retObj != null)
+				{
+					myAllSubExpRequests = (Vector<ExpenseRequest>)retObj;
+				}
+				gDAO.destroy();
+			}
+		}
+		return myAllSubExpRequests;
+	}
+
+	public void setMyAllSubExpRequests(Vector<ExpenseRequest> myAllSubExpRequests) {
+		this.myAllSubExpRequests = myAllSubExpRequests;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1142,12 +1495,50 @@ public class ExpenseMBean implements Serializable
 			{
 				pendingExpRequests = (Vector<ExpenseRequest>)retObj;
 			}
+			gDAO.destroy();
 		}
 		return pendingExpRequests;
 	}
 
 	public void setPendingExpRequests(Vector<ExpenseRequest> pendingExpRequests) {
 		this.pendingExpRequests = pendingExpRequests;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<ExpenseRequest> getMyAttendedExpRequests() {
+		myAttendedExpRequests = null;
+		GeneralDAO gDAO = new GeneralDAO();
+		Query q = gDAO.createQuery("Select e from ExpenseRequest e where e.approvalUser=:approvalUser and not e.approvalStatus = 'PENDING' order by e.request_dt desc");
+		q.setParameter("approvalUser", dashBean.getUser());
+		Object retObj = gDAO.search(q, 0);
+		if(retObj != null)
+		{
+			myAttendedExpRequests = (Vector<ExpenseRequest>)retObj;
+		}
+		gDAO.destroy();
+		return myAttendedExpRequests;
+	}
+
+	public void setMyAttendedExpRequests(
+			Vector<ExpenseRequest> myAttendedExpRequests) {
+		this.myAttendedExpRequests = myAttendedExpRequests;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<ExpenseRequest> getApprovedRequests() {
+		GeneralDAO gDAO = new GeneralDAO();
+		Query q = gDAO.createQuery("Select e from ExpenseRequest e where e.createdBy=:createdBy and e.approvalStatus = 'APPROVED' order by e.request_dt desc");
+		q.setParameter("createdBy", dashBean.getUser());
+		Object retObj = gDAO.search(q, 0);
+		if(retObj != null) {
+			approvedRequests = (Vector<ExpenseRequest>)retObj;
+		}
+		gDAO.destroy();
+		return approvedRequests;
+	}
+
+	public void setApprovedRequests(Vector<ExpenseRequest> approvedRequests) {
+		this.approvedRequests = approvedRequests;
 	}
 
 	public String getApprovalStatus() {

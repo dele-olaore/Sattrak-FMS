@@ -27,6 +27,8 @@ public class PartnerDriverOvertime implements Serializable
 	
 	@Temporal(TemporalType.DATE)
 	private Date tranDate;
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date start_time, end_time;
 	private int overtimehours;
 	private double amountPerHour;
 	private String reason;
@@ -65,6 +67,22 @@ public class PartnerDriverOvertime implements Serializable
 
 	public void setTranDate(Date tranDate) {
 		this.tranDate = tranDate;
+	}
+
+	public Date getStart_time() {
+		return start_time;
+	}
+
+	public void setStart_time(Date start_time) {
+		this.start_time = start_time;
+	}
+
+	public Date getEnd_time() {
+		return end_time;
+	}
+
+	public void setEnd_time(Date end_time) {
+		this.end_time = end_time;
 	}
 
 	public int getOvertimehours() {

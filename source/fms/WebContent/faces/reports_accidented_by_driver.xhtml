@@ -18,6 +18,7 @@
 			  		
 			  		<h:outputLabel for="drv1" value="Driver: " />
 					<p:selectOneMenu id="drv1" value="#{reportsBean.driver_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
 			  			<f:selectItems value="#{ddBean.getPartnerDrivers(reportsBean.partner_id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
 			  		</p:selectOneMenu>
 			  		
@@ -44,13 +45,13 @@
 								fileName="accident_by_driver_report" />
 						</p:commandLink>
 						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(3, 'accident_by_driver_report', 1)}">
+						<!--<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(3, 'accident_by_driver_report', 1)}">
 							<p:graphicImage value="/resources/images/pdf.png" />
 						</p:commandLink>
 						
 						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(3, 'accident_by_driver_report')}">
 							<p:graphicImage value="/resources/images/word.jpg" />
-						</p:commandLink>
+						</p:commandLink>-->
 		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
@@ -84,6 +85,11 @@
 						</p:commandLink>
 					</p:panel>
 				</h:panelGrid>
+				<p:pieChart id="pie"
+                    value="#{reportsBean.pieModel}"
+                    legendPosition="w"
+                    title="Pie Chart"
+                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}"/>
 				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.driverAccidents}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"

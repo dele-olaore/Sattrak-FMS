@@ -55,24 +55,11 @@
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.adhocmaints != null and reportsBean.adhocmaints.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(6, 'adhoc_maintenance_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="adhoc_maintenance_report" />
-						</p:commandLink>
-		
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(6, 'adhoc_maintenance_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(6, 'adhoc_maintenance_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
 						</p:commandLink>
 		
 						<p:commandLink ajax="false">
@@ -122,11 +109,24 @@
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.registrationNo}" />
 					</p:column>
+					<p:column sortBy="#{obj.odometer}">
+						<f:facet name="header">
+							 <h:outputText value="Odometer" />  
+						</f:facet>
+						<h:outputText value="#{obj.odometer}" />
+					</p:column>
 					<p:column sortBy="#{obj.createdBy.personel.firstname}">
 						<f:facet name="header">
 							 <h:outputText value="Requester" />  
 						</f:facet>
 						<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" />
+					</p:column>
+					<p:column sortBy="#{obj.finalApproveBy.personel.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Final Approver" />  
+						</f:facet>
+						<h:outputText value="#{obj.finalApproveBy.personel.firstname} #{obj.finalApproveBy.personel.lastname}" rendered="#{obj.finalApproveBy != null}" />
+						<h:outputText value="N/A #{obj.finalApproveBy.personel.lastname}" rendered="#{obj.finalApproveBy == null}" />
 					</p:column>
 					<p:column filterBy="#{obj.description}" filterMatchMode="contains">
 						<f:facet name="header">
@@ -140,11 +140,24 @@
 						</f:facet>
 						<h:outputText value="#{obj.start_dt}" />
 					</p:column>
-					<p:column sortBy="#{obj.initial_amount}">
+					<p:column sortBy="#{obj.initial_cost}">
 						<f:facet name="header">
 							 <h:outputText value="Initial Cost" />  
 						</f:facet>
-						<h:outputText value="#{obj.initial_amount}" />
+						<h:outputText value="#{obj.initial_cost}" />
+					</p:column>
+					<p:column sortBy="#{obj.vendor.name}">
+						<f:facet name="header">
+							 <h:outputText value="Vendor" />  
+						</f:facet>
+						<h:outputText value="#{obj.vendor.name}" rendered="#{obj.vendor != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vendor == null}" />
+					</p:column>
+					<p:column sortBy="#{obj.negotiated_days_of_completion}">
+						<f:facet name="header">
+							 <h:outputText value="Days of Completion" />  
+						</f:facet>
+						<h:outputText value="#{obj.negotiated_days_of_completion}" />
 					</p:column>
 					<p:column sortBy="#{obj.status}">
 						<f:facet name="header">
@@ -158,11 +171,11 @@
 						</f:facet>
 						<h:outputText value="#{obj.close_dt}" />
 					</p:column>
-					<p:column sortBy="#{obj.closed_amount}">
+					<p:column sortBy="#{obj.closed_cost}">
 						<f:facet name="header">
 							 <h:outputText value="Final Cost" />  
 						</f:facet>
-						<h:outputText value="#{obj.closed_amount}" />
+						<h:outputText value="#{obj.closed_cost}" />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

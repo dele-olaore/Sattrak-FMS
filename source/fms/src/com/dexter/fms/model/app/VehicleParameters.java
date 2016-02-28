@@ -3,7 +3,6 @@ package com.dexter.fms.model.app;
 import java.io.Serializable;
 import java.util.Date;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -16,6 +15,7 @@ import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.ref.Department;
 import com.dexter.fms.model.ref.FuelType;
 import com.dexter.fms.model.ref.Region;
+import com.dexter.fms.model.ref.Unit;
 
 @Entity
 public class VehicleParameters implements Serializable
@@ -31,8 +31,8 @@ public class VehicleParameters implements Serializable
 	private Vehicle vehicle;
 	
 	private String tyresize;
-	private String tankcapacity;
-	private String calibratedcapacity;
+	private double tankcapacity;
+	private double calibratedcapacity;
 	private double fuelCompKML;
 	private double fuelComp100KML;
 	private String color;
@@ -46,6 +46,8 @@ public class VehicleParameters implements Serializable
 	private String cardno;
 	
 	@ManyToOne
+	private Unit unit;
+	@ManyToOne
 	private Department dept;
 	@ManyToOne
 	private Region region;
@@ -55,6 +57,8 @@ public class VehicleParameters implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	private boolean active;
 	
 	public VehicleParameters()
 	{}
@@ -83,19 +87,19 @@ public class VehicleParameters implements Serializable
 		this.tyresize = tyresize;
 	}
 
-	public String getTankcapacity() {
+	public double getTankcapacity() {
 		return tankcapacity;
 	}
 
-	public void setTankcapacity(String tankcapacity) {
+	public void setTankcapacity(double tankcapacity) {
 		this.tankcapacity = tankcapacity;
 	}
 
-	public String getCalibratedcapacity() {
+	public double getCalibratedcapacity() {
 		return calibratedcapacity;
 	}
 
-	public void setCalibratedcapacity(String calibratedcapacity) {
+	public void setCalibratedcapacity(double calibratedcapacity) {
 		this.calibratedcapacity = calibratedcapacity;
 	}
 
@@ -163,6 +167,14 @@ public class VehicleParameters implements Serializable
 		this.cardno = cardno;
 	}
 
+	public Unit getUnit() {
+		return unit;
+	}
+
+	public void setUnit(Unit unit) {
+		this.unit = unit;
+	}
+
 	public Department getDept() {
 		return dept;
 	}
@@ -193,6 +205,14 @@ public class VehicleParameters implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 	
 }

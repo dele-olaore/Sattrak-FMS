@@ -1,0 +1,88 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Attend to Vehicle Maintenance Requests</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Attend to Vehicle Maintenance Requests" action="#{dashboardBean.gotoPage('approve_v_maintenance', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="pendingTab" title="Pending request(s) [#{fleetBean.pendingMaintRequestsForMyApproval.size()}]">
+						<p:panel id="pendPanel">
+						<p:scrollPanel mode="native" style="width:100%;height:500px">
+						<p:dataTable id="objsTable" var="obj" value="#{fleetBean.pendingMaintRequestsForMyApproval}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" scrollable="true"
+							rendered="#{fleetBean.pendingMaintRequestsForMyApproval != null and fleetBean.pendingMaintRequestsForMyApproval.size() > 0}">
+							<f:facet name="header">
+								Vehicle Maintenance Request(s)
+							</f:facet>
+							
+							<p:column id="col1" headerText="">
+								<p:selectBooleanCheckbox value="#{obj.selected}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Registration No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicle.registrationNo}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicle.model.name}" headerText="Model" filterBy="#{obj.vehicle.model.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicle.model.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.maintenanceType}" headerText="Type">
+								<h:outputText value="#{obj.maintenanceType}" />
+							</p:column>
+							<p:column headerText="Summary of Work" filterBy="#{obj.description}" filterMatchMode="contains">
+								<h:outputText value="#{obj.description}" />
+							</p:column>
+							<p:column headerText="Requested">
+								By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+								On: <h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+						</p:dataTable>
+						</p:scrollPanel>
+						<br/>
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="apvstat" value="Approval Status: *" />
+							<p:selectOneMenu id="apvstat" value="#{fleetBean.approvalStatus}">
+					  			<f:selectItem itemLabel="APPROVED" itemValue="APPROVED" />
+					  			<f:selectItem itemLabel="DENIED" itemValue="DENIED" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="apvcmt" value="Remarks: " />
+							<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+					  		<p:inputTextarea id="apvcmt" value="#{fleetBean.approvalComment}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+					  		<h:outputText id="counter" />
+					  		</p:panelGrid>
+					  	</p:panelGrid>
+					  	<f:facet name="footer">
+				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.attendToVMaintRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+				  		</p:panel>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

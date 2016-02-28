@@ -24,36 +24,42 @@
 		<td colspan="2">
 			<p:outputPanel id="OPanel" style="width:100%;">
 				<p:tabView id="tabs" dynamic="true" cache="false">
-					<p:tab id="reqexp" title="Pending Fueling Request(s)[#{fleetBean.pendingFuelingRequests.size()}]">
+					<p:tab id="reqexp" title="Pending Fueling Request(s)">
 						<p:panel id="mypendreqsPanel">
+						
 						<p:dataTable id="myPendExpsTable" var="obj" value="#{fleetBean.pendingFuelingRequests}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"> <!-- binding="#{table}" -->
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220"> <!-- binding="#{table}" -->
 							<f:facet name="header">
-								Pending fueling request(s) [#{fleetBean.pendingFuelingRequests.size()}]
+								Pending fueling request(s)
 							</f:facet>
 							
-							<p:column id="col1" headerText="">
+							<p:column id="col1" headerText="" style="width:10px">
 								<p:selectBooleanCheckbox value="#{obj.selected}" />
 							</p:column>
-							<p:column id="col2" headerText="Request Date">
+							<p:column id="col2" headerText="Request Date" style="width:150px">
 								<h:outputText value="#{obj.crt_dt}" />
 							</p:column>
-							<p:column id="col3" sortBy="#{obj.fueling_dt}" headerText="Fuel date" filterBy="#{obj.fueling_dt}" filterMatchMode="contains">
+							<p:column id="col1_1" headerText="Vehicle" style="width:150px">
+								<h:outputText value="#{obj.vehicle.registrationNo}" />
+							</p:column>
+							<p:column id="col3" sortBy="#{obj.fueling_dt}" headerText="Fuel date" style="width:150px">
 								<h:outputText value="#{obj.fueling_dt}" />
 							</p:column>
-							<p:column id="col4" sortBy="#{obj.amt}" headerText="Cost">
+							<p:column id="col4" sortBy="#{obj.amt}" headerText="Cost" style="width:150px">
 								<h:outputText value="#{obj.amt}" />
 							</p:column>
-							<p:column id="col5" sortBy="#{obj.litres}" headerText="Litres">
+							<p:column id="col5" sortBy="#{obj.litres}" headerText="Litres" style="width:150px">
 								<h:outputText value="#{obj.litres}" />
 							</p:column>
-							<p:column id="col6" headerText="Requester">
+							<p:column id="col6" headerText="Requester" style="width:300px">
 								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
 								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
 							</p:column>
 						</p:dataTable>
+						
 						<br/>
 						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 							<h:outputLabel for="apvstat" value="Approval Status: *" />
@@ -72,6 +78,59 @@
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.attendToFuelingRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>
 						</p:panel>
+					</p:tab>
+					<p:tab id="myapvs" title="My Attended Request(s)">
+						
+						<p:dataTable id="myAttendReqsTable" var="obj" value="#{fleetBean.myAttendedFuelingRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220"> <!-- binding="#{table}" -->
+							<f:facet name="header">
+								Attended fueling request(s)
+							</f:facet>
+							
+							<p:column id="col2" headerText="Request Date" style="width:150px">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column id="col1_1" headerText="Vehicle" style="width:150px">
+								<h:outputText value="#{obj.vehicle.registrationNo}" />
+							</p:column>
+							<p:column id="col3" sortBy="#{obj.fueling_dt}" headerText="Fuel date" style="width:150px">
+								<h:outputText value="#{obj.fueling_dt}" />
+							</p:column>
+							<p:column id="col4" sortBy="#{obj.amt}" headerText="Cost" style="width:150px">
+								<h:outputText value="#{obj.amt}" />
+							</p:column>
+							<p:column id="col5" sortBy="#{obj.litres}" headerText="Litres" style="width:150px">
+								<h:outputText value="#{obj.litres}" />
+							</p:column>
+							<p:column id="col6" headerText="Requester" style="width:300px">
+								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
+								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
+							</p:column>
+							<p:column id="col7" sortBy="#{obj.approvalStatus}" headerText="Status" style="width:150px">
+								<h:outputText value="#{obj.approvalStatus}" />
+							</p:column>
+							<p:column id="col8" headerText="Approval(s)" style="width:350px">
+								<p:dataTable var="ap" value="#{obj.approvers}" style="width:100%" resizableColumns="true">
+									<p:column headerText="Approval User">
+										<h:outputText value="#{ap.approvalUser.personel.firstname} #{ap.approvalUser.personel.lastname}" rendered="#{ap.approvalUser != null}" />
+										<h:outputText value="N/A" rendered="#{ap.approvalUser == null}" />
+									</p:column>
+									<p:column headerText="Approval Date">
+										<h:outputText value="#{ap.approval_dt}" />
+									</p:column>
+									<p:column headerText="Approval Status" sortBy="#{ap.approvalStatus}">
+										<h:outputText value="#{ap.approvalStatus}" />
+									</p:column>
+									<p:column headerText="Approval Comment">
+										<h:outputText value="#{ap.approvalComment}" />
+									</p:column>
+								</p:dataTable>
+							</p:column>
+						</p:dataTable>
+						
 					</p:tab>
 				</p:tabView>
 			</p:outputPanel>

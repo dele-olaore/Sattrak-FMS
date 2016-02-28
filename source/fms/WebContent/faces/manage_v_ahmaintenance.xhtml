@@ -4,10 +4,10 @@
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/layout/other_layout.xhtml">
-<ui:define name="title">Manage Ad-Hoc Maintenace</ui:define>
+<ui:define name="title">Start and Manage Ad-Hoc Maintenance for your Vehicles</ui:define>
 <ui:define name="content">
 	<br/><br/>
-	<h:form id="form">
+	<h:form id="form" enctype="multipart/form-data">
 	<div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
@@ -35,23 +35,6 @@
 			
 			<p:tabView id="tabs" dynamic="true" cache="false">
 				<p:tab id="srtWKORD" title="Setup Work Order">
-					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
-						<h:outputLabel for="wkordDesc" value="Description of Work Order: *" />
-						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-				  		<p:inputTextarea id="wkordDesc" value="#{fleetBean.workOrder.summaryDetailsOfWorkOrder}" rows="4" cols="30" counter="counter1" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
-				  		<h:outputText id="counter1" />
-				  		</p:panelGrid>
-				  		
-				  		<h:outputLabel for="wkordType" value="Work-Order Type: " />
-						<h:outputText id="wkordType" value="Adhoc" />
-						
-						<h:outputLabel for="apvReq" value="Approved Request: " />
-						<p:selectOneMenu id="apvReq" value="#{fleetBean.approved_adhoc_req_id}">
-							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
-				  			<f:selectItems value="#{fleetBean.adHocRequests}" var="it" itemLabel="#{it.vehicle.registrationNo} - #{it.maintenance_dt}" itemValue="#{it.id}" />
-				  		</p:selectOneMenu>
-					</p:panelGrid>
-					
 					<p:dataTable id="addedVehsTable" var="obj" value="#{fleetBean.workOrder.vehicles}"
 						paginator="true" rows="50" style="width:100%" resizableColumns="true" rendered="#{fleetBean.workOrder.vehicles.size() > 0}"
 						editable="true">
@@ -129,10 +112,6 @@
 								</p:column>
 							</p:dataTable>
 						</p:rowExpansion>
-						
-						<f:facet name="footer">
-							<p:commandButton ajax="false" action="#{fleetBean.createWorkOrd('Adhoc')}" value="Create Work Order" icon="ui-icon-disk" style="margin:0"/>
-						</f:facet>
 					</p:dataTable>
 					
 					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
@@ -140,17 +119,22 @@
 							Add vehicle
 						</f:facet>
 						
-				  		<h:outputLabel for="flt1" value="Group: " />
-						<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+						<h:outputLabel for="apvReq" value="Approved Maintenance Request: " />
+						<p:selectOneMenu id="apvReq" value="#{fleetBean.approved_adhoc_req_id}">
 							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
-				  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<f:selectItems value="#{fleetBean.myAdhocApprovedMaintRequests}" var="it" itemLabel="#{it.vehicle.registrationNo} - #{it.crt_dt}" itemValue="#{it.id}" rendered="#{not fleetBean.adHocRequestAlreadyAdded(it.id)}" />
 				  			<p:ajax update="veh1" />
 				  		</p:selectOneMenu>
 				  		
 				  		<h:outputLabel for="veh1" value="Vehicle: " />
 						<p:selectOneMenu id="veh1" value="#{fleetBean.vehicle_id}">
-				  			<f:selectItems value="#{fleetBean.vehicles}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItem itemLabel="#{fleetBean.adHocRequestVehicle.registrationNo}" itemValue="#{fleetBean.adHocRequestVehicle.id}" rendered="#{fleetBean.adHocRequestVehicle != null}" />
+				  			<p:ajax update="vehwkOdometer" />
 				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vehwkOdometer" value="Current Odometer: *" />
+						<p:inputText id="vehwkOdometer" value="#{fleetBean.initVehOdometer}"/>
 				  		
 				  		<h:outputLabel for="vehwkordDesc" value="Summary of Work for Vehicle: *" />
 						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -165,8 +149,36 @@
 				  			<p:commandButton ajax="false" action="#{fleetBean.addVehToWorkOrd}" value="Add Vehicle" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>
 					</p:panelGrid>
+					
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<h:outputLabel for="wkordDesc" value="Description of Work Order: *" />
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea id="wkordDesc" value="#{fleetBean.workOrder.summaryDetailsOfWorkOrder}" rows="4" cols="30" counter="counter1" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter1" />
+				  		</p:panelGrid>
+				  		
+				  		<h:outputLabel for="wkordType" value="Work-Order Type: " />
+						<h:outputText id="wkordType" value="Adhoc" />
+						
+						<h:outputLabel for="wkordBidDate" value="Max Estimate Submission Date: " />
+						<p:calendar id="wkordBidDate" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.workOrder.maxBidSubmission_dt}" navigator="true" />
+					</p:panelGrid>
+					
+					<p:dataGrid id="wrkordVendorsGrid" var="obj" columns="1" value="#{fleetBean.vrepairVendors}">
+						<f:facet name="header">
+							<h:outputText value="Select Vendors for Estimates" />
+						</f:facet>
+						<p:selectBooleanCheckbox value="#{obj.selected}" />
+						<h:outputText value="#{obj.name}" />
+					</p:dataGrid>
+					
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<f:facet name="footer">
+							<p:commandButton ajax="false" action="#{fleetBean.createWorkOrd('Adhoc')}" value="Generate and Send RFQ to Vendors" icon="ui-icon-disk" style="margin:0"/>
+						</f:facet>
+					</p:panelGrid>
 				</p:tab>
-				<p:tab id="pndWKORD" title="Download Work Orders">
+				<p:tab id="pndWKORD" title="Download/Manage Work Order">
 					<p:panelGrid columns="2">
 						<h:outputLabel for="stdt" value="Start date: *" />
 						<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.start_dt}" navigator="true" />
@@ -176,7 +188,12 @@
 						
 						<h:outputLabel for="wkordstatus" value="Status: " />
 						<p:selectOneMenu id="wkordstatus" value="#{fleetBean.workOrderStatus}">
-							<f:selectItem itemLabel="NEW" itemValue="NEW" />
+							<f:selectItem itemLabel="SETUP" itemValue="SETUP" />
+							<f:selectItem itemLabel="REQUEST-NEGOTIATION" itemValue="REQUEST-NEGOTIATION" />
+							<f:selectItem itemLabel="NEGOTIATED" itemValue="NEGOTIATED" />
+							<f:selectItem itemLabel="REQUEST-FINAL-APPROVAL-FIRST-LEG" itemValue="REQUEST-FINAL1" />
+							<f:selectItem itemLabel="REQUEST-FINAL-APPROVAL-FINAL-LEG" itemValue="REQUEST" />
+							<f:selectItem itemLabel="APPROVED" itemValue="NEW" />
 							<f:selectItem itemLabel="CANCELED" itemValue="CANCELED" />
 							<f:selectItem itemLabel="IN-PROGRESS" itemValue="IN-PROGRESS" />
 							<f:selectItem itemLabel="COMPLETED" itemValue="COMPLETED" />
@@ -195,7 +212,7 @@
 						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
 						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
 						<f:facet name="header">
-							Available routine work order(s)
+							Available adhoc work order(s)
 						</f:facet>
 						
 						<p:column sortBy="#{obj.workOrderNumber}" headerText="WorkOrder No." filterBy="#{obj.workOrderNumber}" filterMatchMode="contains">
@@ -206,15 +223,18 @@
 							<h:outputText value="#{obj.summaryDetailsOfWorkOrder}" />
 						</p:column>
 						
-						<p:column headerText="Created">
-							On: <h:outputText value="#{obj.crt_dt}" /><br/>
-							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+						<p:column headerText="Dates">
+							Created On: <h:outputText value="#{obj.crt_dt}" /><br/>
+							Created By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+							Completion Date: <h:outputText value="#{obj.proposedCompletion_dt}" rendered="#{obj.proposedCompletion_dt != null}"/><h:outputText value="N/A" rendered="#{obj.proposedCompletion_dt == null}"/>
 						</p:column>
 						
 						<p:column headerText="Status" filterBy="#{obj.status}" filterMatchMode="contains">
-							<h:outputText value="#{obj.status}" />
-							<br/>
-							<p:commandButton ajax="false" onclick="alert('Under Construction!');return false;" value="Cancel" icon="ui-icon-close" style="margin:0" rendered="#{obj.status == 'NEW'}"/>
+							Status: <h:outputText value="#{obj.status}" /> <font color="#{obj.dueLvl == 1 ? 'orange' : (obj.dueLvl == 2 ? 'yellow' : (obj.dueLvl == 3 ? 'red' : ''))}"><h:outputText value=" | #{obj.dueDesc}" rendered="#{obj.due}" /></font><br/>
+							Attended By: <h:outputText value="#{obj.approveBy.personel.firstname} #{obj.approveBy.personel.lastname}" rendered="#{obj.approveBy != null}" /><h:outputText value="N/A" rendered="#{obj.approveBy == null}" /><br/>
+							Attended On: <h:outputText value="#{obj.approve_dt}" rendered="#{obj.approve_dt != null}" /><h:outputText value="N/A" rendered="#{obj.approve_dt == null}" /><br/>
+							Attend Comment: <h:outputText value="#{obj.approveComment}" rendered="#{obj.approveComment != null}" /><h:outputText value="N/A" rendered="#{obj.approveComment == null}" /><br/>
+							<p:commandButton ajax="false" onclick="alert('Feature not available at the moment!');return false;" value="Cancel" icon="ui-icon-close" style="margin:0" rendered="#{obj.status == 'NEW' or obj.status == 'SETUP' or obj.status == 'REQUEST' or obj.status == 'IN-PROGRESS'}"/>
 						</p:column>
 						
 						<p:column headerText="Download Word Doc.">						
@@ -235,16 +255,210 @@
 							</p:commandLink>
 						</p:column>
 						
+						<p:column headerText="Action">
+							<p:commandLink value="Edit" onclick="alert('Function not available at the moment!');return false;" rendered="#{obj.status == 'REQUEST' or obj.status == 'SETUP'}" />
+							<h:outputText value="Can't Edit" rendered="#{obj.status != 'REQUEST' and obj.status != 'SETUP'}" />
+						</p:column>
+						
 					</p:dataTable>
 				</p:tab>
-				
+				<p:tab id="subbidWKORD" title="Submit/View Vendor RFQ Estimate">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="bidwkords" value="Work Order - RFQ: " />
+						<p:selectOneMenu id="bidwkords" value="#{fleetBean.workOrder_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.adhocSetupWorkOrders}" var="it" itemLabel="#{it.workOrderNumber}" itemValue="#{it.id}" />
+							<p:ajax update="bidvendors,submittedbids,submittedbidsTable" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="submittedbids" value="Submitted Estimates: " />
+						<p:panelGrid id="submittedbids" columns="2">
+							<!-- Table showing the already submitted bids  -->
+							<p:dataTable id="submittedbidsTable" var="obj" value="#{fleetBean.adhocSetupWorkOrderVendors}"
+								paginator="true" rows="50"
+								paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+								rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+								rendered="#{fleetBean.adhocSetupWorkOrderVendors != null and fleetBean.adhocSetupWorkOrderVendors.size() > 0}">
+								<f:facet name="header">
+									Submitted Estimate(s)
+								</f:facet>
+								
+								<p:column sortBy="#{obj.vendor.name}" headerText="Name" filterBy="#{obj.vendor.name}" filterMatchMode="contains">
+									<h:outputText value="#{obj.vendor.name}" />
+								</p:column>
+								<p:column sortBy="#{obj.submittionStatus}" headerText="Estimate Status" filterBy="#{obj.submittionStatus}" filterMatchMode="contains">
+									<h:outputText value="#{obj.submittionStatus}" />
+								</p:column>
+								<p:column sortBy="#{obj.days_of_completion}" headerText="Days of Completion">
+									<h:outputText value="#{obj.days_of_completion}" />
+								</p:column>
+								<p:column sortBy="#{obj.cost}" headerText="Cost">
+									<h:outputText value="#{obj.cost}" />
+								</p:column>
+								<p:column sortBy="#{obj.comment}" headerText="Comment">
+									<h:outputText value="#{obj.comment}" />
+								</p:column>
+								<p:column headerText="Doc">
+									<p:commandLink value="Download" action="#{fleetBean.downloadWorkOrderVendorBidDoc(obj.id)}" ajax="false" rendered="#{obj.vendorDocument != null}" />
+									<h:outputText value="N/A" rendered="#{obj.vendorDocument == null}" />
+								</p:column>
+								
+							</p:dataTable>
+						</p:panelGrid>
+						
+						<h:outputLabel for="bidvendors" value="Vendor: " />
+						<p:selectOneMenu id="bidvendors" value="#{fleetBean.workOrderVendor_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.adhocSetupWorkOrderVendors}" var="it" itemLabel="#{it.vendor.name}" itemValue="#{it.id}" />
+							<p:ajax update="bidstatus,workordFile,compltdays,totcost,vcomment" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="bidstatus" value="Vendor Submit Status: " />
+						<p:selectOneMenu id="bidstatus" value="#{fleetBean.wv.submittionStatus}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="" />
+							<f:selectItem itemLabel="YES" itemValue="SUBMITTED" />
+							<f:selectItem itemLabel="NO" itemValue="DECLINED" />
+							<p:ajax update="workordFile,compltdays,totcost" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="workordFile" value="Vendor Document(docx): " />
+						<p:fileUpload id="workordFile" value="#{fleetBean.vendorWorkordFile}" mode="simple" />
+						
+						<h:outputLabel for="compltdays" value="Days of completion: " />
+						<h:inputText id="compltdays" value="#{fleetBean.wv.days_of_completion}" disabled="#{fleetBean.wv.submittionStatus=='SUBMITTED' ? 'false' : 'true'}" />
+						
+						<h:outputLabel for="totcost" value="Total Cost: " />
+						<h:inputText id="totcost" value="#{fleetBean.wv.cost}" disabled="#{fleetBean.wv.submittionStatus=='SUBMITTED' ? 'false' : 'true'}" />
+						
+						<h:outputLabel for="vcomment" value="Vendor Comment: " />
+						<p:inputTextarea id="vcomment" value="#{fleetBean.wv.comment}" rows="3" cols="50" autoResize="false"/>
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.submitVendorBid}" value="Submit for Vendor" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="reqWKORD" title="Request Work Order RFQ Negotiation">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="pendingReqwkords" value="Work Order - RFQ: " />
+						<p:selectOneMenu id="pendingReqwkords" value="#{fleetBean.workOrder_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.adhocSetupWorkOrders}" var="it" itemLabel="#{it.workOrderNumber}" itemValue="#{it.id}" />
+							<p:ajax update="wordvendors" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="wordvendors" value="Recommended Vendor: " />
+						<p:selectOneMenu id="wordvendors" value="#{fleetBean.workOrderVendor_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.adhocSetupWorkOrderVendors}" var="it" itemLabel="#{it.vendor.name}" itemValue="#{it.id}" />
+							<p:ajax update="vcomment2" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="vcomment2" value="Comment on Recommended Vendor: " />
+						<p:inputTextarea id="vcomment2" value="#{fleetBean.wv.requesterComment}" rows="3" cols="50" autoResize="false"/>
+						
+						<h:outputLabel value="Select approver staff: " />
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="brch" value="Division/Branch: " />
+							<p:selectOneMenu id="brch" value="#{reportsBean.division_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getPartnerDivisions(fleetBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="dept, unt, stf" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="dept" value="Department: " />
+							<p:selectOneMenu id="dept" value="#{reportsBean.department_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getDivisionDepartments(fleetBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="unt, stf" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="unt" value="Unit: " />
+							<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getDepartmentUnits(fleetBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="stf" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="stf" value="Staff: " />
+							<p:selectOneMenu id="stf" value="#{fleetBean.approver_id}">
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getPartnerPersonels(fleetBean.partner.id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+						</p:panelGrid>
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.submitWorkOrderRequest}" value="Submit" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
+				<p:tab id="sndQuote" title="Send Negotiated Quote for Final Approval">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="pendingReqwkords2" value="Work Order - Negotiated RFQ: " />
+						<p:selectOneMenu id="pendingReqwkords2" value="#{fleetBean.workOrder_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.negotiatedWorkOrders}" var="it" itemLabel="#{it.workOrderNumber}" itemValue="#{it.id}" />
+							<p:ajax update="negoVendor2,negoDaysOfComp2,negoCost2,negoComment2" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="negoVendor2" value="Choosen Vendor: " />
+						<h:outputText id="negoVendor2" value="#{fleetBean.negotiatedWv.vendor.name}" />
+						
+						<h:outputLabel for="negoDaysOfComp2" value="Negotiated Days of Completion: " />
+						<h:outputText id="negoDaysOfComp2" value="#{fleetBean.negotiatedWv.negotiated_days_of_completion}" />
+						
+						<h:outputLabel for="negoCost2" value="Negotiated Cost: " />
+						<h:outputText id="negoCost2" value="#{fleetBean.negotiatedWv.negotiated_cost}" />
+						
+						<h:outputLabel for="negoComment2" value="Comment on Selected Vendor: " />
+						<h:outputText id="negoComment2" value="#{fleetBean.negotiatedWv.approverComment}" />
+						
+						<h:outputLabel value="Download Negotiated Quote: " />
+						<p:commandLink value="Download" action="#{fleetBean.downloadWorkOrderVendorNegotiatedDoc(fleetBean.negotiatedWv.id)}" ajax="false" rendered="#{fleetBean.negotiatedWv.negotiatedDocument != null}" />
+						<h:outputText value="N/A" rendered="#{fleetBean.negotiatedWv.negotiatedDocument == null}" />
+						
+						<h:outputLabel value="Select approver staff: " />
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="brch2" value="Division/Branch: " />
+							<p:selectOneMenu id="brch2" value="#{reportsBean.division_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getPartnerDivisions(fleetBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="dept2, unt2, stf2" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="dept2" value="Department: " />
+							<p:selectOneMenu id="dept2" value="#{reportsBean.department_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getDivisionDepartments(fleetBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="unt2, stf2" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="unt2" value="Unit: " />
+							<p:selectOneMenu id="unt2" value="#{reportsBean.unit_id}">
+								<f:selectItem itemLabel="-- All --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getDepartmentUnits(fleetBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="stf2" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="stf2" value="Staff: " />
+							<p:selectOneMenu id="stf2" value="#{fleetBean.approver_id}">
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{ddBean.getPartnerPersonels(fleetBean.partner.id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+						</p:panelGrid>
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="false" action="#{fleetBean.submitWorkOrderFinalRequest}" value="Submit" icon="ui-icon-disk" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+				</p:tab>
 				<p:tab id="srt" title="Start Ad-Hoc Maintenance">
 					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 						<h:outputLabel for="wkord" value="Select Work Order: " />
 						<p:selectOneMenu id="wkord" value="#{fleetBean.workOrder_id}">
 				  			<f:selectItems value="#{fleetBean.pendingAdhocWorkOrders}" var="it" itemLabel="#{it.workOrderNumber}" itemValue="#{it.id}" />
 				  		</p:selectOneMenu>
-					
+						
 				  		<f:facet name="footer">
 				  			<p:commandButton ajax="false" action="#{fleetBean.resetPendingAdhocWorkOrderVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
 				  		</f:facet>
@@ -285,13 +499,13 @@
 							<p:inputText value="#{obj.initial_amount}" />
 						</p:column>
 					</p:dataTable>
-					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{fleetBean.selectedPendingRoutineWorkOrder != null}">
+					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{fleetBean.selectedPendingAdhocWorkOrder != null}">
 						<h:outputLabel for="rotstdt" value="Start date: *" />
 						<p:calendar id="rotstdt" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.adhocMain.start_dt}" showOn="button" />
 						
 						<h:outputLabel for="rotvendor" value="Vendor: " />
 						<p:selectOneMenu id="rotvendor" value="#{fleetBean.vendor_id}">
-							<f:selectItems value="#{fleetBean.vserviceVendors}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							<f:selectItems value="#{fleetBean.selectedPendingAdhocWorkOrder.wvendors}" var="it" itemLabel="#{it.vendor.name}" itemValue="#{it.vendor.id}" rendered="#{it.approverApproved}" />
 				  		</p:selectOneMenu>
 						
 						<f:facet name="footer">

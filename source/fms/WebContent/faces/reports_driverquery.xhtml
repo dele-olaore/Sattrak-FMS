@@ -1,0 +1,127 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Driver Queries Detail Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2">
+					<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="drv1" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="drv1" value="Driver: " />
+					<p:selectOneMenu id="drv1" value="#{reportsBean.driver_id}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getPartnerDrivers(reportsBean.partner.id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="acddt" value="Start date: *" />
+					<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+					
+					<h:outputLabel for="acdrdt" value="End date: *" />
+					<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+					
+					<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchDriverQueries}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+			  	</p:panelGrid>
+			  	<h:panelGrid columns="3" rendered="#{reportsBean.driverQueries != null and reportsBean.driverQueries.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="driver_queries_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="driver_queries_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="driver_queries_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="driver_queries_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="driver_queries_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="driver_queries_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.driverQueries}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.driverQueries != null and reportsBean.driverQueries.size() > 0}">
+					<f:facet name="header">
+						Found query(ies)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.tranDate}">
+						<f:facet name="header">
+							 <h:outputText value="Date" />
+						</f:facet>
+						<h:outputText value="#{obj.tranDate}" />
+					</p:column>
+					<p:column sortBy="#{obj.driver.personel.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Driver" />
+						</f:facet>
+						<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" />
+					</p:column>
+					<p:column filterBy="#{obj.queryGrade}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Query Grade" />
+						</f:facet>
+						<h:outputText value="#{obj.queryGrade}" />
+					</p:column>
+					<p:column filterBy="#{obj.queryRemarks}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Query" />
+						</f:facet>
+						<h:outputText value="#{obj.queryRemarks}" />
+					</p:column>
+					<p:column filterBy="#{obj.driverResponse}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Driver Response" />
+						</f:facet>
+						Date: <h:outputText value="#{obj.driverResponseDate}" /><br/>
+						Response: <h:outputText value="#{obj.driverResponse}" />
+					</p:column>
+					<p:column filterBy="#{obj.finalQueryRemarks}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Final Decision" />
+						</f:facet>
+						Date: <h:outputText value="#{obj.finalQueryRemarksDate}" /><br/>
+						Decision: <h:outputText value="#{obj.finalQueryRemarks}" /><br/>
+						Punish Driver: <h:outputText value="Yes" rendered="#{obj.punishDriver}" /><h:outputText value="No" rendered="#{not obj.punishDriver}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

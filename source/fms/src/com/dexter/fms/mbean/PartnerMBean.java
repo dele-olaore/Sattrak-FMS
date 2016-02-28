@@ -14,6 +14,7 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
+import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 
 import org.primefaces.event.RowEditEvent;
@@ -32,14 +33,15 @@ import com.dexter.fms.model.MRole;
 import com.dexter.fms.model.MRoleFunction;
 import com.dexter.fms.model.MRoleReport;
 import com.dexter.fms.model.Partner;
+import com.dexter.fms.model.PartnerApprover;
 import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
+import com.dexter.fms.model.app.ExpenseType;
 import com.dexter.fms.model.app.Fleet;
-import com.dexter.fms.model.ref.Division;
 
 @ManagedBean(name = "partnerBean")
 @SessionScoped
@@ -51,7 +53,7 @@ public class PartnerMBean implements Serializable
 	
 	private FacesMessage msg = null;
 	
-	private Partner partner;
+	private Partner partner, selPartner;
 	private PartnerPersonel partnerPersonel;
 	private PartnerUser partnerUser;
 	private String cpassword;
@@ -60,24 +62,28 @@ public class PartnerMBean implements Serializable
 	private PartnerLicense partnerLicense;
 	
 	private UploadedFile partnerLogo;
+	private double curoverTimeAmountPerHour, overTimeAmountPerHour;
+	private int curmaxMinutesToBookTrip, maxMinutesToBookTrip, curmaxMinutesPendingTripApproval, maxMinutesPendingTripApproval;
 	private PartnerSetting setting;
 	
 	private Vector<Partner> partners;
 	private Vector<PartnerSubscription> partnerSubscriptions;
 	private Vector<PartnerLicense> partnerLicenses;
 	
-	private Long partner_id;
+	private Long partner_id, pp_id;
 	private Long appType_id, appTypeVersion_id, subType_id;
 	private Date subStdt;
+	
+	private long subsidairy_id, division_id, department_id, unit_id, expType_id;
+	private PartnerApprover partnerApprover;
+	private Vector<PartnerApprover> partnerApprovers;
 	
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
 	
-	public PartnerMBean()
-	{}
+	public PartnerMBean() {}
 	
-	public void onEdit(RowEditEvent event)
-	{
+	public void onEdit(RowEditEvent event) {
 		GeneralDAO gDAO = new GeneralDAO();
 		boolean ret = false;
 		Object eventSource = event.getObject();
@@ -85,14 +91,11 @@ public class PartnerMBean implements Serializable
 		gDAO.startTransaction();
 		ret = gDAO.update(eventSource);
 		
-		if(ret)
-		{
+		if(ret) {
 			gDAO.commit();
 			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity updated successfully.");
 			FacesContext.getCurrentInstance().addMessage(null, msg);
-		}
-		else
-		{
+		} else {
 			gDAO.rollback();
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to update entity. " + gDAO.getMessage());
 			FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -100,46 +103,102 @@ public class PartnerMBean implements Serializable
 		gDAO.destroy();
 	}
 	
-	public void onCancel(RowEditEvent event)
-	{
+	public void onCancel(RowEditEvent event) {
 		msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Update canceled!");
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void saveApprover() {
+		if(getPartnerApprover() != null && getPartnerApprover().getAmountLimit() >= 0 &&
+				getPp_id() != null && getExpType_id() > 0) {
+			String naration = "Create approver: ";
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			Object ppObj = gDAO.find(PartnerPersonel.class, getPp_id());
+			if(ppObj != null) {
+				getPartnerApprover().setPersonel((PartnerPersonel)ppObj);
+				naration += getPartnerApprover().getPersonel().getFirstname() + " " + getPartnerApprover().getPersonel().getLastname();
+			}
+			
+			Object expTObj = gDAO.find(ExpenseType.class, getExpType_id());
+			if(expTObj != null) {
+				getPartnerApprover().setExpenseType((ExpenseType)expTObj);
+				naration += " Expense Type: " + getPartnerApprover().getExpenseType().getName();
+			}
+			
+			getPartnerApprover().setActive(true);
+			getPartnerApprover().setCreatedBy(dashBean.getUser());
+			getPartnerApprover().setCrt_dt(new Date());
+			getPartnerApprover().setPartner(getSelPartner());
+			naration += "(" + getPartnerApprover().getAmountLimit() + ")";
+			gDAO.startTransaction();
+			gDAO.save(getPartnerApprover());
+			if(gDAO.commit()) {
+				naration += " Status: Success";
+				setPartnerApprover(null);
+				setPartnerApprovers(null);
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Approver created successfully!");
+			} else {
+				gDAO.rollback();
+				naration += " Status: Failed: " + gDAO.getMessage();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", gDAO.getMessage());
+			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
+		} else
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Fields with '*' sign are required!");
+		
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void saveSetting()
 	{
-		if(getPartnerLogo() != null)
-		{
-			PartnerSetting sett = new PartnerSetting();
-			
-			GeneralDAO gDAO = new GeneralDAO();
-			
-			Hashtable<String, Object> params = new Hashtable<String, Object>();
-			params.put("partner", dashBean.getUser().getPartner());
-			
-			Object pSettingsObj = gDAO.search("PartnerSetting", params);
-			if(pSettingsObj != null)
-			{
-				Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
-				for(PartnerSetting e : pSettingsList)
-				{
-					sett = e;
-				}
+		PartnerSetting sett = new PartnerSetting();
+		String naration = "Save partner settings: ";
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("partner", dashBean.getUser().getPartner());
+		
+		Object pSettingsObj = gDAO.search("PartnerSetting", params);
+		if(pSettingsObj != null) {
+			Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
+			for(PartnerSetting e : pSettingsList) {
+				sett = e;
 			}
-			
-			sett.setLogo(getPartnerLogo().getContents());
-			sett.setPartner(dashBean.getUser().getPartner());
-			gDAO.startTransaction();
-			if(sett.getId() != null)
-				gDAO.update(sett);
-			else
-				gDAO.save(sett);
-			gDAO.commit();
-			gDAO.destroy();
-			
-			setSetting(null);
 		}
+		if(getPartnerLogo() != null && getPartnerLogo().getContents() != null)
+			sett.setLogo(getPartnerLogo().getContents());
+		if(getOverTimeAmountPerHour() > 0)
+			sett.setOverTimeAmountPerHour(getOverTimeAmountPerHour());
+		if(getMaxMinutesPendingTripApproval() > 0)
+			sett.setMaxMinutesPendingTripApproval(getMaxMinutesPendingTripApproval());
+		if(getMaxMinutesToBookTrip() > 0)
+			sett.setMaxMinutesToBookTrip(getMaxMinutesToBookTrip());
+		sett.setPartner(dashBean.getUser().getPartner());
+		gDAO.startTransaction();
+		if(sett.getId() != null)
+			gDAO.update(sett);
+		else
+			gDAO.save(sett);
+		if(gDAO.commit()) {
+			setOverTimeAmountPerHour(0);
+			setMaxMinutesPendingTripApproval(0);
+			setMaxMinutesToBookTrip(0);
+			setPartnerLogo(null);
+			naration += " Status: Success";
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Settings updated successfully!");
+		} else {
+			gDAO.rollback();
+			naration += " Status: Failed: " + gDAO.getMessage();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to save settings: " + gDAO.getMessage());
+		}
+		gDAO.destroy();
+		dashBean.saveAudit(naration, "", null);
+		setSetting(null);
+		
+		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -147,6 +206,7 @@ public class PartnerMBean implements Serializable
 	{
 		if(getPartner_id() != null && getPartnerLicense().getPurchasedLicenseCount() > 0)
 		{
+			String naration = "Create partner license: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object partnerObj = gDAO.find(Partner.class, getPartner_id());
@@ -170,6 +230,7 @@ public class PartnerMBean implements Serializable
 				getPartnerLicense().setCurrentLicenseCount((currentLicense != null) ? currentLicense.getFinalLicenseCount() : 0);
 				getPartnerLicense().setFinalLicenseCount(getPartnerLicense().getPurchasedLicenseCount() + getPartnerLicense().getCurrentLicenseCount());
 				getPartnerLicense().setPartner(partner);
+				naration += partner.getName() + "(" + getPartnerLicense().getFinalLicenseCount() + ")";
 				try{
 				getPartnerLicense().setTotalLicensePrice(getPartnerLicense().getUnitLicensePrice()*getPartnerLicense().getPurchasedLicenseCount());
 				} catch(Exception ex){}
@@ -178,6 +239,7 @@ public class PartnerMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += ", Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", getPartnerLicense().getPurchasedLicenseCount() + " license(s) added for partner successfully!");
 					
 					setPartners(null);
@@ -187,6 +249,7 @@ public class PartnerMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += ", Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Create failed. " + gDAO.getMessage());
 				}
 			}
@@ -195,6 +258,7 @@ public class PartnerMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Unknown partner!");
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -207,6 +271,7 @@ public class PartnerMBean implements Serializable
 	{
 		if(getPartner_id() != null && getAppTypeVersion_id() != null && getSubStdt() != null)
 		{
+			String naration = "Save subscription: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object pObj = gDAO.find(Partner.class, getPartner_id());
@@ -222,6 +287,8 @@ public class PartnerMBean implements Serializable
 					getSubscription().setCrt_dt(new Date());
 					getSubscription().setCreatedBy(dashBean.getUser());
 					getSubscription().setExpired(false);
+					
+					naration += " Partner: " + getSubscription().getPartner().getName() + "(" + getSubscription().getAppTypeVersion().getVersionName() + ")";
 					
 					Calendar c = Calendar.getInstance();
 					c.setTime(getSubStdt());
@@ -257,6 +324,7 @@ public class PartnerMBean implements Serializable
 						activateSubs(getSubscription(), gDAO);
 						
 						gDAO.commit();
+						naration += " Status: Success";
 						
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Subscription created successfully.");
 						FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -270,6 +338,7 @@ public class PartnerMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += " Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed. " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
@@ -285,6 +354,8 @@ public class PartnerMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Invalid partner selected!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -536,6 +607,7 @@ public class PartnerMBean implements Serializable
 		{
 			if(getPartnerUser().getPassword().equals(getCpassword()))
 			{
+				String naration = "Create partner: " + getPartner().getName();
 				getPartner().setCreatedBy(dashBean.getUser());
 				getPartner().setCrt_dt(new Date());
 				
@@ -657,7 +729,7 @@ public class PartnerMBean implements Serializable
 						gDAO.save(userRole);
 						
 						gDAO.commit();
-						
+						naration += " Status: Success";
 						HttpServletRequest origRequest = (HttpServletRequest)FacesContext.getCurrentInstance().getExternalContext().getRequest();
 						
 						final StringBuilder body = new StringBuilder("<html><body>");
@@ -701,6 +773,7 @@ public class PartnerMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += " Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Failed to create the partner: " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
@@ -708,9 +781,12 @@ public class PartnerMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += " Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Failed to create the partner: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -733,6 +809,29 @@ public class PartnerMBean implements Serializable
 
 	public void setPartner(Partner partner) {
 		this.partner = partner;
+	}
+
+	public Partner getSelPartner() {
+		if(!dashBean.getUser().getPartner().isSattrak())
+		{
+			selPartner = dashBean.getUser().getPartner();
+		}
+		else
+		{
+			if(getPartner_id() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				try {
+					selPartner = (Partner)gDAO.find(Partner.class, getPartner_id());
+				} catch(Exception ex){}
+				gDAO.destroy();
+			}
+		}
+		return selPartner;
+	}
+
+	public void setSelPartner(Partner selPartner) {
+		this.selPartner = selPartner;
 	}
 
 	public PartnerPersonel getPartnerPersonel() {
@@ -799,19 +898,72 @@ public class PartnerMBean implements Serializable
 		this.partnerLogo = partnerLogo;
 	}
 
+	public double getCuroverTimeAmountPerHour() {
+		if(getSetting() != null)
+			curoverTimeAmountPerHour = getSetting().getOverTimeAmountPerHour();
+		return curoverTimeAmountPerHour;
+	}
+
+	public void setCuroverTimeAmountPerHour(double curoverTimeAmountPerHour) {
+		this.curoverTimeAmountPerHour = curoverTimeAmountPerHour;
+	}
+
+	public double getOverTimeAmountPerHour() {
+		return overTimeAmountPerHour;
+	}
+
+	public void setOverTimeAmountPerHour(double overTimeAmountPerHour) {
+		this.overTimeAmountPerHour = overTimeAmountPerHour;
+	}
+
+	public int getCurmaxMinutesToBookTrip() {
+		if(getSetting() != null)
+			curmaxMinutesToBookTrip = getSetting().getMaxMinutesToBookTrip();
+		return curmaxMinutesToBookTrip;
+	}
+
+	public void setCurmaxMinutesToBookTrip(int curmaxMinutesToBookTrip) {
+		this.curmaxMinutesToBookTrip = curmaxMinutesToBookTrip;
+	}
+
+	public int getMaxMinutesToBookTrip() {
+		return maxMinutesToBookTrip;
+	}
+
+	public void setMaxMinutesToBookTrip(int maxMinutesToBookTrip) {
+		this.maxMinutesToBookTrip = maxMinutesToBookTrip;
+	}
+
+	public int getCurmaxMinutesPendingTripApproval() {
+		if(getSetting() != null)
+			curmaxMinutesPendingTripApproval = getSetting().getMaxMinutesPendingTripApproval();
+		return curmaxMinutesPendingTripApproval;
+	}
+
+	public void setCurmaxMinutesPendingTripApproval(
+			int curmaxMinutesPendingTripApproval) {
+		this.curmaxMinutesPendingTripApproval = curmaxMinutesPendingTripApproval;
+	}
+
+	public int getMaxMinutesPendingTripApproval() {
+		return maxMinutesPendingTripApproval;
+	}
+
+	public void setMaxMinutesPendingTripApproval(
+			int maxMinutesPendingTripApproval) {
+		this.maxMinutesPendingTripApproval = maxMinutesPendingTripApproval;
+	}
+
 	@SuppressWarnings("unchecked")
 	public PartnerSetting getSetting() {
-		if(setting == null)
-		{
+		if(setting == null) {
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
 			params.put("partner", dashBean.getUser().getPartner());
 			GeneralDAO gDAO = new GeneralDAO();
 			Object pSettingsObj = gDAO.search("PartnerSetting", params);
-			if(pSettingsObj != null)
-			{
+			if(pSettingsObj != null) {
 				Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
-				for(PartnerSetting e : pSettingsList)
-				{
+				for(PartnerSetting e : pSettingsList) {
 					setting = e;
 				}
 			}
@@ -919,6 +1071,14 @@ public class PartnerMBean implements Serializable
 		this.partner_id = partner_id;
 	}
 
+	public Long getPp_id() {
+		return pp_id;
+	}
+
+	public void setPp_id(Long pp_id) {
+		this.pp_id = pp_id;
+	}
+
 	public Long getAppType_id() {
 		return appType_id;
 	}
@@ -949,6 +1109,78 @@ public class PartnerMBean implements Serializable
 
 	public void setSubStdt(Date subStdt) {
 		this.subStdt = subStdt;
+	}
+
+	public long getSubsidairy_id() {
+		return subsidairy_id;
+	}
+
+	public void setSubsidairy_id(long subsidairy_id) {
+		this.subsidairy_id = subsidairy_id;
+	}
+
+	public long getDivision_id() {
+		return division_id;
+	}
+
+	public void setDivision_id(long division_id) {
+		this.division_id = division_id;
+	}
+
+	public long getDepartment_id() {
+		return department_id;
+	}
+
+	public void setDepartment_id(long department_id) {
+		this.department_id = department_id;
+	}
+
+	public long getUnit_id() {
+		return unit_id;
+	}
+
+	public void setUnit_id(long unit_id) {
+		this.unit_id = unit_id;
+	}
+
+	public long getExpType_id() {
+		return expType_id;
+	}
+
+	public void setExpType_id(long expType_id) {
+		this.expType_id = expType_id;
+	}
+
+	public PartnerApprover getPartnerApprover() {
+		if(partnerApprover == null)
+			partnerApprover = new PartnerApprover();
+		return partnerApprover;
+	}
+
+	public void setPartnerApprover(PartnerApprover partnerApprover) {
+		this.partnerApprover = partnerApprover;
+	}
+	
+	public void resetApprovers() {
+		setPartnerApprovers(null);
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerApprover> getPartnerApprovers() {
+		GeneralDAO gDAO = new GeneralDAO();
+		try {
+			Query q = gDAO.createQuery("Select e from PartnerApprover e where e.partner=:partner");
+			q.setParameter("partner", getSelPartner());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null)
+				partnerApprovers = (Vector<PartnerApprover>)obj;
+		} catch(Exception ex){ ex.printStackTrace(); }
+		gDAO.destroy();
+		return partnerApprovers;
+	}
+
+	public void setPartnerApprovers(Vector<PartnerApprover> partnerApprovers) {
+		this.partnerApprovers = partnerApprovers;
 	}
 
 	public DashboardMBean getDashBean() {

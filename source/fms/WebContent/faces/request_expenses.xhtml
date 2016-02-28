@@ -71,14 +71,87 @@
 						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 							<h:outputLabel for="expt2" value="Expense Type: *" />
 							<p:selectOneMenu id="expt2" value="#{expenseBean.expType_id}">
-					  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" rendered="#{not it.systemObj}" />
+					  			<p:ajax update="apvu2" />
 					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="exptveh" value="Vehicle: " />
+					  		<p:panelGrid id="exptveh" columns="2" cellpadding="5">
+					  			<h:outputLabel for="exptvehflt1" value="Fleet: " />
+								<p:selectOneMenu id="exptvehflt1" value="#{expenseBean.fleet_id}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getFleets(expenseBean.partner.id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="exptvch1" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="exptvch1" value="Vehicle: " />
+								<p:selectOneMenu id="exptvch1" value="#{expenseBean.vehicle_id}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+									<f:selectItems value="#{ddBean.getVehicles(expenseBean.partner.id, expenseBean.fleet_id, null)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+								</p:selectOneMenu>
+					  		</p:panelGrid>
+					  		
+					  		<h:outputLabel for="exptstaff" value="Staff: " />
+					  		<p:panelGrid id="exptstaff" columns="2" cellpadding="5">
+					  			<h:outputLabel for="brch" value="Division/Branch: " />
+								<p:selectOneMenu id="brch" value="#{expenseBean.division_id}">
+									<f:selectItem itemLabel="-- All --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getPartnerDivisions(expenseBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="dept, unt, stf" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="dept" value="Department: " />
+								<p:selectOneMenu id="dept" value="#{expenseBean.department_id}">
+									<f:selectItem itemLabel="-- All --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getDivisionDepartments(expenseBean.partner.id, expenseBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="unt, stf" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="unt" value="Unit: " />
+								<p:selectOneMenu id="unt" value="#{expenseBean.unit_id}">
+									<f:selectItem itemLabel="-- All --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getDepartmentUnits(expenseBean.partner.id, expenseBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="stf" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="stf" value="Staff: " />
+								<p:selectOneMenu id="stf" value="#{expenseBean.staff_id}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getPartnerPersonels(expenseBean.partner.id, expenseBean.division_id, 0, expenseBean.department_id, expenseBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+						  		</p:selectOneMenu>
+					  		</p:panelGrid>
+					  		
+					  		<h:outputLabel for="exptmis" value="MIS: " />
+					  		<p:panelGrid id="exptmis" columns="2" cellpadding="5">
+					  			<h:outputLabel for="misbrch" value="Division/Branch: " />
+								<p:selectOneMenu id="misbrch" value="#{expenseBean.division_id2}">
+									<f:selectItem itemLabel="-- All --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getPartnerDivisions(expenseBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="misdept, misunt" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="misdept" value="Department: " />
+								<p:selectOneMenu id="misdept" value="#{expenseBean.department_id2}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getDivisionDepartments(expenseBean.partner.id, expenseBean.division_id2)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  			<p:ajax update="misunt" />
+						  		</p:selectOneMenu>
+						  		
+						  		<h:outputLabel for="misunt" value="Unit: " />
+								<p:selectOneMenu id="misunt" value="#{expenseBean.unit_id2}">
+									<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+						  			<f:selectItems value="#{ddBean.getDepartmentUnits(expenseBean.partner.id, expenseBean.department_id2)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						  		</p:selectOneMenu>
+						  	</p:panelGrid>
 					  		
 					  		<h:outputLabel for="stdt2" value="Date: *" />
 							<p:calendar id="stdt2" value="#{expenseBean.expRequest.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
 							
 							<h:outputLabel for="amt2" value="Amount: *" />
-							<p:inputText id="amt2" value="#{expenseBean.expRequest.amount}" />
+							<p:inputText id="amt2" value="#{expenseBean.expRequest.amount}">
+								<p:ajax update="apvu2" />
+							</p:inputText>
 							
 							<h:outputLabel for="desc2" value="Remarks: " />
 							<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -88,7 +161,8 @@
 					  		
 					  		<h:outputLabel for="apvu2" value="Approval User: *" />
 							<p:selectOneMenu id="apvu2" value="#{expenseBean.approvalUser_id}">
-					  			<f:selectItems value="#{ddBean.getUsersWithFunction(expenseBean.partner.id, 'approve_expenses')}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+					  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+								<f:selectItems value="#{ddBean.getApprovingUsers(expenseBean.partner.id, expenseBean.expRequest.amount, expenseBean.expType_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
 					  		</p:selectOneMenu>
 					  		
 					  		<f:facet name="footer">
@@ -96,7 +170,7 @@
 					  		</f:facet>
 						</p:panelGrid>
 					</p:tab>
-					<p:tab id="myexps" title="Your Expense Requests">
+					<p:tab id="myexps" title="Your Pending Expense Requests">
 						<p:panel id="myreqsPanel">
 						<p:dataTable id="mySubExpsTable" var="obj" value="#{expenseBean.mySubExpRequests}"
 							paginator="true" rows="50"
@@ -104,7 +178,7 @@
 							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
 							binding="#{table2}">
 							<f:facet name="header">
-								My expense request(s) [#{expenseBean.mySubExpRequests.size()}]
+								My pending expense request(s) [#{expenseBean.mySubExpRequests.size()}]
 							</f:facet>
 							
 							<p:column headerText="Date">
@@ -140,6 +214,60 @@
 							</p:column>
 						</p:dataTable>
 						</p:panel>
+					</p:tab>
+					<p:tab id="myallexps" title="Your Expense Requests">
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="searchstdt" value="Start Date: *" />
+							<p:calendar id="searchstdt" value="#{expenseBean.start_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+							
+							<h:outputLabel for="searcheddt" value="End Date: *" />
+							<p:calendar id="searcheddt" value="#{expenseBean.end_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
+							
+							<f:facet name="footer">
+					  			<p:commandButton ajax="false" action="#{expenseBean.resetMyAllSubExpRequests}" value="Search" icon="ui-icon-search" style="margin:0"/>
+					  		</f:facet>
+						</p:panelGrid>
+						<br/>
+						<p:dataTable id="myAllSubExpsTable" var="obj" value="#{expenseBean.myAllSubExpRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								My expense request(s) [#{expenseBean.myAllSubExpRequests.size()}]
+							</f:facet>
+							
+							<p:column headerText="Date">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.name}" />
+							</p:column>
+							<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.description}" />
+							</p:column>
+							<p:column sortBy="#{obj.amount}" headerText="Amount">
+								<h:outputText value="#{obj.amount}" />
+							</p:column>
+							<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+								<h:outputText value="#{obj.expense_dt}" />
+							</p:column>
+							<p:column headerText="Remarks">
+								<h:outputText value="#{obj.remarks}" />
+							</p:column>
+							<p:column headerText="Approval User">
+								<h:outputText value="#{obj.approvalUser.personel.firstname} #{obj.approvalUser.personel.lastname}" rendered="#{obj.approvalUser != null}" />
+								<h:outputText value="N/A" rendered="#{obj.approvalUser == null}" />
+							</p:column>
+							<p:column headerText="Approval Date">
+								<h:outputText value="#{obj.approval_dt}" />
+							</p:column>
+							<p:column headerText="Approval Status" sortBy="#{obj.approvalStatus}" filterBy="#{obj.approvalStatus}" filterMatchMode="contains">
+								<h:outputText value="#{obj.approvalStatus}" />
+							</p:column>
+							<p:column headerText="Approval Comment">
+								<h:outputText value="#{obj.approvalComment}" />
+							</p:column>
+						</p:dataTable>
 					</p:tab>
 				</p:tabView>
 			</p:outputPanel>

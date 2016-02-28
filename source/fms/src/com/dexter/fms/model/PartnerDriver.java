@@ -1,6 +1,7 @@
 package com.dexter.fms.model;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -48,6 +49,8 @@ public class PartnerDriver implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	private String driverNo;
 	
 	@Transient
 	private Vehicle vehicle;
@@ -147,6 +150,14 @@ public class PartnerDriver implements Serializable
 		this.createdBy = createdBy;
 	}
 
+	public String getDriverNo() {
+		return driverNo;
+	}
+
+	public void setDriverNo(String driverNo) {
+		this.driverNo = driverNo;
+	}
+
 	public Vehicle getVehicle() {
 		return vehicle;
 	}
@@ -156,6 +167,11 @@ public class PartnerDriver implements Serializable
 	}
 
 	public int getYearsOfService() {
+		if(getPersonel().getHiredDate() != null) {
+			Calendar can = Calendar.getInstance(), can2 = Calendar.getInstance();
+			can2.setTime(getPersonel().getHiredDate());
+			yearsOfService = can.get(Calendar.YEAR) - can2.get(Calendar.YEAR);
+		}
 		return yearsOfService;
 	}
 

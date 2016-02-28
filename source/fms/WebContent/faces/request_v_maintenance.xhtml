@@ -1,0 +1,126 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Request Vehicle Maintenace</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Request Vehicle Maintenace" action="#{dashboardBean.gotoPage('request_v_maintenance', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="flt1" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="flt1" value="Fleet: " />
+				<p:selectOneMenu id="flt1" value="#{fleetBean.fleet_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{fleetBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<f:facet name="footer">
+		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
+				paginator="true" rows="50"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true">
+				<f:facet name="header">
+					Available vehicle(s)
+				</f:facet>
+				
+				<p:column style="width: 3%">
+					<f:facet name="header">
+						<p:selectBooleanCheckbox value="#{fleetBean.selectAll}">
+							<p:ajax update="objsTable" />
+						</p:selectBooleanCheckbox>
+					</f:facet>
+					<p:selectBooleanCheckbox value="#{obj.selected}" />
+				</p:column>
+				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+					<h:outputText value="#{obj.registrationNo}" />
+				</p:column>
+				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.model.name} (#{obj.model.year})" />
+				</p:column>
+				<p:column sortBy="#{obj.fleet.name}" headerText="Group" filterBy="#{obj.fleet.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.fleet.name}" />
+				</p:column>
+			</p:dataTable>
+			<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<h:outputLabel for="mtype" value="Maintenance Type: " />
+				<p:selectOneMenu id="mtype" value="#{fleetBean.maintRequest.maintenanceType}">
+					<f:selectItem itemLabel="Adhoc" itemValue="Adhoc" />
+					<f:selectItem itemLabel="Routine" itemValue="Routine" />
+		  		</p:selectOneMenu>
+				
+				<h:outputLabel for="rdesc" value="Description: *" />
+				<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+		  		<p:inputTextarea id="rdesc" value="#{fleetBean.maintRequest.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+		  		<h:outputText id="counter" />
+		  		</p:panelGrid>
+		  		
+		  		<h:outputLabel value="Select approver staff: " />
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+				
+					<h:outputLabel for="brch" value="Division/Branch: " />
+					<p:selectOneMenu id="brch" value="#{reportsBean.division_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getPartnerDivisions(dashboardBean.user.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="dept, unt, stf" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="dept" value="Department: " />
+					<p:selectOneMenu id="dept" value="#{reportsBean.department_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getDivisionDepartments(dashboardBean.user.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="unt, stf" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="unt" value="Unit: " />
+					<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getDepartmentUnits(dashboardBean.user.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="stf" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="stf" value="Staff: " />
+					<p:selectOneMenu id="stf" value="#{fleetBean.approver_id}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getPartnerPersonels(dashboardBean.user.partner.id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+				</p:panelGrid>
+				
+				<f:facet name="footer">
+		  			<p:commandButton ajax="false" action="#{fleetBean.requestVehicleMaintenance}" value="Save" onclick="return confirm('Are you sure?');" icon="ui-icon-disk" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

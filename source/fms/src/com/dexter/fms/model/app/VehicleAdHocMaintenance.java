@@ -10,6 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerUser;
@@ -49,6 +50,13 @@ public class VehicleAdHocMaintenance implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	@Transient
+	private double odometer;
+	@Transient
+	private int negotiated_days_of_completion;
+	@Transient
+	private PartnerUser finalApproveBy;
 	
 	public VehicleAdHocMaintenance()
 	{}
@@ -155,6 +163,30 @@ public class VehicleAdHocMaintenance implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public double getOdometer() {
+		return odometer;
+	}
+
+	public void setOdometer(double odometer) {
+		this.odometer = odometer;
+	}
+
+	public int getNegotiated_days_of_completion() {
+		return negotiated_days_of_completion;
+	}
+
+	public void setNegotiated_days_of_completion(int negotiated_days_of_completion) {
+		this.negotiated_days_of_completion = negotiated_days_of_completion;
+	}
+
+	public PartnerUser getFinalApproveBy() {
+		return finalApproveBy;
+	}
+
+	public void setFinalApproveBy(PartnerUser finalApproveBy) {
+		this.finalApproveBy = finalApproveBy;
 	}
 	
 }

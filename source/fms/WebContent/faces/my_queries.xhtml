@@ -1,0 +1,96 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">My Queries</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="My Queries" action="#{dashboardBean.gotoPage('my_queries', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="pendingTab" title="Pending query(ies) [#{userBean.myPendingQueries.size()}]">
+						<p:dataTable id="queriesTable" var="obj" value="#{userBean.dvrQueries}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+							<f:facet name="header">
+								Found query record(s) [#{userBean.myPendingQueries.size()}]
+							</f:facet>
+							
+							<p:column sortBy="#{obj.tranDate}" headerText="Date">
+								<h:outputText value="#{obj.tranDate}" />
+							</p:column>
+							<p:column sortBy="#{obj.queryGrade}" headerText="Grade">
+								<h:outputText value="#{obj.queryGrade}" />
+							</p:column>
+							<p:column headerText="Reason" filterBy="#{obj.queryRemarks}" filterMatchMode="contains">
+								<h:outputText value="#{obj.queryRemarks}" />
+							</p:column>
+							<p:column headerText="Created" style="width: 7%">
+								On: <h:outputText value="#{obj.crt_dt}" /><br/>
+								By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
+							</p:column>
+							<p:column sort="#{obj.status}" headerText="Status" filterBy="#{obj.status}" filterMatchMode="contains">
+								<h:outputText value="#{obj.status}" />
+							</p:column>
+							<p:column headerText="">
+								<p:commandLink update=":form:responsePanel" oncomplete="responsedlg.show();" value="Respond">
+									<f:setPropertyActionListener value="#{obj}" target="#{userBean.selDvrQuery}" />
+								</p:commandLink>
+							</p:column>
+						</p:dataTable>
+					</p:tab>
+					<p:tab id="archiveTab" title="Queries History">
+						
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="responseDialog" header="Respond to Query" widgetVar="responsedlg" modal="true" dynamic="true">
+		<p:panelGrid id="responsePanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+			<h:outputLabel for="dvrSelQueryDate" value="Date: " />
+  			<h:outputText id="dvrSelQueryDate" value="#{userBean.selDvrQuery.tranDate}" />
+  			
+  			<h:outputLabel for="dvrSelQueryGrade" value="Grade: " />
+  			<h:outputText id="dvrSelQueryGrade" value="#{userBean.selDvrQuery.queryGrade}" />
+  			
+  			<h:outputLabel for="dvrSelQueryReason" value="Reason: " />
+  			<h:outputText id="dvrSelQueryReason" value="#{userBean.selDvrQuery.queryRemarks}" />
+  			
+  			<h:outputLabel for="dvrResponse" value="Your response: *" />
+	  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="dvrResponse" value="#{userBean.selDvrQuery.driverResponse}" rows="3" cols="30" counter="ccounter" maxlength="255" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  			<h:outputText id="ccounter" />
+	  		</p:panelGrid>
+  			
+  			<f:facet name="footer">
+	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(777)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

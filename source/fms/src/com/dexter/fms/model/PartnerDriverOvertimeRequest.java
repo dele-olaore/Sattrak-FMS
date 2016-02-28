@@ -2,15 +2,19 @@ package com.dexter.fms.model;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Vector;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.Query;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
+
+import com.dexter.fms.dao.GeneralDAO;
 
 @Entity
 public class PartnerDriverOvertimeRequest implements Serializable
@@ -29,13 +33,15 @@ public class PartnerDriverOvertimeRequest implements Serializable
 	
 	@Temporal(TemporalType.DATE)
 	private Date tranDate;
-	private int overtimehours;
-	private double amountPerHour;
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date start_time, end_time;
+	private int overtimehours; // should be calculated by platform
+	private double amountPerHour; // Should load from configuration. TODO: Implement this in the settings.
 	private String reason;
 	private String approvalStatus; // PENDING, APPROVED, DINIED, CANCELED
 	private String approvalComment;
 	@ManyToOne
-	private PartnerUser approvedBy;
+	private PartnerUser approvedBy; // should be the person the driver drove, to be selected on the page
 	@Temporal(TemporalType.DATE)
 	private Date approvedDate;
 	
@@ -85,7 +91,36 @@ public class PartnerDriverOvertimeRequest implements Serializable
 		this.tranDate = tranDate;
 	}
 
+	public Date getStart_time() {
+		return start_time;
+	}
+
+	public void setStart_time(Date start_time) {
+		this.start_time = start_time;
+	}
+
+	public Date getEnd_time() {
+		return end_time;
+	}
+
+	public void setEnd_time(Date end_time) {
+		this.end_time = end_time;
+	}
+
 	public int getOvertimehours() {
+		if(getId() == null) {
+			if(getStart_time() != null && getEnd_time() != null) {
+				long timediff = getEnd_time().getTime() - getStart_time().getTime();
+				long hour = 1000*60*60;
+				int divide = 0;
+				try {
+					divide = Integer.parseInt(""+timediff/hour);
+				} catch(Exception ex){}
+				if(divide <= 0)
+					divide = 1;
+				overtimehours = divide;
+			}
+		}
 		return overtimehours;
 	}
 
@@ -166,7 +201,7 @@ public class PartnerDriverOvertimeRequest implements Serializable
 	}
 
 	public double getAmount() {
-		amount = amountPerHour*overtimehours;
+		amount = amountPerHour*getOvertimehours();
 		return amount;
 	}
 

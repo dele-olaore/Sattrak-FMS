@@ -1,0 +1,165 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Fleet Trips Utilization Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+			  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="flt1" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="flt1" value="Fleet: " />
+					<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="stdt" value="Start date: *" />
+					<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+					
+					<h:outputLabel for="eddt" value="End date: *" />
+					<p:calendar id="eddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchCorporateTrips}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.corporateTripsSummary != null and reportsBean.corporateTripsSummary.vehicles.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="corporate_trips_utilization" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="corporate_trips_utilization" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="corporate_trips_utilization" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" action="#{reportsBean.downloadCorporateTripsPDF}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="corporate_trips_utilization" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="corporate_trips_utilization" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="corporate_trips_utilization" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<h:panelGrid columns="2" rendered="#{reportsBean.corporateTripsSummary != null and reportsBean.corporateTripsSummary.vehicles.size() > 0}">
+					<p:pieChart id="pie"
+	                    value="#{reportsBean.pieModel}"
+	                    legendPosition="w"
+	                    title="Trips Utilization Chart"
+	                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}" />
+                    
+                    <p:barChart id="bar" value="#{reportsBean.barModel}" legendPosition="ne" xaxisLabel="Vehicle" yaxisLabel="Distance covered"
+                    	title="Utilization Distance Covered Chart" min="0" max="#{reportsBean.maxY}" style="height:300px" />
+                </h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.corporateTripsSummary.vehicles}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.corporateTripsSummary != null and reportsBean.corporateTripsSummary.vehicles.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.registrationNo}" filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.registrationNo}" />
+					</p:column>
+					<p:column sortBy="#{obj.no_of_trips}">
+						<f:facet name="header">
+							 <h:outputText value="No of Trips" />  
+						</f:facet>
+						<h:outputText value="#{obj.no_of_trips}" />
+					</p:column>
+					<p:column sortBy="#{obj.no_of_drivers}">
+						<f:facet name="header">
+							 <h:outputText value="No of Drivers" />  
+						</f:facet>
+						<h:outputText value="#{obj.no_of_drivers}" />
+					</p:column>
+					<p:column sortBy="#{obj.no_of_passengers}">
+						<f:facet name="header">
+							 <h:outputText value="No of Passengers" />  
+						</f:facet>
+						<h:outputText value="#{obj.no_of_passengers}" />
+					</p:column>
+					<p:column sortBy="#{obj.distance}">
+						<f:facet name="header">
+							 <h:outputText value="Distance covered" />  
+						</f:facet>
+						<h:outputText value="#{obj.distance}" />
+					</p:column>
+					<p:column sortBy="#{obj.working_time}">
+						<f:facet name="header">
+							 <h:outputText value="Work Time (hours)" />  
+						</f:facet>
+						<h:outputText value="#{obj.working_time}" />
+					</p:column>
+					<p:column sortBy="#{obj.fuel_consumed}">
+						<f:facet name="header">
+							 <h:outputText value="Fuel Consumed" />  
+						</f:facet>
+						<h:outputText value="#{obj.fuel_consumed}" />
+					</p:column>
+					<p:column sortBy="#{obj.km_per_liter}">
+						<f:facet name="header">
+							 <h:outputText value="Km/L" />  
+						</f:facet>
+						<h:outputText value="#{obj.km_per_liter}" />
+					</p:column>
+					<p:column sortBy="#{obj.average_speed}">
+						<f:facet name="header">
+							 <h:outputText value="Avg. Speed" />  
+						</f:facet>
+						<h:outputText value="#{obj.average_speed}" />
+					</p:column>
+					<p:column sortBy="#{obj.max_speed}">
+						<f:facet name="header">
+							 <h:outputText value="Top Speed" />  
+						</f:facet>
+						<h:outputText value="#{obj.max_speed}" />
+					</p:column>
+					
+				</p:dataTable>
+				
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

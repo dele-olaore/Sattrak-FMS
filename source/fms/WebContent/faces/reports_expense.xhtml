@@ -27,26 +27,17 @@
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.expenses != null and reportsBean.expenses.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(9, 'expense_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="expense_report" />
 						</p:commandLink>
-		
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(9, 'expense_report', 1)}">
+						
+						<p:commandLink ajax="false" action="#{reportsBean.downloadExpensesPDF}">
 							<p:graphicImage value="/resources/images/pdf.png" />
 						</p:commandLink>
 						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(9, 'expense_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
-						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
 							<p:dataExporter type="csv" target=":form:objsTable"
@@ -88,27 +79,43 @@
 						Found expense(s)
 					</f:facet>
 					
+					<p:column sortBy="#{obj.type.expenseHeader.name}">
+						<f:facet name="header">
+							 <h:outputText value="Header" />
+						</f:facet>
+						<h:outputText value="#{obj.type.expenseHeader.name}" rendered="#{obj.type.expenseHeader != null}" />
+						<h:outputText value="N/A" rendered="#{obj.type.expenseHeader == null}" />
+					</p:column>
 					<p:column sortBy="#{obj.type.name}">
 						<f:facet name="header">
-							 <h:outputText value="Type" />  
+							 <h:outputText value="Type" />
 						</f:facet>
 						<h:outputText value="#{obj.type.name}" />
 					</p:column>
 					<p:column sortBy="#{obj.expense_dt}">
 						<f:facet name="header">
-							 <h:outputText value="Date" />  
+							 <h:outputText value="Date" />
 						</f:facet>
 						<h:outputText value="#{obj.expense_dt}" />
 					</p:column>
 					<p:column sortBy="#{obj.amount}">
 						<f:facet name="header">
-							 <h:outputText value="Amount" />  
+							 <h:outputText value="Amount" />
 						</f:facet>
 						<h:outputText value="#{obj.amount}" />
 					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Beneficiary" />
+						</f:facet>
+						<h:outputText value="Vehicle: #{obj.vehicle.registrationNo}, " rendered="#{obj.vehicle != null}" />
+						<h:outputText value="Staff: #{obj.personel.firstname} #{obj.personel.lastname}, " rendered="#{obj.personel != null}" />
+						<h:outputText value="MIS Department: #{obj.misDepartment.name}, " rendered="#{obj.misDepartment != null}" />
+						<h:outputText value="MIS Unit: #{obj.misUnit.name}" rendered="#{obj.misUnit != null}" />
+					</p:column>
 					<p:column filterBy="#{obj.remarks}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Detail" />  
+							 <h:outputText value="Detail" />
 						</f:facet>
 						<h:outputText value="#{obj.remarks}" />
 					</p:column>

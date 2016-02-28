@@ -132,6 +132,11 @@ public class AssetMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Item supply saved successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
+				try {
+				String naration = "Create item supply for Item: " + getItemSupply().getItem().getName() + ", Quantity: " + getItemSupply().getQuantity() + ", Supply Date: " + getItemSupply().getSupplyDate() + ", Status: Success";
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
+				
 				setItemSupply(null);
 				setItem_id(null);
 				setVendor_id(null);
@@ -142,6 +147,10 @@ public class AssetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Save failed. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				try {
+				String naration = "Create item supply for Item: " + getItemSupply().getItem().getName() + ", Quantity: " + getItemSupply().getQuantity() + ", Supply Date: " + getItemSupply().getSupplyDate() + ", Status: Failed: " + gDAO.getMessage();
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
 			}
 			gDAO.destroy();
 		}
@@ -184,7 +193,10 @@ public class AssetMBean implements Serializable
 				
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Item usage saved successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				try {
+				String naration = "Create item use: Item: " + getItemUse().getItem().getName() + ", Quantity: " + getItemUse().getQuantity() + ", Use date: " + getItemUse().getUseDate() + ", Status: Success";
+				dashBean.saveAudit(naration, "", getItemUse().getVehicle());
+				} catch(Exception ex){}
 				setItemUse(null);
 				setItem_id(null);
 				setVehicle_id(null);
@@ -195,6 +207,10 @@ public class AssetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Save failed. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				try {
+				String naration = "Create item use: Item: " + getItemUse().getItem().getName() + ", Quantity: " + getItemUse().getQuantity() + ", Use date: " + getItemUse().getUseDate() + ", Status: Failed: " + gDAO.getMessage();
+				dashBean.saveAudit(naration, "", getItemUse().getVehicle());
+				} catch(Exception ex){}
 			}
 			gDAO.destroy();
 		}
@@ -227,7 +243,10 @@ public class AssetMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Item saved successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				try {
+				String naration = "Create item: " + getItem().getName() + ", Status: Success";
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
 				setItem(null);
 				setItems(null);
 			}
@@ -236,6 +255,10 @@ public class AssetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Save failed. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				try {
+				String naration = "Create item: " + getItem().getName() + ", Status: Failed: " + gDAO.getMessage();
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
 			}
 			gDAO.destroy();
 		}
@@ -259,7 +282,10 @@ public class AssetMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Item type saved successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				try {
+				String naration = "Create item type: " + getItemType().getName() + ", Status: Success";
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
 				setItemType(null);
 				setItemTypes(null);
 			}
@@ -268,6 +294,10 @@ public class AssetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Save failed. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				try {
+				String naration = "Create item type: " + getItemType().getName() + ", Status: Failed: " + gDAO.getMessage();
+				dashBean.saveAudit(naration, "", null);
+				} catch(Exception ex){}
 			}
 		}
 		else

@@ -106,7 +106,7 @@
 		
 		<h:outputLabel for="rlvmodel" value="Vehicle Model: *"/>
 		<p:selectOneMenu id="rlvmodel" value="#{fleetBean.vehicleModel_id}">
-			<f:selectItems value="#{fleetBean.allvmodels}" var="it" itemLabel="#{it.name} (#{it.year})" itemValue="#{it.id}" />
+			<f:selectItems value="#{fleetBean.allvmodels}" var="it" itemLabel="#{it.maker.name} #{it.name} (#{it.year})" itemValue="#{it.id}" />
   		</p:selectOneMenu>
 		
   		<h:outputLabel for="vsrmodo" value="Odometer: *" />

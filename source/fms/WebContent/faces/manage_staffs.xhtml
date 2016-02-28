@@ -53,63 +53,66 @@
 	  			<p:commandButton ajax="true" update="staffsTable" value="Search" icon="ui-icon-search" style="margin:0"/>
 	  		</f:facet>
 		</p:panelGrid>
+		
 		<p:dataTable id="staffsTable" var="obj" value="#{userBean.personels}"
 			paginator="true" rows="10"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+			rowsPerPageTemplate="10,20,50" resizableColumns="true"
+			scrollable="true" scrollWidth="1220">
 			<f:facet name="header">
 				Available personels
 			</f:facet>
 			
-			<p:column headerText="">
+			<p:column headerText="" style="width:100px">
 				<img src="#{request.contextPath}/imageservlet/#{obj.id}-personel-#{appBean.randomNumber}" width="50" height="50" alt="personel" />
 			</p:column>
-			<p:column sortBy="#{obj.lastname}" headerText="Last name" filterBy="#{obj.lastname}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.lastname}" headerText="Last name" filterBy="#{obj.lastname}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.lastname}" />
 			</p:column>
-			<p:column sortBy="#{obj.firstname}" headerText="First name" filterBy="#{obj.firstname}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.firstname}" headerText="First name" filterBy="#{obj.firstname}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.firstname}" />
 			</p:column>
-			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.partner.name}" />
 			</p:column>
-			<p:column sortBy="#{obj.phone}" headerText="Phone" filterBy="#{obj.phone}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.phone}" headerText="Phone" filterBy="#{obj.phone}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.phone}" />
 			</p:column>
-			<p:column sortBy="#{obj.email}" headerText="Email" filterBy="#{obj.email}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.email}" headerText="Email" filterBy="#{obj.email}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.email}" />
 			</p:column>
-			<p:column sortBy="#{obj.department.name}" headerText="Dept" filterBy="#{obj.department.name}" filterMatchMode="contains" style="width: 5%">
+			<p:column sortBy="#{obj.department.name}" headerText="Dept" filterBy="#{obj.department.name}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.department.name}" />
 			</p:column>
-			<p:column sortBy="#{obj.region.name}" headerText="Region" filterBy="#{obj.region.name}" filterMatchMode="contains" style="width: 5%">
+			<p:column sortBy="#{obj.region.name}" headerText="Region" filterBy="#{obj.region.name}" filterMatchMode="contains" style="width:150px">
 				<h:outputText value="#{obj.region.name}" />
 			</p:column>
-			<p:column sortBy="#{obj.availabilityStatus}" headerText="Avail. Status" filterBy="#{obj.availabilityStatus}" filterMatchMode="contains">
+			<p:column sortBy="#{obj.availabilityStatus}" headerText="Avail. Status" filterBy="#{obj.availabilityStatus}" filterMatchMode="contains" style="width:100px">
 				<h:outputText value="#{obj.availabilityStatus}" />
 			</p:column>
-			<p:column sortBy="#{obj.hasUser}" headerText="User" style="width: 6%">
+			<p:column sortBy="#{obj.hasUser}" headerText="User" style="width:150px">
 				<h:outputText value="Yes" rendered="#{obj.hasUser}" />
 				<p:commandLink ajax="true" oncomplete="makeuserdlg.show();" update=":form:newUserPanel" value="No [Make User]" rendered="#{not obj.hasUser}">
 					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
 				</p:commandLink>
 			</p:column>
-			<p:column sortBy="#{obj.hasDriver}" headerText="Driver" style="width: 6%">
+			<p:column sortBy="#{obj.hasDriver}" headerText="Driver" style="width:150px">
 				<h:outputText value="Yes" rendered="#{obj.hasDriver}" />
 				<p:commandLink ajax="true" oncomplete="makedriverdlg.show();" update=":form:newDriverPanel" value="No [Make Driver]" rendered="#{not obj.hasDriver}">
 					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
 				</p:commandLink>
 			</p:column>
-			<p:column headerText="Created">
+			<p:column headerText="Created" style="width:250px">
 				On: <h:outputText value="#{obj.crt_dt}" /><br/>
 				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 			</p:column>
-			<p:column headerText="" style="width: 3%">
+			<p:column headerText="" style="width:60px">
 				<p:commandButton ajax="false" action="#{userBean.initStaffEdit}" icon="ui-icon-pencil">
 					<f:setPropertyActionListener value="#{obj}" target="#{userBean.personel}" />
 				</p:commandButton>
 			</p:column>
 		</p:dataTable>
+		
 		</p:panel>
 		</td>
 		</tr>

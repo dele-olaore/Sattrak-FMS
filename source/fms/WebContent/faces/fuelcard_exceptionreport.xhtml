@@ -1,0 +1,117 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Exception Report</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Exception Report" action="#{dashboardBean.gotoPage('fuelcard_exceptionreport', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panel header="Export All Data" rendered="#{fuelcardBean.recordsEX != null and fuelcardBean.recordsEX.size() > 0}">
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/excel.png" />
+						<p:dataExporter type="xls" target=":form:objsTable"
+							fileName="exception_report" />
+					</p:commandLink>
+					
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/csv.png" />
+						<p:dataExporter type="csv" target=":form:objsTable"
+							fileName="exception_report" />
+					</p:commandLink>
+				</p:panel>
+				<p:scrollPanel mode="native" style="width:100%;height:250px" rendered="#{fuelcardBean.recordsEX != null and fuelcardBean.recordsEX.size() > 0}">
+				<p:dataTable id="objsTable" var="obj" value="#{fuelcardBean.recordsEX}"
+					paginator="true" rows="100"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{fuelcardBean.recordsEX != null and fuelcardBean.recordsEX.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column style="vertical-align: top" rendered="#{reportMBean.recordsEXFields[0]}">
+						<f:facet name="header">
+							<h:outputText value="Exception Type" />
+						</f:facet>
+						<h:outputText value="#{obj[0]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{reportMBean.recordsEXFields[1]}">
+						<f:facet name="header">
+							<h:outputText value="VIN" />
+						</f:facet>
+						<h:outputText value="#{obj[1]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{reportMBean.recordsEXFields[2]}">
+						<f:facet name="header">
+							<h:outputText value="Tran Time" />
+						</f:facet>
+						<h:outputText value="#{obj[2]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{reportMBean.recordsEXFields[3]}">
+						<f:facet name="header">
+							<h:outputText value="Details" />
+						</f:facet>
+						<h:outputText value="#{obj[3]}" />
+					</p:column>
+				</p:dataTable>
+				</p:scrollPanel>
+				<br/>
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="region" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="region" value="Region: " />
+						<p:selectOneMenu id="region" value="#{fuelcardBean.region_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							<p:ajax update="vehicle" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vehicle" value="Vehicle: " />
+						<p:selectOneMenu id="vehicle" value="#{fuelcardBean.vehicle_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fuelcardBean.vehicles}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="stdt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fuelcardBean.tranDate}" navigator="true" />
+						
+						<h:outputLabel for="eddt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fuelcardBean.tranDate2}" navigator="true" />
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+				  		<p:commandButton ajax="false" action="#{fuelcardBean.searchExceptionTransactions}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

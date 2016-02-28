@@ -34,13 +34,13 @@
 								fileName="vehicle_license_due_report" />
 						</p:commandLink>
 						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(12, 'vehicle_license_due_report', 1)}">
+						<!--<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(12, 'vehicle_license_due_report', 1)}">
 							<p:graphicImage value="/resources/images/pdf.png" />
 						</p:commandLink>
 						
 						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(12, 'vehicle_license_due_report')}">
 							<p:graphicImage value="/resources/images/word.jpg" />
-						</p:commandLink>
+						</p:commandLink>-->
 						
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
@@ -84,34 +84,59 @@
 					
 					<p:column sortBy="#{obj.vehicle.registrationNo}" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Reg No." />  
+							 <h:outputText value="Reg No." />
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.registrationNo}" />
 					</p:column>
 					<p:column sortBy="#{obj.vehicle.fleet.name}" filterBy="#{obj.vehicle.fleet.name}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Fleet" />  
+							 <h:outputText value="Fleet" />
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.fleet.name}" rendered="#{obj.vehicle.fleet != null}" />
 						<h:outputText value="N/A" rendered="#{obj.vehicle.fleet == null}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">
-							 <h:outputText value="Make" />  
+							 <h:outputText value="Make" />
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.model.maker.name}" rendered="#{obj.vehicle.model.maker != null}" />
 						<h:outputText value="N/A" rendered="#{obj.vehicle.model.maker == null}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">
-							 <h:outputText value="Model" />  
+							 <h:outputText value="Model" />
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.model.name}" rendered="#{obj.vehicle.model != null}" />
 						<h:outputText value="N/A" rendered="#{obj.vehicle.model == null}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">
-							 <h:outputText value="License Due Date" />  
+							 <h:outputText value="Type" />  
+						</f:facet>
+						<h:outputText value="#{obj.licType.name}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Insure Type" />  
+						</f:facet>
+						<h:outputText value="#{obj.subLicType}" rendered="#{obj.subLicType != null}" />
+						<h:outputText value="N/A" rendered="#{obj.subLicType == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Tran Type" />  
+						</f:facet>
+						<h:outputText value="#{obj.tranType.name}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Lic. Issue Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.lic_start_dt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Lic. Due Date" />  
 						</f:facet>
 						<h:outputText value="#{obj.lic_end_dt}" />
 					</p:column>

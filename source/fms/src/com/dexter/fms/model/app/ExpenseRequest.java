@@ -15,6 +15,8 @@ import javax.validation.constraints.NotNull;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
+import com.dexter.fms.model.ref.Department;
+import com.dexter.fms.model.ref.Unit;
 
 @Entity
 public class ExpenseRequest implements Serializable
@@ -40,7 +42,7 @@ public class ExpenseRequest implements Serializable
 	private Date request_dt;
 	@ManyToOne
 	private PartnerUser approvalUser;
-	private String approvalStatus; // PENDING, APPROVED, DENIED
+	private String approvalStatus; // PENDING, APPROVED, DENIED, PROCESSED
 	private String approvalComment; // comment for approval status
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date approval_dt;
@@ -49,9 +51,13 @@ public class ExpenseRequest implements Serializable
 	private Vehicle vehicle;
 	@ManyToOne
 	private PartnerPersonel personel;
-	
 	@ManyToOne
-	private Expense expense; // the expense created if this request was approved
+	private Department misDepartment;
+	@ManyToOne
+	private Unit misUnit;
+	
+	//@ManyToOne
+	//private Expense expense; // the expense created if this request was approved
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -169,12 +175,20 @@ public class ExpenseRequest implements Serializable
 		this.personel = personel;
 	}
 
-	public Expense getExpense() {
-		return expense;
+	public Department getMisDepartment() {
+		return misDepartment;
 	}
 
-	public void setExpense(Expense expense) {
-		this.expense = expense;
+	public void setMisDepartment(Department misDepartment) {
+		this.misDepartment = misDepartment;
+	}
+
+	public Unit getMisUnit() {
+		return misUnit;
+	}
+
+	public void setMisUnit(Unit misUnit) {
+		this.misUnit = misUnit;
 	}
 
 	public Date getCrt_dt() {

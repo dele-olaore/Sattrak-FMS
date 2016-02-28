@@ -49,6 +49,7 @@ import com.dexter.fms.model.Module;
 import com.dexter.fms.model.Notification;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerPersonel;
+import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
@@ -66,6 +67,8 @@ import com.dexter.fms.model.app.VehicleOdometerData;
 import com.dexter.fms.model.app.VehicleStatusEnum;
 import com.dexter.fms.model.app.VehicleTrackerData;
 import com.dexter.fms.model.app.VehicleTrackerEventData;
+import com.dexter.fms.model.app.WorkOrder;
+import com.dexter.fms.model.app.WorkOrderVendor;
 import com.dexter.fms.model.ref.DocumentType;
 import com.dexter.fms.model.ref.FuelType;
 import com.dexter.fms.model.ref.ItemType;
@@ -88,8 +91,8 @@ public class ApplicationMBean implements Serializable
 	
 	private boolean appSetup;
 	
-	private Timer timer, timer2, trackerEventTimer, trackerRealTimeTimer;
-	private TimerTask task, task2, trackerEventTask, trackerRealTimeTask;
+	private Timer timer, timer2, dailyTimer, trackerEventTimer, trackerRealTimeTimer;
+	private TimerTask task, task2, dailyTask, trackerEventTask, trackerRealTimeTask;
     
 	//private int tracker_interval = 5; // interval in minutes
 	//private Long lastReceivedId = -1L;
@@ -119,6 +122,10 @@ public class ApplicationMBean implements Serializable
                 logger.info("Starting disposable vehicles check at: " + new Date());
                 checkDisposableVehicles();
                 logger.info("Finished disposable vehicles check at: " + new Date());
+                
+                logger.info("Starting expiring vendor bids check at: " + new Date());
+                checkExpiringVendorBids();
+                logger.info("Finished expiring vendor bids check at: " + new Date());
             }
         };
         
@@ -133,11 +140,23 @@ public class ApplicationMBean implements Serializable
             }
         };
         
+        dailyTask = new TimerTask() {
+			@Override
+			public void run() {
+				logger.info("Starting expired work-order checks at: " + new Date());
+                checkExpiredWorkorders();
+                logger.info("Finished expired work-order checks at: " + new Date());
+			}
+		};
+        
         timer = new Timer();
         timer.scheduleAtFixedRate(task, new Date(), 1000 * 60 * 60 * 1); // 1 hour(s)
         
         timer2 = new Timer();
         timer2.scheduleAtFixedRate(task2, new Date(), 1000 * 60 * 5); // 5 minutes
+        
+        dailyTimer = new Timer();
+        dailyTimer.scheduleAtFixedRate(dailyTask, new Date(), 1000 * 60 * 60 * 24); // 24 hours
         
         trackerEventTimer = new Timer();
 		trackerEventTask = new TimerTask()
@@ -617,9 +636,25 @@ public class ApplicationMBean implements Serializable
 		//trackerRealTimeTimer.scheduleAtFixedRate(trackerRealTimeTask, new Date(), 1000 * 60 * 1); // every 1 minutes after first call
 	}
 	
-	public String getYear()
-	{
+	public String getYear() {
 		return ""+Calendar.getInstance().get(Calendar.YEAR);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public PartnerSetting getSetting(long partner_id) {
+		PartnerSetting setting = null;
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("partner.id", partner_id);
+		GeneralDAO gDAO = new GeneralDAO();
+		Object pSettingsObj = gDAO.search("PartnerSetting", params);
+		if(pSettingsObj != null) {
+			Vector<PartnerSetting> pSettingsList = (Vector<PartnerSetting>)pSettingsObj;
+			for(PartnerSetting e : pSettingsList) {
+				setting = e;
+			}
+		}
+		gDAO.destroy();
+		return setting;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -646,14 +681,15 @@ public class ApplicationMBean implements Serializable
 				}
 			}
 			gDAO.commit();
-			gDAO.destroy();
 		}
+		gDAO.destroy();
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void checkLicenses()
 	{
-		GeneralDAO gDAO = new GeneralDAO();
+		long onemonth = 1000*60*60*24*30, twoweeks = 1000*60*60*24*15;
+		GeneralDAO gDAO = new GeneralDAO(), gDAO2 = new GeneralDAO();
 		Hashtable<String, Object> params = new Hashtable<String, Object>();
 		params.put("expired", false);
 		Object subsObj = gDAO.search("VehicleLicense", params);
@@ -661,9 +697,25 @@ public class ApplicationMBean implements Serializable
 		{
 			Vector<VehicleLicense> subs = (Vector<VehicleLicense>)subsObj;
 			gDAO.startTransaction();
-			VehicleLicense prevE = null;
 			for(VehicleLicense e : subs)
 			{
+				PartnerUser fleetManager = null;
+				try {
+					Query q = gDAO2.createQuery("Select e from PartnerUser e where e.partner=:partner and e.active=:active and e.personel.fleetManager=:fleetManager");
+					q.setParameter("partner", e.getVehicle().getPartner());
+					q.setParameter("active", true);
+					q.setParameter("fleetManager", true);
+					
+					Object objs = gDAO2.search(q, 0);
+					if(objs != null) {
+						Vector<PartnerUser> usrs = (Vector<PartnerUser>)objs;
+						for(PartnerUser pu : usrs)
+							fleetManager = pu;
+					}
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				
 				Date now = new Date();
 				boolean change = false;
 				if(e.getLic_start_dt().before(now) && e.getLic_end_dt().after(now) && !e.isActive() && !e.isExpired())
@@ -671,11 +723,19 @@ public class ApplicationMBean implements Serializable
 					e.setActive(true);
 					e.setExpired(false);
 					change = true;
-					if(prevE != null && prevE.isActive())
-					{
-						prevE.setActive(false);
-						prevE.setExpired(true);
-						gDAO.update(prevE);
+					Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+					params2.put("expired", false);
+					params2.put("vehicle", e.getVehicle());
+					params2.put("active", true);
+					Object toUpdateObj = gDAO2.search("VehicleLicense", params2);
+					if(toUpdateObj != null) {
+						Vector<VehicleLicense> toUpdateList = (Vector<VehicleLicense>)toUpdateObj;
+						for(VehicleLicense vl : toUpdateList) {
+							vl.setActive(false);
+							if(vl.getLic_end_dt().before(now))
+								vl.setExpired(true);
+							gDAO.update(vl);
+						}
 					}
 				}
 				else if(!e.isExpired() && e.getLic_end_dt().before(now))
@@ -684,14 +744,56 @@ public class ApplicationMBean implements Serializable
 					//e.setActive(false);
 					change = true;
 				}
+				
+				try {
+					if(e.isActive() && !e.isExpired() && now.before(e.getLic_end_dt())) {
+						long diff = e.getLic_end_dt().getTime() - now.getTime();
+						if(diff == onemonth || diff == twoweeks) {
+							if(e.getNotified_date() == null || now.after(e.getNotified_date())) {
+								e.setNotified_date(now);
+								change = true;
+								// Notify here
+								if(fleetManager != null) {
+									Notification notif = new Notification();
+									notif.setCrt_dt(new Date());
+									notif.setNotified(false);
+									notif.setUser(fleetManager);
+									notif.setPage_url("manage_v_licenseinfo");
+									notif.setSubject("License Expire Notice");
+									notif.setMessage(e.getLicType().getName() + " for vehicle " + e.getVehicle().getRegistrationNo() + " will soon expire!");
+									gDAO.save(notif);
+									if(fleetManager.getPersonel().getEmail() != null) {
+										StringBuilder sb = new StringBuilder("<html><body>");
+										sb.append("<p><strong>Hello,</strong></p>");
+										sb.append("<p>Vehicle license with details below will soon expire...<br/>");
+										sb.append("<ul><li>Vehicle: ").append(e.getVehicle().getRegistrationNo()).append("</li>");
+										sb.append("<li>License Type: ").append(e.getLicType().getName()).append("</li>");
+										sb.append("<li>Sub Type: ").append(e.getSubLicType()).append("</li>");
+										sb.append("<li>Expiry date: ").append(e.getLic_end_dt()).append("</li>");
+										sb.append("</ul></p>");
+										sb.append("</body></html>");
+										try {
+											Emailer.sendEmail("fms@sattrakservices.com", new String[]{fleetManager.getPersonel().getEmail()}, "License Expire Notice", sb.toString());
+										} catch(Exception ex) {
+											ex.printStackTrace();
+										}
+									}
+								}
+							}
+						}
+					}
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				
 				if(change)
 					gDAO.update(e);
 				
-				prevE = e;
 			}
 		}
 		gDAO.commit();
 		gDAO.destroy();
+		gDAO2.destroy();
 		
 		gDAO = new GeneralDAO();
 		params = new Hashtable<String, Object>();
@@ -794,10 +896,58 @@ public class ApplicationMBean implements Serializable
 				n.setSubject("Trip completion overdue");
 				n.setPage_url("attend_trips");
 				gDAO.save(n);
+				
+				if(e.getCreatedBy().getPersonel().getEmail() != null) {
+					StringBuilder sb = new StringBuilder("<html><body>");
+					sb.append("<p><strong>Hello ").append(e.getCreatedBy().getPersonel().getFirstname()).append(",</strong></p>");
+					sb.append("<p>Your trip for destination '" + e.getArrivalLocation() + "' is overdue.</p>");
+					sb.append("</body></html>");
+					try {
+						Emailer.sendEmail("fms@sattrakservices.com", new String[]{e.getCreatedBy().getPersonel().getEmail()}, "Trip Overdue", sb.toString());
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+				
+				if(e.getApproveUser().getPersonel().getEmail() != null) {
+					StringBuilder sb = new StringBuilder("<html><body>");
+					sb.append("<p><strong>Hello ").append(e.getApproveUser().getPersonel().getFirstname()).append(",</strong></p>");
+					sb.append("<p>").append(e.getStaff().getFirstname() + " " + e.getStaff().getLastname() + "'s trip for destination '" + e.getArrivalLocation() + "' is overdue.</p>");
+					sb.append("</body></html>");
+					try {
+						Emailer.sendEmail("fms@sattrakservices.com", new String[]{e.getApproveUser().getPersonel().getEmail()}, "Trip Overdue", sb.toString());
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+			}
+		}
+		
+		q = gDAO.createQuery("Select e from CorporateTrip e where e.approvalStatus=:approvalStatus or e.approvalStatus2=:approvalStatus2");
+		q.setParameter("approvalStatus", "PENDING");
+		q.setParameter("approvalStatus2", "PENDING");
+		
+		tripsObj = gDAO.search(q, 0);
+		if(tripsObj != null) {
+			Vector<CorporateTrip> trips = (Vector<CorporateTrip>)tripsObj;
+			for(CorporateTrip e : trips) {
+				PartnerSetting setting = getSetting(e.getPartner().getId());
+				if(setting != null && setting.getMaxMinutesPendingTripApproval() > 0) {
+					Calendar c = Calendar.getInstance();
+					c.setTime(e.getDepartureDateTime());
+					c.add(Calendar.MINUTE, setting.getMaxMinutesPendingTripApproval());
+					if(c.before(Calendar.getInstance())) {
+						e.setTripStatus("CANCELED");
+						e.setCompletedDateTime(new Date());
+						gDAO.update(e);
+					}
+				}
 			}
 		}
 		
 		gDAO.commit();
+		
+		gDAO.destroy();
 		
 		/*Calendar c = Calendar.getInstance();
 		c.add(Calendar.DAY_OF_MONTH, -7);
@@ -835,7 +985,7 @@ public class ApplicationMBean implements Serializable
 			gDAO.startTransaction();
 			for(Budget b : budgets)
 			{
-				if(b.getEnd_dt().before(new Date()))
+				if(b.getEnd_dt() != null && b.getEnd_dt().before(new Date()))
 				{
 					b.setActive(false);
 					gDAO.update(b);
@@ -843,6 +993,7 @@ public class ApplicationMBean implements Serializable
 			}
 			gDAO.commit();
 		}
+		gDAO.destroy();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -909,6 +1060,83 @@ public class ApplicationMBean implements Serializable
 			}
 		}
 		
+		gDAO.destroy();
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void checkExpiringVendorBids() {
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Query q = gDAO.createQuery("Select e from WorkOrderVendor e where e.submittionStatus = :status");
+		q.setParameter("status", "PENDING");
+		Object obj = gDAO.search(q, 0);
+		if(obj != null) {
+			Vector<WorkOrderVendor> list = (Vector<WorkOrderVendor>)obj;
+			for(WorkOrderVendor wov : list) {
+				try {
+				if(wov.getWorkOrder().getMaxBidSubmission_dt().after(new Date())) {
+					long submaxtime = wov.getWorkOrder().getMaxBidSubmission_dt().getTime();
+					long nowtime = new Date().getTime();
+					long onehour = 1000 * 60 * 60;
+					if(submaxtime - nowtime <= onehour) {
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Dear ").append(wov.getVendor().getName()).append(",</p>");
+						sb.append("<p>This is a reminder that the bid submittion for work-order ").append(wov.getWorkOrder().getWorkOrderNumber()).append(" will close within the next one hour!</p>");
+						sb.append("<p>Regards<br/>Sattrak FMS</p>");
+						sb.append("</body></html>");
+						
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{wov.getVendor().getEmail()}, "Work-order Bid Closure Notice", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				}
+				} catch(Exception ex){}
+			}
+		}
+		gDAO.destroy();
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void checkExpiredWorkorders() {
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Query q = gDAO.createQuery("Select e from WorkOrder e where e.status = :status");
+		q.setParameter("status", "IN-PROGRESS");
+		Object obj = gDAO.search(q, 0);
+		if(obj != null) {
+			Vector<WorkOrder> list = (Vector<WorkOrder>)obj;
+			for(WorkOrder wo : list) {
+				if(wo.getProposedCompletion_dt() != null) {
+					Date now = new Date();
+					if(now.after(wo.getProposedCompletion_dt())) {
+						long compdt = wo.getProposedCompletion_dt().getTime();
+						long nowtime = new Date().getTime();
+						long twoweeks = 1000 * 60 * 60 * 24 * 14;
+						long fourweeks = 1000 * 60 * 60 * 24 * 28;
+						long eightweeks = 1000 * 60 * 60 * 24 * 56;
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						if(nowtime - compdt >= eightweeks) {
+							sb.append("<p>This is a reminder that the work-order ").append(wo.getWorkOrderNumber()).append(" is 8 weeks over due for completion! You need to invite the Vendor in for discussion!</p>");
+						} else if(nowtime - compdt >= fourweeks) {
+							sb.append("<p>This is a reminder that the work-order ").append(wo.getWorkOrderNumber()).append(" is 4 weeks over due for completion!</p>");
+						} else if(nowtime - compdt >= twoweeks) {
+							sb.append("<p>This is a reminder that the work-order ").append(wo.getWorkOrderNumber()).append(" is 2 weeks over due for completion!</p>");
+						}
+						sb.append("<p>Regards<br/>Sattrak FMS</p>");
+						sb.append("</body></html>");
+						
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{wo.getCreatedBy().getPersonel().getEmail(), wo.getVendor().getEmail()}, "Work-order Completion Overdue Notice", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				}
+			}
+		}
 		gDAO.destroy();
 	}
 	
@@ -2600,6 +2828,7 @@ public class ApplicationMBean implements Serializable
 		}
 		
 		gDAO.commit();
+		gDAO.destroy();
 		
 		msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Transaction completed successfully! Please review the logs for details.");
 		FacesContext.getCurrentInstance().addMessage(null, msg);

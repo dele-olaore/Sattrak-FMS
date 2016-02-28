@@ -14,6 +14,8 @@ import javax.validation.constraints.NotNull;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
+import com.dexter.fms.model.ref.Department;
+import com.dexter.fms.model.ref.Unit;
 
 @Entity
 public class Expense implements Serializable
@@ -33,11 +35,18 @@ public class Expense implements Serializable
 	private Date expense_dt;
 	
 	@ManyToOne
+	private ExpenseRequest expR;
+	
+	@ManyToOne
 	private Partner partner;
 	@ManyToOne
 	private Vehicle vehicle;
 	@ManyToOne
 	private PartnerPersonel personel;
+	@ManyToOne
+	private Department misDepartment;
+	@ManyToOne
+	private Unit misUnit;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -88,6 +97,14 @@ public class Expense implements Serializable
 		this.expense_dt = expense_dt;
 	}
 
+	public ExpenseRequest getExpR() {
+		return expR;
+	}
+
+	public void setExpR(ExpenseRequest expR) {
+		this.expR = expR;
+	}
+
 	public Partner getPartner() {
 		return partner;
 	}
@@ -110,6 +127,22 @@ public class Expense implements Serializable
 
 	public void setPersonel(PartnerPersonel personel) {
 		this.personel = personel;
+	}
+
+	public Department getMisDepartment() {
+		return misDepartment;
+	}
+
+	public void setMisDepartment(Department misDepartment) {
+		this.misDepartment = misDepartment;
+	}
+
+	public Unit getMisUnit() {
+		return misUnit;
+	}
+
+	public void setMisUnit(Unit misUnit) {
+		this.misUnit = misUnit;
 	}
 
 	public Date getCrt_dt() {

@@ -29,12 +29,27 @@
 						<p:selectOneMenu id="ptn1" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1, vch1" />
 				  		</p:selectOneMenu>
 				  		<h:outputLabel for="acddt" value="Start date: *" />
 						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{userBean.audit_st}" navigator="true" />
 						
 						<h:outputLabel for="acdrdt" value="End date: *" />
 						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{userBean.audit_end}" navigator="true" />
+						
+						<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: " />
+						<p:selectOneMenu id="vch1" value="#{userBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getVehicles(dashboardBean.user.partner.id, reportsBean.fleet_id, '')}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+						
 				  	</p:panelGrid>
 				  	<f:facet name="footer">
 			  			<p:commandButton ajax="false" action="#{userBean.resetAudits}" value="Search" icon="ui-icon-search" style="margin:0"/>

@@ -11,6 +11,8 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 
+import com.dexter.fms.model.app.Vehicle;
+
 @Entity
 public class Audit implements Serializable
 {
@@ -26,6 +28,8 @@ public class Audit implements Serializable
 	@ManyToOne
 	private MFunction function;
 	private String narration;
+	@ManyToOne
+	private Vehicle vehicle;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date action_dt;
@@ -63,6 +67,14 @@ public class Audit implements Serializable
 
 	public void setNarration(String narration) {
 		this.narration = narration;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
 	}
 
 	public Date getAction_dt() {

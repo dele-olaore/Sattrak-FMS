@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Vector;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -18,7 +17,6 @@ import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.app.Vehicle;
 
-// should include the year
 @Entity
 public class VehicleModel implements Serializable
 {
@@ -34,9 +32,9 @@ public class VehicleModel implements Serializable
 	@ManyToOne
 	private Partner partner;
 	
-	@ManyToOne(cascade = {CascadeType.PERSIST})
+	@ManyToOne
 	private VehicleMake maker;
-	@ManyToOne(cascade = {CascadeType.PERSIST})
+	@ManyToOne
 	private VehicleType type;
 	
 	@Temporal(TemporalType.TIMESTAMP)

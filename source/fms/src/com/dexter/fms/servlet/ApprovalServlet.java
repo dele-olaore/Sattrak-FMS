@@ -15,13 +15,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.dexter.common.util.Emailer;
 import com.dexter.fms.model.app.Expense;
 import com.dexter.fms.model.app.ExpenseRequest;
 
 /**
  * Servlet implementation class ApprovalServlet
  */
-@WebServlet(description = "Servlet to attend to requests via email", urlPatterns = { "/approvalservlet/*" })
+@WebServlet(description = "Servlet to attend to requests via email", urlPatterns = { "/approvalservlet" })
 public class ApprovalServlet extends HttpServlet
 {
 	private static final long serialVersionUID = 1L;
@@ -68,90 +69,116 @@ public class ApprovalServlet extends HttpServlet
 				catch(Exception ex){}
 				if(expR != null)
 				{
-					try
-					{
-						if(expR.getApprovalUser().getId().longValue() == Long.parseLong(usrId))
+					if(expR.getApproval_dt() != null) {
+						html += "<p><font color=red size=12>Error: You already attended to this request!</font></p>";
+					} else {
+						try
 						{
-							if(apv.equals("1"))
+							if(expR.getApprovalUser().getId().longValue() == Long.parseLong(usrId))
 							{
-								EntityTransaction utx = em.getTransaction();
-								utx.begin();
-								
-								expR.setApprovalComment("Approved");
-								expR.setApprovalStatus("APPROVED");
-								expR.setApproval_dt(new Date());
-								em.merge(expR);
-								
-								Expense exp = new Expense();
-								exp.setAmount(expR.getAmount());
-								exp.setCreatedBy(expR.getCreatedBy());
-								exp.setCrt_dt(new Date());
-								exp.setExpense_dt(expR.getExpense_dt());
-								exp.setPartner(expR.getPartner());
-								exp.setRemarks(expR.getRemarks());
-								exp.setType(expR.getType());
-								em.persist(exp);
-								
-								expR.setExpense(exp);
-								em.merge(expR);
-								
-								utx.commit();
-							}
-							else if(apv.equals("0"))
-							{
-								EntityTransaction utx = em.getTransaction();
-								utx.begin();
-								
-								expR.setApprovalComment("Denied");
-								expR.setApprovalStatus("DENIED");
-								expR.setApproval_dt(new Date());
-								em.merge(expR);
-								
-								utx.commit();
+								if(apv.equals("1"))
+								{
+									EntityTransaction utx = em.getTransaction();
+									utx.begin();
+									
+									expR.setApprovalComment("Approved");
+									expR.setApprovalStatus("APPROVED");
+									expR.setApproval_dt(new Date());
+									em.merge(expR);
+									
+									/*Expense exp = new Expense();
+									exp.setAmount(expR.getAmount());
+									exp.setCreatedBy(expR.getCreatedBy());
+									exp.setCrt_dt(new Date());
+									exp.setExpense_dt(expR.getExpense_dt());
+									exp.setPartner(expR.getPartner());
+									exp.setRemarks(expR.getRemarks());
+									exp.setType(expR.getType());
+									em.persist(exp);
+									
+									expR.setExpense(exp);
+									em.merge(expR);*/
+									
+									utx.commit();
+									
+									String email_message = "<html><body><p><strong>Dear " + expR.getCreatedBy().getPersonel().getFirstname() + ", </strong></p>";
+									email_message += "<p>Your expense request for " + expR.getType() + ": " + expR.getRemarks() + " has been approved! You can now make the expense and capture it on the platform.</p>";
+									email_message += "<p>Regards<br/>FMS</p></body></html>";
+									
+									try {
+										Emailer.sendEmail("fms@sattrakservices.com", new String[]{expR.getCreatedBy().getPersonel().getEmail()}, "Expense Approved", email_message);
+									} catch(Exception ex){}
+									
+									html += "<p><font color=green size=12>Success: Expense approved successfully!</font></p>";
+								}
+								else if(apv.equals("0"))
+								{
+									EntityTransaction utx = em.getTransaction();
+									utx.begin();
+									
+									expR.setApprovalComment("Denied");
+									expR.setApprovalStatus("DENIED");
+									expR.setApproval_dt(new Date());
+									em.merge(expR);
+									
+									utx.commit();
+									
+									String email_message = "<html><body><p><strong>Dear " + expR.getCreatedBy().getPersonel().getFirstname() + ", </strong></p>";
+									email_message += "<p>Your expense request for " + expR.getType() + ": " + expR.getRemarks() + " has been <font color=red>denied!</font></p>";
+									email_message += "<p>Regards<br/>FMS</p></body></html>";
+									
+									try {
+										Emailer.sendEmail("fms@sattrakservices.com", new String[]{expR.getCreatedBy().getPersonel().getEmail()}, "Expense Denied", email_message);
+									} catch(Exception ex){}
+									
+									html += "<p><font color=green size=12>Success: Expense denied successfully!</font></p>";
+								}
+								else
+								{
+									html += "<p><font color=red size=12>Error: Invalid parameter detected!</font></p>";
+								}
 							}
 							else
 							{
-								html += "<p><font color=red size=14>Error: Invalid parameter detected!</font></p>";
+								html += "<p><font color=red size=12>Failed: Request can only be approved by the approval personel!</font></p>";
 							}
 						}
-						else
+						catch(Exception ex)
 						{
-							html += "<p><font color=red size=14>Failed: Request can only be approved by the approval personel!</font></p>";
+							html += "<p><font color=red size=12>Error: Invalid parameter detected!</font></p>";
 						}
-					}
-					catch(Exception ex)
-					{
-						html += "<p><font color=red size=14>Error: Invalid parameter detected!</font></p>";
 					}
 				}
 				else
 				{
-					html += "<p><font color=red size=14>Failed: Unknown expense request!</font></p>";
+					html += "<p><font color=red size=12>Failed: Unknown expense request!</font></p>";
 				}
 			}
 			else
 			{
-				html += "<p><font color=red size=14>Error: Request values not found!</font></p>";
+				html += "<p><font color=red size=12>Error: Request values not found!</font></p>";
 			}
 			
 			html += "</body></html>";
 			
-			em.flush();
-			em.close();
+			//em.flush();
+			try {
+				em.close();
+			} catch(Exception ex) {
+				ex.printStackTrace();
+			}
 			
 			BufferedOutputStream output = null;
 			
-	        try
-	        {
+	        try {
 	        	output = new BufferedOutputStream(response.getOutputStream());
 	        	output.write(html.getBytes());
-	        }
-	        finally
-	        {
+	        } finally {
 	            if (output != null) try { output.close(); } catch (IOException logOrIgnore) {}
 	        }
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
-		catch(Exception e){}
 	}
 	
 	/**

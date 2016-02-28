@@ -8,18 +8,12 @@
 			<h:outputText value="All User Report" />
 			<br/>
 			<p:outputPanel id="MyOPanel" style="width:100%;">
-				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
 					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 			  			<p:ajax update="staffdept,staffrg" />
-			  		</p:selectOneMenu>
-			  		
-			  		<h:outputLabel for="staffdept" value="Department: " />
-					<p:selectOneMenu id="staffdept" value="#{reportsBean.department_id}">
-						<f:selectItem itemLabel="-- All --" itemValue="0" />
-			  			<f:selectItems value="#{reportsBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 			  		</p:selectOneMenu>
 			  		
 			  		<h:outputLabel for="staffrg" value="Region: " />
@@ -28,38 +22,44 @@
 			  			<f:selectItems value="#{reportsBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 			  		</p:selectOneMenu>
 			  		
+			  		<h:outputLabel for="brch" value="Division/Branch: " />
+					<p:selectOneMenu id="brch" value="#{reportsBean.division_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getPartnerDivisions(reportsBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="staffdept, unt" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="staffdept" value="Department: " />
+					<p:selectOneMenu id="staffdept" value="#{reportsBean.department_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+						<f:selectItems value="#{ddBean.getDivisionDepartments(reportsBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+						<p:ajax update="unt" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="unt" value="Unit: " />
+					<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="vch1" />
+			  		</p:selectOneMenu>
+			  		
 			  		<f:facet name="footer">
 			  			<p:commandButton ajax="false" action="#{reportsBean.search}" value="Search" icon="ui-icon-search" style="margin:0"/>
 			  		</f:facet>
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.allUsers != null and reportsBean.allUsers.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'all_users_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="all_users_report" />
 						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(1, 'all_users_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(1, 'all_users_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
-						</p:commandLink>
-						
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
 							<p:dataExporter type="csv" target=":form:objsTable"
 								fileName="all_users_report" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/xml.png" />
 							<p:dataExporter type="xml" target=":form:objsTable"
@@ -72,13 +72,11 @@
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="all_users_report" pageOnly="true" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
 							<p:dataExporter type="csv" target=":form:objsTable"
 								fileName="all_users_report" pageOnly="true" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/xml.png" />
 							<p:dataExporter type="xml" target=":form:objsTable"

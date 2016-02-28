@@ -28,6 +28,7 @@ public class VehicleOdometerData implements Serializable
 	private Date captured_dt;
 	
 	private double odometer;
+	private double engineHours;
 	
 	private String source;
 	
@@ -67,6 +68,14 @@ public class VehicleOdometerData implements Serializable
 
 	public void setOdometer(double odometer) {
 		this.odometer = odometer;
+	}
+
+	public double getEngineHours() {
+		return engineHours;
+	}
+
+	public void setEngineHours(double engineHours) {
+		this.engineHours = engineHours;
 	}
 
 	public String getSource() {

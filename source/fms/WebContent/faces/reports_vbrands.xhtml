@@ -29,24 +29,11 @@
 			  		</f:facet>
 				  </p:panelGrid>
 				  <h:panelGrid columns="3" rendered="#{reportsBean.vehiclesByBrand != null and reportsBean.vehiclesByBrand.size() > 0}">
-				  	<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(4, 'vehicles_bybrand_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
-					<p:panel header="Export All Data">
+				  	<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="vehicles_bybrand_report" />
-						</p:commandLink>
-		
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(4, 'vehicles_bybrand_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(4, 'vehicles_bybrand_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
 						</p:commandLink>
 		
 						<p:commandLink ajax="false">
@@ -81,6 +68,11 @@
 						</p:commandLink>
 					</p:panel>
 				</h:panelGrid>
+				<p:pieChart id="pie"
+                    value="#{reportsBean.pieModel}"
+                    legendPosition="w"
+                    title="Pie Chart"
+                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}"/>
 				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.vehiclesByBrand}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
@@ -114,16 +106,25 @@
 						</f:facet>
 						<h:outputText value="#{obj.registrationNo}" />
 					</p:column>
-					
-					<p:column>
+					<p:column sortBy="#{obj.purchaseAmt}">
 						<f:facet name="header">
-							 <h:outputText value="Department" />  
+							 <h:outputText value="Purchase Amount" />
 						</f:facet>
+						<h:outputText value="#{obj.purchaseAmt}" rendered="#{obj.purchaseAmt != null}" />
+						<h:outputText value="N/A" rendered="#{obj.purchaseAmt == null}" />
 					</p:column>
-					<p:column>
+					<p:column sortBy="#{obj.purchaseDate}">
 						<f:facet name="header">
-							 <h:outputText value="Region" />  
+							 <h:outputText value="Date of Purchase" />
 						</f:facet>
+						<h:outputText value="#{obj.purchaseDate}" rendered="#{obj.purchaseDate != null}" />
+						<h:outputText value="N/A" rendered="#{obj.purchaseDate == null}" />
+					</p:column>
+					<p:column sortBy="#{obj.age}">
+						<f:facet name="header">
+							 <h:outputText value="Age" />
+						</f:facet>
+						<h:outputText value="#{obj.age}" />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

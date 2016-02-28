@@ -15,44 +15,36 @@ public class GeneralPickListConverter implements Converter
 {
 	@SuppressWarnings("rawtypes")
 	@Override
-    public Object getAsObject(FacesContext arg0, UIComponent arg1, String arg2)
-	{
+    public Object getAsObject(FacesContext arg0, UIComponent arg1, String arg2) {
 		Object ret = null;
-		if(arg1 instanceof PickList)
-		{
+		if(arg1 instanceof PickList) {
 			Object dualList = ((PickList) arg1).getValue();
 			DualListModel dl = (DualListModel) dualList;
-			for(Object o : dl.getSource())
-			{
+			for(Object o : dl.getSource()) {
 				String id = "";
-                if(o instanceof CorporateTrip)
-                {
+                if(o instanceof CorporateTrip) {
                 	id += ((CorporateTrip)o).getId();
                 }
                 /*if(o instanceof Grupo)
                 {
                 	id += ((Grupo) o).getId();
                 }*/
-                if(arg2.equals(id))
-                {
+                if(arg2.equals(id)) {
                 	ret = o;
                 	break;
                 }
 			}
 			if(ret == null)
-				for (Object o : dl.getTarget())
-				{
+				for (Object o : dl.getTarget()) {
 					String id = "";
-					if (o instanceof CorporateTrip)
-					{
+					if (o instanceof CorporateTrip) {
 						id += ((CorporateTrip)o).getId();
 					}
 					/*if (o instanceof Grupo)
 					{
 						id += ((Grupo) o).getId();
 					}*/
-					if (arg2.equals(id))
-					{
+					if (arg2.equals(id)) {
 						ret = o;
 						break;
 					}
@@ -65,8 +57,7 @@ public class GeneralPickListConverter implements Converter
 	public String getAsString(FacesContext arg0, UIComponent arg1, Object arg2)
 	{
 		String str = "";
-		if(arg2 instanceof CorporateTrip)
-		{
+		if(arg2 instanceof CorporateTrip) {
 			str = "" + ((CorporateTrip)arg2).getId();
         }
         /*if (arg2 instanceof Grupo) {

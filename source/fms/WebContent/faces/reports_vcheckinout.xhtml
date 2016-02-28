@@ -1,0 +1,153 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Vehicle check out and check in Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="5">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1, vch1" />
+				  		</p:selectOneMenu>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		<h:outputText value="" rendered="#{dashboardBean.user.partner.sattrak}"/>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		<h:outputText value="" />
+				  		<h:outputText value="" />
+				  		<h:outputText value="" />
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: " />
+						<p:selectOneMenu id="vch1" value="#{reportsBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getVehicles(reportsBean.partner_id, reportsBean.fleet_id, reportsBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+						<h:outputText value=" OR " />
+						<h:outputLabel for="vchregn1" value="Registration No.: " />
+						<h:inputText id="vchregn1" value="#{reportsBean.regNo}">
+							<p:ajax update="vch1" />
+						</h:inputText>
+					</p:panelGrid>
+					<p:panelGrid columns="2">
+						<h:outputLabel for="acddt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="acdrdt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+					</p:panelGrid>
+					
+					<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.resetVehiclesCheckInOut}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.vehiclesCheckInOut != null and reportsBean.vehiclesCheckInOut.size() > 0}">
+					<p:panel header="Export All Data [Landscape]">
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(6, 'vehicles_check_outin_report', 2)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" />
+						</p:commandLink>
+		
+						<!--<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(6, 'vehicles_check_outin_report', 1)}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+						
+						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(6, 'vehicles_check_outin_report')}">
+							<p:graphicImage value="/resources/images/word.jpg" />
+						</p:commandLink>-->
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="vehicles_check_outin_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.vehiclesCheckInOut}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.vehiclesCheckInOut != null and reportsBean.vehiclesCheckInOut.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.vehicleRegNumber}" filterBy="#{obj.vehicleRegNumber}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Reg No." />  
+						</f:facet>
+						<h:outputText value="#{obj.vehicleRegNumber}" />
+					</p:column>
+					<p:column sortBy="#{obj.operation}">
+						<f:facet name="header">
+							 <h:outputText value="Operation" />  
+						</f:facet>
+						<h:outputText value="#{obj.operation}" />
+					</p:column>
+					<p:column filterBy="#{obj.operationDesc}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Description" />  
+						</f:facet>
+						<h:outputText value="#{obj.operationDesc}" />
+					</p:column>
+					<p:column sortBy="#{obj.checkOut}">
+						<f:facet name="header">
+							 <h:outputText value="Check Out" />  
+						</f:facet>
+						<h:outputText value="#{obj.checkOut}" />
+					</p:column>
+					<p:column sortBy="#{obj.checkIn}">
+						<f:facet name="header">
+							 <h:outputText value="Check In" />  
+						</f:facet>
+						<h:outputText value="#{obj.checkIn}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

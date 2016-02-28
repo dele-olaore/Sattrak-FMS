@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Random;
 import java.util.Vector;
 import java.util.logging.Logger;
 
@@ -16,6 +17,7 @@ import javax.faces.context.FacesContext;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 
+import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.Audit;
@@ -49,8 +51,7 @@ public class LoginMBean implements Serializable
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
 	
-	public LoginMBean()
-	{}
+	public LoginMBean() {}
 	
 	private void saveAudit(String narration)
 	{
@@ -69,11 +70,11 @@ public class LoginMBean implements Serializable
 	}
 	
 	/**
-	  * 
-	  * @param url
-	  */
-	 public void redirector(String url)
-	 {
+	 * 
+	 * @param url
+	 */
+	public void redirector(String url)
+	{
 	        FacesContext fc = FacesContext.getCurrentInstance();
 	        ExternalContext ec = fc.getExternalContext();
 	        try 
@@ -84,7 +85,7 @@ public class LoginMBean implements Serializable
 	        {
 	            //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
 	        }
-	    }
+	}
 
 	 /*
 	  * 
@@ -101,6 +102,81 @@ public class LoginMBean implements Serializable
 			 //Logger.getLogger(getClass().getName(), null).log(Level.SEVERE, null, ex);
 		 }
 	 }
+	
+	@SuppressWarnings("unchecked")
+	public String forgotPassword() {
+		String ret = "index?faces-redirect=true";
+		
+		GeneralDAO gDAO = new GeneralDAO();
+		
+		Hashtable<String, Object> params = new Hashtable<String, Object>();
+		params.put("username", getUsername());
+		params.put("partner_code", getPartner_code());
+		
+		Object foundUsers = gDAO.search("PartnerUser", params);
+		if(foundUsers != null)
+		{
+			Vector<PartnerUser> list = (Vector<PartnerUser>)foundUsers;
+			if(list.size()>0)
+			{
+				PartnerUser foundUser = list.get(0);
+				String pwd = generatePassword();
+				
+				foundUser.setActivated(false);
+				foundUser.setPassword(Hasher.getHashValue(pwd));
+				gDAO.startTransaction();
+				gDAO.update(foundUser);
+				try {
+					if(gDAO.commit()) {
+						//TODO: Send email here with new credentials to the user
+						StringBuilder body = new StringBuilder();
+						body.append("<html><body>");
+						body.append("<p>Dear <strong>").append(foundUser.getPersonel().getFirstname()).append("</strong>,</p>");
+						body.append("<p>Your password reset was successful! Your new temporary password is <strong>").append(pwd).append("</strong>. Please sign in with this temporary password to set your new password.</p>");
+						body.append("<br/><br/>Regards<br/><br/><strong>FMS</strong>");
+						body.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{foundUser.getPersonel().getEmail()}, "Password Reset", body.toString());
+							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Password reset was successful! Your new temporary password has been sent to your email address");
+							saveAudit("FORGOT-PASSWORD: Password reset was successful! Your new temporary password has been sent to your email address");
+						} catch(Exception ex) {
+							ex.printStackTrace();
+							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Password reset was successful! However we had some technical issues while trying to send an email to you. Please try again if you do not get an email");
+							saveAudit("FORGOT-PASSWORD: Password reset was successful! However we had some technical issues while trying to send an email to you. Please try again if you do not get an email");
+						}
+						
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						
+					} else {
+						gDAO.rollback();
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured: " + gDAO.getMessage());
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						saveAudit("FORGOT-PASSWORD: Error occured: " + gDAO.getMessage());
+					}
+				} catch(Exception ex) {
+					ex.printStackTrace();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured: " + ex.getMessage());
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					saveAudit("FORGOT-PASSWORD: Error occured: " + ex.getMessage());
+				}
+			}
+			else
+			{
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "User does not exist. No record found.");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				saveAudit("FORGOT-PASSWORD: User does not exist: " + getUsername());
+			}
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "User does not exist.");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+			saveAudit("FORGOT-PASSWORD: User does not exist: " + getUsername());
+		}
+		gDAO.destroy();
+		
+		return ret;
+	}
 	
 	public String logout()
 	{
@@ -330,6 +406,8 @@ public class LoginMBean implements Serializable
 	}
 
 	public String getPartner_code() {
+		// for MTN
+		// partner_code = "P00011"; // comment for general fms
 		return partner_code;
 	}
 
@@ -361,4 +439,12 @@ public class LoginMBean implements Serializable
 		this.dashBean = dashBean;
 	}
 	
+	private String[] letters_digits = new String[]{"a","b","c","d","e","f","g","h","i","j","0","1","2","3","4","5","6","7","8","9"};
+	private String generatePassword() {
+		String pwd = "";
+		Random rnd = new Random();
+		for(int i=0; i<6; i++)
+			pwd += letters_digits[rnd.nextInt(letters_digits.length)];
+		return pwd;
+	}
 }

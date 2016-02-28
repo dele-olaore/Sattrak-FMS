@@ -43,6 +43,8 @@ public class Vendor implements Serializable
 	
 	@Transient
 	private Vector<VendorServices> services;
+	@Transient
+	private boolean selected;
 	
 	public Vendor()
 	{}
@@ -127,6 +129,14 @@ public class Vendor implements Serializable
 
 	public void setServices(Vector<VendorServices> services) {
 		this.services = services;
+	}
+
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
 	}
 	
 }

@@ -40,6 +40,7 @@ public class AdvertMBean implements Serializable
 				getAdvert().getExpiryDate() != null && getAdvert().getProbability() > 0 &&
 				getAdvertAnim() != null)
 		{
+			String naration = "Create Advert with details: Type: " + getAdvert().getType() + ", Customer: " + getAdvert().getCustomerName() + ", expiry date: " + getAdvert().getExpiryDate();
 			if(getAdvertAnim() != null)
 				getAdvert().setContent(getAdvertAnim().getContents());
 			getAdvert().setActive(true);
@@ -49,27 +50,28 @@ public class AdvertMBean implements Serializable
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			gDAO.startTransaction();
-			if(gDAO.save(getAdvert()))
-			{
+			if(gDAO.save(getAdvert())) {
 				gDAO.commit();
 				
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Advert created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
+				naration += ", Status: Success";
+				
 				setAdvert(null);
 				setAdvertAnim(null);
 				setAdverts(null);
-			}
-			else
-			{
+			} else {
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Save failed. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Failed, Message: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
-		}
-		else
-		{
+			
+			dashBean.saveAudit(naration, "adverts", null);
+		} else {
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "All fields with '*' sign are required!");
 			FacesContext.getCurrentInstance().addMessage(null, msg);
 		}

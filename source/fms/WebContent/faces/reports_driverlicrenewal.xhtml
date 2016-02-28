@@ -1,0 +1,146 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Driver License Registration/Renewal History" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="staffrg,brch,dept, unt" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="staffrg" value="Region: " />
+					<p:selectOneMenu id="staffrg" value="#{reportsBean.region_id}">
+			  			<f:selectItems value="#{reportsBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="brch" value="Division/Branch: " />
+					<p:selectOneMenu id="brch" value="#{reportsBean.division_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getPartnerDivisions(reportsBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="dept, unt" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="dept" value="Department: " />
+					<p:selectOneMenu id="dept" value="#{reportsBean.department_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getDivisionDepartments(reportsBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  			<p:ajax update="unt" />
+			  		</p:selectOneMenu>
+			  		
+			  		<h:outputLabel for="unt" value="Unit: " />
+					<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
+						<f:selectItem itemLabel="-- All --" itemValue="0" />
+			  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+			  		</p:selectOneMenu>
+			  		
+			  		<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchDriverLicenseRenewal}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				<h:panelGrid columns="3" rendered="#{reportsBean.driverLicenseRenewal != null and reportsBean.driverLicenseRenewal.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="drivers_by_region_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="drivers_by_region_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="drivers_by_region_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="drivers_by_region_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="drivers_by_region_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="drivers_by_region_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.driverLicenseRenewal}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Found driver license(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.personel.firstname}">
+						<f:facet name="header">
+							 <h:outputText value="Full name" />  
+						</f:facet>
+						<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Type" />  
+						</f:facet>
+						<h:outputText value="#{obj.tranType}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="License No." />  
+						</f:facet>
+						<h:outputText value="#{obj.drvLicenseNo}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="License Issue Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.lic_start_dt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Expiry Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.lic_end_dt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Amount" />  
+						</f:facet>
+						<h:outputText value="#{obj.tranAmt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Vendor" />  
+						</f:facet>
+						<h:outputText value="#{obj.vendor.name}" rendered="#{obj.vendor != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vendor == null}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Status" />  
+						</f:facet>
+						Active: <h:outputText value="Yes" rendered="#{obj.active}" /><h:outputText value="No" rendered="#{not obj.active}" /><br/>
+						Expired: <h:outputText value="Yes" rendered="#{obj.expired}" /><h:outputText value="No" rendered="#{not obj.expired}" />
+					</p:column>
+				</p:dataTable>
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

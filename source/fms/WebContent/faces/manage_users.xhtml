@@ -34,29 +34,31 @@
 			  			<p:commandButton ajax="false" update="usrsTable" value="Search" icon="ui-icon-search" style="margin:0"/>
 			  		</f:facet>
 				</p:panelGrid>
+				
 				<p:dataTable id="usrsTable" var="obj" value="#{userBean.users}"
 					paginator="true" rows="20"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-					rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true" editable="true">
+					rowsPerPageTemplate="20,50,100" resizableColumns="true" editable="true"
+					scrollable="true" scrollWidth="1220">
 					<f:facet name="header">
 						Available user(s)
 					</f:facet>
 					<p:ajax event="rowEdit" listener="#{userBean.onEdit}" update=":messages3" />
         			<p:ajax event="rowEditCancel" listener="#{userBean.onCancel}" update=":messages3" />
 					
-					<p:column headerText="">
+					<p:column headerText="" style="width:100px">
 						<img src="#{request.contextPath}/imageservlet/#{obj.personel.id}-personel-#{appBean.randomNumber}" width="50" height="50" alt="driver" />
 					</p:column>
-					<p:column sortBy="#{obj.personel.lastname}" headerText="Last name" filterBy="#{obj.personel.lastname}" filterMatchMode="contains">
+					<p:column sortBy="#{obj.personel.lastname}" headerText="Last name" filterBy="#{obj.personel.lastname}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.personel.lastname}" />
 					</p:column>
-					<p:column sortBy="#{obj.personel.firstname}" headerText="First name" filterBy="#{obj.personel.firstname}" filterMatchMode="contains">
+					<p:column sortBy="#{obj.personel.firstname}" headerText="First name" filterBy="#{obj.personel.firstname}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.personel.firstname}" />
 					</p:column>
-					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+					<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.partner.name}" />
 					</p:column>
-					<p:column sortBy="#{obj.username}" headerText="Username" filterBy="#{obj.username}" filterMatchMode="contains">
+					<p:column sortBy="#{obj.username}" headerText="Username" filterBy="#{obj.username}" filterMatchMode="contains" style="width:150px">
 						<p:cellEditor>
 							<f:facet name="output">
 								<h:outputText value="#{obj.username}" />
@@ -66,7 +68,7 @@
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
-					<p:column headerText="Status" style="width: 5%">
+					<p:column headerText="Status" style="width:60px">
 						<p:cellEditor>
 							<f:facet name="output">
 								<h:outputText value="Active" rendered="#{obj.active}" />
@@ -77,26 +79,27 @@
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
-					<p:column headerText="Role" style="width: 5%">
+					<p:column headerText="Role" style="width:100px">
 						<h:outputText value="#{obj.roles.size()} role(s)" />
 						<p:commandLink value=" Edit" action="#{userBean.initUserRoleEdit}" icon="ui-icon-pencil" oncomplete="edituserroledlg.show();">
 							<f:setPropertyActionListener value="#{obj}" target="#{userBean.user}" />
 						</p:commandLink>
 					</p:column>
-					<p:column sortBy="#{obj.personel.department.name}" headerText="Department" filterBy="#{obj.personel.department.name}" filterMatchMode="contains" style="width: 5%">
+					<p:column sortBy="#{obj.personel.department.name}" headerText="Department" filterBy="#{obj.personel.department.name}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.personel.department.name}" />
 					</p:column>
-					<p:column sortBy="#{obj.personel.region.name}" headerText="Region" filterBy="#{obj.personel.region.name}" filterMatchMode="contains" style="width: 5%">
+					<p:column sortBy="#{obj.personel.region.name}" headerText="Region" filterBy="#{obj.personel.region.name}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.personel.region.name}" />
 					</p:column>
-					<p:column headerText="Created">
+					<p:column headerText="Created" style="width:250px">
 						On: <h:outputText value="#{obj.crt_dt}" /><br/>
 						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 					</p:column>
-					<p:column headerText="" style="width: 3%">
+					<p:column headerText="" style="width:50px">
 						<p:rowEditor />
 					</p:column>
 				</p:dataTable>
+				
 			</p:outputPanel>
 		</td>
 		</tr>

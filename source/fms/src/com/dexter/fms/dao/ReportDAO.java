@@ -120,6 +120,37 @@ public class ReportDAO
 		
 		return count;
 	}
+	public Vector<String[]> getDriversWithoutLicenseList(Long partner_id) {
+		Vector<String[]> list = new Vector<String[]>();
+		try
+		{
+			connectToDB();
+			
+			statement = con.prepareStatement("Select pp.id, pp.firstname, pp.lastname, pd.id from partnerpersonel pp inner join partnerdriver pd on pd.personel_id=pp.id where pd.id not in " +
+					"(select driver_id from driverlicense where active = 1 and expired = 0) and pd.active = 1 and pd.partner_id = ?");
+			statement.setLong(1, partner_id);
+			
+			result = statement.executeQuery();
+			while(result.next())
+			{
+				String[] e = new String[4];
+				e[0] = ""+result.getLong(1);
+				e[1] = result.getString(2);
+				e[2] = result.getString(3);
+				e[3] = ""+result.getLong(4);
+				list.add(e);
+			}
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		finally
+		{
+			closeConnection();
+		}
+		return list;
+	}
 	
 	public long getDriversWithoutVehiclesCount(Long partner_id)
 	{
@@ -188,7 +219,7 @@ public class ReportDAO
 		{
 			connectToDB();
 			
-			statement = con.prepareStatement("Select count(*) as count from VehicleFuelingRequest where APPROVALUSER_ID = ? and APPROVALSTATUS = 'PENDING'");
+			statement = con.prepareStatement("Select count(*) as count from Approver where APPROVALUSER_ID = ? and APPROVALSTATUS = 'PENDING' and ENTITYNAME='Fueling'");
 			statement.setLong(1, user_id);
 			
 			result = statement.executeQuery();
@@ -238,16 +269,45 @@ public class ReportDAO
 		return count;
 	}
 	
+	public long getPendingAccidentRepairRequestCount(Long partner_id)
+	{
+		long count = 0;
+		
+		try
+		{
+			connectToDB();
+			
+			statement = con.prepareStatement("Select count(va.id) as count from VehicleAccident va inner join Vehicle v on v.id = va.vehicle_id where v.PARTNER_ID = ? and va.active = ? and va.repairApprovedDesc = 'PENDING'");
+			statement.setLong(1, partner_id);
+			statement.setBoolean(2, true);
+			
+			result = statement.executeQuery();
+			while(result.next())
+			{
+				count = result.getLong(1);
+			}
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		finally
+		{
+			closeConnection();
+		}
+		
+		return count;
+	}
+	
 	public Vector<String[]> getBestDrivers(int count, long partnerId, Date start_dt, Date end_dt)
 	{
 		Vector<String[]> list = new Vector<String[]>();
 		
-		try
-		{
+		try {
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			connectToDB();
 			
-			statement = con.prepareStatement("select pd.id, sum(vb.warningValue) as score from partnerdriver pd left outer join vehiclebehaviour vb on vb.driver_id = pd.id " +
+			statement = con.prepareStatement("select pd.id, sum(vb.warningValue) as score, count(vb.warningValue) as vb_count from partnerdriver pd left outer join vehiclebehaviour vb on vb.driver_id = pd.id " +
 					"and vb.eventdate between ? and ? where pd.partner_id = ? group by pd.id order by score");
 			statement.setTimestamp(1, Timestamp.valueOf(sdf.format(start_dt)));
 			statement.setTimestamp(2, Timestamp.valueOf(sdf.format(end_dt)));
@@ -258,11 +318,15 @@ public class ReportDAO
 			while(result.next())
 			{
 				String[] e = new String[]{""+result.getLong(1), ""+result.getInt(2)};
-				list.add(e);
+				int vb_count = result.getInt(3);
 				
-				if(pos == count)
-					break;
-				pos += 1;
+				if(vb_count >= 10) {
+					list.add(e);
+					
+					if(pos == count)
+						break;
+					pos += 1;
+				}
 			}
 		}
 		catch(Exception ex)
@@ -286,7 +350,7 @@ public class ReportDAO
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			connectToDB();
 			
-			statement = con.prepareStatement("select pd.id, sum(vb.warningValue) as score from partnerdriver pd left outer join vehiclebehaviour vb on vb.driver_id = pd.id " +
+			statement = con.prepareStatement("select pd.id, sum(vb.warningValue) as score, count(vb.warningValue) as vb_count from partnerdriver pd left outer join vehiclebehaviour vb on vb.driver_id = pd.id " +
 					"and vb.eventdate between ? and ? where pd.partner_id = ? group by pd.id order by score desc");
 			statement.setTimestamp(1, Timestamp.valueOf(sdf.format(start_dt)));
 			statement.setTimestamp(2, Timestamp.valueOf(sdf.format(end_dt)));
@@ -297,11 +361,15 @@ public class ReportDAO
 			while(result.next())
 			{
 				String[] e = new String[]{""+result.getLong(1), ""+result.getInt(2)};
-				list.add(e);
+				int vb_count = result.getInt(3);
 				
-				if(pos == count)
-					break;
-				pos += 1;
+				if(vb_count >= 10) {
+					list.add(e);
+					
+					if(pos == count)
+						break;
+					pos += 1;
+				}
 			}
 		}
 		catch(Exception ex)

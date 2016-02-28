@@ -31,13 +31,20 @@
 			<p:selectOneMenu id="staffptn" value="#{userBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 	  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-	  			<p:ajax update="staffdept,staffrg" />
+	  			<p:ajax update="brch,staffdept,staffrg" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="brch" value="Division/Branch: " />
+			<p:selectOneMenu id="brch" value="#{userBean.division_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.getPartnerDivisions(userBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="staffdept, staffunit" />
 	  		</p:selectOneMenu>
 	  		
 	  		<h:outputLabel for="staffdept" value="Department: " />
 			<p:selectOneMenu id="staffdept" value="#{userBean.personel_dept_id}">
 				<f:selectItem itemLabel="-- All --" itemValue="0" />
-	  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<f:selectItems value="#{ddBean.getDivisionDepartments(userBean.partner.id, userBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 	  			<p:ajax update="staffunit" />
 	  		</p:selectOneMenu>
 	  		
@@ -47,7 +54,7 @@
 	  		<h:outputLabel for="staffunit" value="Unit: " />
 			<p:selectOneMenu id="staffunit" value="#{userBean.personel_unit_id}">
 				<f:selectItem itemLabel="" itemValue="0" />
-	  			<f:selectItems value="#{userBean.deptUnits}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<f:selectItems value="#{ddBean.getDepartmentUnits(userBean.partner.id, userBean.personel_dept_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 	  			<p:ajax update="staffrto" />
 	  		</p:selectOneMenu>
 	  		
@@ -68,7 +75,7 @@
 	  		<h:outputText value="Region does not exist?" />
 	  		<p:commandLink value="New Region" onclick="regiondlg.show();" />
 	  		
-	  		<h:outputLabel for="staffid" value="Staff ID: " />
+	  		<h:outputLabel for="staffid" value="Staff ID: *" />
 			<p:inputText id="staffid" value="#{userBean.personel.staff_id}" />
 	  		
 	  		<h:outputLabel for="stafffname" value="First name: *" />
@@ -106,7 +113,7 @@
 			
 			<h:outputLabel for="staffrto" value="Reports To: " />
 			<p:selectOneMenu id="staffrto" value="#{userBean.reportsTo_id}">
-	  			<f:selectItems value="#{userBean.unitHead}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<f:selectItems value="#{userBean.unitHead}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
 	  		</p:selectOneMenu>
 			
 			<h:outputLabel for="staffas" value="Availability Status: " />
@@ -138,6 +145,9 @@
 				<p:inputText id="nok_email" value="#{userBean.personel.nok_email}" />
 				</p:panelGrid>
 			</p:panelGrid>
+			
+			<h:outputLabel for="staffisfm" value="Is Fleet Manager?: " />
+			<p:selectBooleanCheckbox id="staffisfm" value="#{userBean.personel.fleetManager}" />
 	  		
 	  		<f:facet name="footer">
 	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.edit(1)}" value="Save" icon="ui-icon-disk" style="margin:0"/>

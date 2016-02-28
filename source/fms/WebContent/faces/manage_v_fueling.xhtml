@@ -67,14 +67,15 @@
 					<p:column sortBy="#{obj.odometer}" headerText="Odometer">
 						<h:outputText value="#{obj.odometer}" />
 					</p:column>
-					<p:column sortBy="#{obj.fuelLevel}" headerText="Odometer">
+					<p:column sortBy="#{obj.fuelLevel}" headerText="Fuel Level">
 						<h:outputText value="#{obj.fuelLevel}" />
 					</p:column>
 					<p:column sortBy="#{obj.source}" headerText="Pay. Type">
 						<h:outputText value="#{obj.source}" />
 					</p:column>
 					<p:column headerText="">
-						<p:commandLink value="Update" onclick="return false;" />
+						<p:commandLink value="Update" onclick="alert('Feature not available at the moment!');return false;" rendered="#{obj.source != null and obj.source == 'Cash'}" />
+						<h:outputText value="Can't Update" rendered="#{obj.source != null and obj.source != 'Card'}"/>
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

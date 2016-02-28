@@ -41,6 +41,8 @@ public class VehicleTrackerData implements Serializable
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	
+	private double fuelLevel;
+	
 	public VehicleTrackerData()
 	{}
 
@@ -154,6 +156,14 @@ public class VehicleTrackerData implements Serializable
 
 	public void setCrt_dt(Date crt_dt) {
 		this.crt_dt = crt_dt;
+	}
+
+	public double getFuelLevel() {
+		return fuelLevel;
+	}
+
+	public void setFuelLevel(double fuelLevel) {
+		this.fuelLevel = fuelLevel;
 	}
 	
 }

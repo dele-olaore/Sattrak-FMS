@@ -30,6 +30,12 @@ public class Subsidiary implements Serializable
 	private String addr2;
 	private String phone;
 	private String email;
+	@ManyToOne
+	private LGA lga;
+	@ManyToOne
+	private State state;
+	@ManyToOne
+	private Region region;
 	
 	@ManyToOne
 	private Partner partner;
@@ -89,6 +95,30 @@ public class Subsidiary implements Serializable
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public LGA getLga() {
+		return lga;
+	}
+
+	public void setLga(LGA lga) {
+		this.lga = lga;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
+	}
+
+	public Region getRegion() {
+		return region;
+	}
+
+	public void setRegion(Region region) {
+		this.region = region;
 	}
 
 	public Partner getPartner() {

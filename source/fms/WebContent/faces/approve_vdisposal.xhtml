@@ -26,37 +26,40 @@
 				<p:tabView id="tabs" dynamic="true" cache="false">
 					<p:tab id="reqexp" title="Pending Disposal Request(s)[#{fleetBean.pendingDisposalRequests.size()}]">
 						<p:panel id="mypendreqsPanel">
+						
 						<p:dataTable id="myPendExpsTable" var="obj" value="#{fleetBean.pendingDisposalRequests}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"> <!-- binding="#{table}" -->
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220"> <!-- binding="#{table}" -->
 							<f:facet name="header">
 								Pending disposal request(s) [#{fleetBean.pendingFuelingRequests.size()}]
 							</f:facet>
 							
-							<p:column headerText="">
+							<p:column headerText="" style="width:10px">
 								<p:selectBooleanCheckbox value="#{obj.selected}" />
 							</p:column>
-							<p:column headerText="Request Date">
+							<p:column headerText="Request Date" style="width:150px">
 								<h:outputText value="#{obj.crt_dt}" />
 							</p:column>
-							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. Number" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. Number" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains" style="width:150px">
 								<h:outputText value="#{obj.vehicle.registrationNo}" />
 							</p:column>
-							<p:column headerText="Netbook Value">
+							<p:column headerText="Netbook Value" style="width:150px">
 								<h:outputText value="#{obj.netbookVal}" />
 							</p:column>
-							<p:column sortBy="#{obj.soldTo}" headerText="Proposed Buyer">
+							<p:column sortBy="#{obj.soldTo}" headerText="Proposed Buyer" style="width:150px">
 								<h:outputText value="#{obj.soldTo}" />
 							</p:column>
-							<p:column sortBy="#{obj.negoVal}" headerText="Negotiated Value">
+							<p:column sortBy="#{obj.negoVal}" headerText="Negotiated Value" style="width:150px">
 								<h:outputText value="#{obj.negoVal}" />
 							</p:column>
-							<p:column headerText="Requester">
+							<p:column headerText="Requester" style="width:300px">
 								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
 								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
 							</p:column>
 						</p:dataTable>
+						
 						<br/>
 						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 							<h:outputLabel for="apvstat" value="Approval Status: *" />
@@ -74,6 +77,51 @@
 					  	<f:facet name="footer">
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.attendToDisposalRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>
+						</p:panel>
+					</p:tab>
+					<p:tab id="attendedreqs" title="My Attended Disposal Request(s)">
+						<p:panel id="myreqsPanel">
+						
+						<p:dataTable id="myAttendedReqsTable" var="obj" value="#{fleetBean.myAttendedDisposalRequest}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220">
+							<f:facet name="header">
+								My attended disposal request(s) [#{fleetBean.myAttendedDisposalRequest.size()}]
+							</f:facet>
+							
+							<p:column headerText="Date" style="width:150px">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. Number" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains" style="width:150px">
+								<h:outputText value="#{obj.vehicle.registrationNo}" />
+							</p:column>
+							<p:column headerText="Netbook Value" style="width:150px">
+								<h:outputText value="#{obj.netbookVal}" />
+							</p:column>
+							<p:column sortBy="#{obj.soldTo}" headerText="Proposed Buyer" style="width:150px">
+								<h:outputText value="#{obj.soldTo}" />
+							</p:column>
+							<p:column sortBy="#{obj.negoVal}" headerText="Negotiated Value" style="width:150px">
+								<h:outputText value="#{obj.negoVal}" />
+							</p:column>
+							<p:column headerText="Approval User" style="width:250px">
+								<h:outputText value="#{obj.approvalUser.personel.firstname} #{obj.approvalUser.personel.lastname}" rendered="#{obj.approvalUser != null}" />
+								<h:outputText value="N/A" rendered="#{obj.approvalUser == null}" />
+							</p:column>
+							<p:column headerText="Approval Date" style="width:150px">
+								<h:outputText value="#{obj.approval_dt}" rendered="#{obj.approval_dt != null}" />
+								<h:outputText value="N/A" rendered="#{obj.approval_dt == null}" />
+							</p:column>
+							<p:column headerText="Approval Status" sortBy="#{obj.approvalStatus}" filterBy="#{obj.approvalStatus}" filterMatchMode="contains" style="width:150px">
+								<h:outputText value="#{obj.approvalStatus}" />
+							</p:column>
+							<p:column headerText="Approval Comment" style="width:300px">
+								<h:outputText value="#{obj.approvalComment}" />
+							</p:column>
+						</p:dataTable>
+						
 						</p:panel>
 					</p:tab>
 				</p:tabView>

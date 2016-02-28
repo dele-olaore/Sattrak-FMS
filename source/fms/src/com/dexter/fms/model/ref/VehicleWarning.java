@@ -27,6 +27,8 @@ public class VehicleWarning implements Serializable
 	private String name;
 	private String description;
 	
+	private int warningValue;
+	
 	private boolean systemObj;
 	
 	@Temporal(TemporalType.TIMESTAMP)
@@ -63,6 +65,14 @@ public class VehicleWarning implements Serializable
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public int getWarningValue() {
+		return warningValue;
+	}
+
+	public void setWarningValue(int warningValue) {
+		this.warningValue = warningValue;
 	}
 
 	public boolean isSystemObj() {

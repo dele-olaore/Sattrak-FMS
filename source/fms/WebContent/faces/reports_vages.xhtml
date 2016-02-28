@@ -29,24 +29,11 @@
 			  		</f:facet>
 			  	</p:panelGrid>
 			  	<h:panelGrid columns="3" rendered="#{reportsBean.vehiclesAges != null and reportsBean.vehiclesAges.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(10, 'vehicles_ages_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="vehicles_ages_report" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(10, 'vehicles_ages_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(10, 'vehicles_ages_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
 						</p:commandLink>
 						
 						<p:commandLink ajax="false">

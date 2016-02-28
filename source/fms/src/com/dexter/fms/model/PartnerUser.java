@@ -52,6 +52,9 @@ public class PartnerUser implements Serializable
 	@Transient
 	HttpSession session;
 	
+	@Transient
+	private boolean selected;
+	
 	public PartnerUser()
 	{}
 
@@ -159,6 +162,14 @@ public class PartnerUser implements Serializable
 
 	public void setPersonel(PartnerPersonel personel) {
 		this.personel = personel;
+	}
+
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
 	}
 	
 }

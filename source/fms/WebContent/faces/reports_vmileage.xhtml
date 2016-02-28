@@ -1,0 +1,186 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Vehicle Mileage Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vbrand, regn, brch, dept, unt, flt1, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="filttype" value="Filter Type: *" />
+						<p:selectOneMenu id="filttype" value="#{reportsBean.filterType}">
+							<f:selectItem itemLabel="By Fleet" itemValue="byfleet" />
+							<f:selectItem itemLabel="By Region" itemValue="byregion" />
+							<f:selectItem itemLabel="By Brand" itemValue="bybrand" />
+							<f:selectItem itemLabel="By Year of Purchase" itemValue="byyearofp" />
+							<f:selectItem itemLabel="By Engine Capacity" itemValue="byenginecap" />
+							<p:ajax update="MyOPanel" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="engcap" value="Engine Capacity: " rendered="#{reportsBean.filterType=='byenginecap'}" />
+						<p:selectOneMenu id="engcap" value="#{reportsBean.engineCapacity_id}" rendered="#{reportsBean.filterType=='byenginecap'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.engineCapacities}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vbrand" value="Vehicle Brand: " rendered="#{reportsBean.filterType=='bybrand'}" />
+						<p:selectOneMenu id="vbrand" value="#{reportsBean.brand_id}" rendered="#{reportsBean.filterType=='bybrand'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getPartnerVehicleBrands(reportsBean.partner.id)}" var="it" itemLabel="#{it.name}(#{it.year})" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vyearofp" value="Year of Purchase: " rendered="#{reportsBean.filterType=='byyearofp'}" />
+						<p:selectOneMenu id="vyearofp" value="#{reportsBean.yearOfPurchase}" rendered="#{reportsBean.filterType=='byyearofp'}">
+							<f:selectItem itemLabel="-- Any --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.yearOfPurchase}" var="it" itemLabel="#{it}" itemValue="#{it}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="regn" value="Region: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="regn" value="#{reportsBean.region_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getPartnerRegions(reportsBean.partner.id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="dept, unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="brch" value="Division/Branch: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="brch" value="#{reportsBean.division_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getPartnerDivisions(reportsBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="dept, unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="dept" value="Department: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="dept" value="#{reportsBean.department_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getDivisionDepartments(reportsBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="unt,vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="unt" value="Unit: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: " />
+						<p:selectOneMenu id="vch1" value="#{reportsBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getPartnerVehicles(reportsBean.partner.id, reportsBean.region_id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id, reportsBean.fleet_id)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="stype" value="Search Type: *" />
+						<p:selectOneMenu id="stype" value="#{reportsBean.stype}">
+							<f:selectItem itemLabel="Month" itemValue="Month" />
+							<f:selectItem itemLabel="Week" itemValue="Week" />
+							<f:selectItem itemLabel="Day" itemValue="Day" />
+							<f:selectItem itemLabel="Hour" itemValue="Hour" />
+						</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="acddt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="acdrdt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.vehicleMileage}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.mileageConsumptions != null and reportsBean.mileageConsumptions.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="fuelings_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="fuelings_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="fuelings_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false" action="#{reportsBean.downloadVehicleMileagePDF}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="fuelings_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="fuelings_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="fuelings_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.mileageConsumptions}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.mileageConsumptions != null and reportsBean.mileageConsumptions.size() > 0}">
+					<f:facet name="header">
+						Found Vehicle Mileage Record(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj.date}">
+						<f:facet name="header">
+							 <h:outputText value="Date" />  
+						</f:facet>
+						<h:outputText value="#{obj.date}" />
+					</p:column>
+					<p:column sortBy="#{obj.regNo}" filterBy="#{obj.regNo}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Entity/Group" />
+						</f:facet>
+						<h:outputText value="#{obj.regNo}" />
+					</p:column>
+					<p:column sortBy="#{obj.level}">
+						<f:facet name="header">
+							 <h:outputText value="Mileage Covered" />  
+						</f:facet>
+						<h:outputText value="#{obj.level}" />
+					</p:column>
+					<p:column sortBy="#{obj.noOfVehicles}">
+						<f:facet name="header">
+							 <h:outputText value="No. of Vehicles" />  
+						</f:facet>
+						<h:outputText value="#{obj.noOfVehicles}" />
+					</p:column>
+				</p:dataTable>
+				
+				</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>
+				

@@ -27,24 +27,11 @@
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.corTrips != null and reportsBean.corTrips.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(8, 'ctrips_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="ctrips_report" />
-						</p:commandLink>
-		
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(8, 'ctrips_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(8, 'ctrips_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
 						</p:commandLink>
 		
 						<p:commandLink ajax="false">
@@ -106,6 +93,19 @@
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="obj.vehicle != null" />
 						<h:outputText value="N/A" rendered="obj.vehicle == null" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Driver" />  
+						</f:facet>
+						<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="obj.driver != null" />
+						<h:outputText value="N/A" rendered="obj.driver == null" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Manifest" />  
+						</f:facet>
+						<h:outputText value="N/A" />
 					</p:column>
 					<p:column filterBy="#{obj.departureLocation}" filterMatchMode="contains">
 						<f:facet name="header">

@@ -15,6 +15,8 @@ import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
+import com.dexter.fms.model.ref.LGA;
+import com.dexter.fms.model.ref.State;
 
 @Entity
 public class CorporateTrip implements Serializable
@@ -40,6 +42,11 @@ public class CorporateTrip implements Serializable
 	private Date estimatedArrivalDateTime;
 	private String arrivalLocation;
 	
+	@ManyToOne
+	private State arrivalState;
+	@ManyToOne
+	private LGA arrivalLga;
+	
 	private String approvalStatus; // PENDING, APPROVED, DECLINED, NOT_ATTENDED
 	private String approvalReason; // Reason for the approval or decline
 	@Temporal(TemporalType.TIMESTAMP)
@@ -54,11 +61,12 @@ public class CorporateTrip implements Serializable
 	@ManyToOne
 	private PartnerUser approveUser2;
 	
-	private String tripStatus; // AWAITING, ON_TRIP, SHOULD_BE_COMPLETED, COMPLETION_REQUEST, COMPLETED, CANCELED
+	private String tripStatus; // PENDING, AWAITING, ON_TRIP, SHOULD_BE_COMPLETED, COMPLETION_REQUEST, COMPLETED, CANCELED
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date completeRequestDateTime;
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date completedDateTime;
+	private Date completedDateTime, checkInSubmitDateTime;
+	private String checkInComment;
 	
 	@ManyToOne
 	private Vehicle vehicle;
@@ -136,6 +144,22 @@ public class CorporateTrip implements Serializable
 
 	public void setArrivalLocation(String arrivalLocation) {
 		this.arrivalLocation = arrivalLocation;
+	}
+
+	public State getArrivalState() {
+		return arrivalState;
+	}
+
+	public void setArrivalState(State arrivalState) {
+		this.arrivalState = arrivalState;
+	}
+
+	public LGA getArrivalLga() {
+		return arrivalLga;
+	}
+
+	public void setArrivalLga(LGA arrivalLga) {
+		this.arrivalLga = arrivalLga;
 	}
 
 	public String getApprovalStatus() {
@@ -224,6 +248,22 @@ public class CorporateTrip implements Serializable
 
 	public void setCompletedDateTime(Date completedDateTime) {
 		this.completedDateTime = completedDateTime;
+	}
+
+	public Date getCheckInSubmitDateTime() {
+		return checkInSubmitDateTime;
+	}
+
+	public void setCheckInSubmitDateTime(Date checkInSubmitDateTime) {
+		this.checkInSubmitDateTime = checkInSubmitDateTime;
+	}
+
+	public String getCheckInComment() {
+		return checkInComment;
+	}
+
+	public void setCheckInComment(String checkInComment) {
+		this.checkInComment = checkInComment;
 	}
 
 	public Vehicle getVehicle() {

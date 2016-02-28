@@ -3,6 +3,7 @@
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
+                xmlns:gn="http://greatnowhere.com/jsf"
                 template="/WEB-INF/layout/other_layout.xhtml">
 <ui:define name="title">Trip Request</ui:define>
 <ui:define name="content">
@@ -29,15 +30,26 @@
 			<f:facet name="header"></f:facet>
 	  		
 	  		<h:outputLabel for="dpdt" value="Departure date: *" />
-			<p:calendar id="dpdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{ctripBean.trip.departureDateTime}" navigator="true" />
+			<p:calendar id="dpdt" pattern="dd/MM/yyyy HH:mm:ss" mindate="#{ctripBean.tripSubmitMinDate}" showOn="both" mode="popup" value="#{ctripBean.trip.departureDateTime}" navigator="true" />
 			
 			<h:outputLabel for="dplocation" value="Departure location: *" />
 			<p:inputText id="dplocation" value="#{ctripBean.trip.departureLocation}" />
 			
 			<h:outputLabel for="avlocation" value="Destination: *" />
-			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-	  		<p:inputTextarea id="avlocation" value="#{ctripBean.trip.arrivalLocation}" rows="3" cols="50" counter="counter2" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
-	  		<h:outputText id="counter2" />
+			<p:panelGrid id="avlocation" columns="2" cellpadding="1" style="margin-bottom:10px;">
+				<h:outputLabel for="avstate" value="State: " />
+				<p:selectOneMenu id="avstate" value="#{ctripBean.state_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ctripBean.states}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="avlga" />
+		  		</p:selectOneMenu>
+				<h:outputLabel for="avlga" value="Local Govt. Area: " />
+				<p:selectOneMenu id="avlga" value="#{ctripBean.lga_id}">
+		  			<f:selectItems value="#{ctripBean.lgas}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+				
+				<h:outputLabel for="avaddress" value="Address: *" />
+				<gn:GooglePlace id="avaddress" place="#{ctripBean.place}" loadAPI="true" value="#{ctripBean.trip.arrivalLocation}" style="width:100%;" />
 	  		</p:panelGrid>
 			
 			<h:outputLabel for="tpurpose" value="Trip purpose: *" />
@@ -68,6 +80,36 @@
 	  				#{p.firstname} #{p.lastname}
 	  			</p:column>
 	  		</p:pickList>
+	  		
+	  		<h:outputLabel for="apvstaff" value="Approver: " />
+	  		<p:panelGrid id="apvstaff" columns="2" cellpadding="5">
+	  			<h:outputLabel for="brch" value="Division/Branch: " />
+				<p:selectOneMenu id="brch" value="#{ctripBean.division_id}">
+					<f:selectItem itemLabel="-- All --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.getPartnerDivisions(ctripBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="dept, unt, stf" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="dept" value="Department: " />
+				<p:selectOneMenu id="dept" value="#{ctripBean.department_id}">
+					<f:selectItem itemLabel="-- All --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.getDivisionDepartments(ctripBean.partner.id, ctripBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="unt, stf" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="unt" value="Unit: " />
+				<p:selectOneMenu id="unt" value="#{ctripBean.unit_id}">
+					<f:selectItem itemLabel="-- All --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.getDepartmentUnits(ctripBean.partner.id, ctripBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="stf" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="stf" value="Approver: " />
+				<p:selectOneMenu id="stf" value="#{ctripBean.approver_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.getPartnerPersonels(ctripBean.partner.id, ctripBean.division_id, 0, ctripBean.department_id, ctripBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+	  		</p:panelGrid>
 	  		
 	  		<f:facet name="footer">
 	  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{ctripBean.saveTripRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>

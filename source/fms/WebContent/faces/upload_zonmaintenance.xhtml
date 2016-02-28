@@ -1,0 +1,49 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Upload Zon Maintenance Records</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Upload Zon Maintenance Records" action="#{dashboardBean.gotoPage('upload_zonmaintenance', true)}" ajax="false" />
+    		</p:breadCrumb>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+			<p:panelGrid id="newstpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header"></f:facet>
+				
+				<h:outputLabel for="staffptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="staffptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+				
+				<h:outputLabel for="excelFile" value="Upload Excel: " />
+				<p:fileUpload id="excelFile" value="#{fleetBean.maintenanceExcel}" mode="simple" />
+				
+				<f:facet name="footer">
+		  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.UploadZonMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+		  		</f:facet>
+			</p:panelGrid>
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

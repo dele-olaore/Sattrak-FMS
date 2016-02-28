@@ -74,7 +74,7 @@
 				  		<h:outputLabel for="fuelcost" value="Cost: *" />
 				  		<p:inputText id="fuelcost" value="#{fleetBean.fueling.amt}" />
 				  		
-				  		<h:outputLabel for="fuellitres" value="Litres: *" />
+				  		<h:outputLabel for="fuellitres" value="Fuel Purchased (Litres): *" />
 				  		<p:inputText id="fuellitres" value="#{fleetBean.fueling.litres}" />
 				  		
 				  		<h:outputLabel for="fuelodo" value="Odometer reading: " />
@@ -134,20 +134,21 @@
 						<p:column sortBy="#{obj.amt}" headerText="Cost">
 							<h:outputText value="#{obj.amt}" />
 						</p:column>
-						<p:column sortBy="#{obj.litres}" headerText="Litres">
+						<p:column sortBy="#{obj.litres}" headerText="Fuel Purchased (Litres)">
 							<h:outputText value="#{obj.litres}" />
 						</p:column>
 						<p:column sortBy="#{obj.odometer}" headerText="Odometer">
 							<h:outputText value="#{obj.odometer}" />
 						</p:column>
-						<p:column sortBy="#{obj.fuelLevel}" headerText="Odometer">
+						<p:column sortBy="#{obj.fuelLevel}" headerText="Fuel Level">
 							<h:outputText value="#{obj.fuelLevel}" />
 						</p:column>
 						<p:column sortBy="#{obj.source}" headerText="Pay. Type">
 							<h:outputText value="#{obj.source}" />
 						</p:column>
 						<p:column headerText="">
-							<p:commandLink value="Update" onclick="return false;" />
+							<p:commandLink value="Update" onclick="alert('Feature not available at the moment!');return false;" rendered="#{obj.source == 'Cash'}" />
+							<h:outputText value="Can't Update" rendered="#{obj.source != 'Cash'}" />
 						</p:column>
 					</p:dataTable>
 				</p:tab>

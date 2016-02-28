@@ -39,26 +39,55 @@
 				  		<h:outputText id="dvrName" value="#{dashboardBean.driver.personel.firstname} #{dashboardBean.driver.personel.lastname}" />
 				  		
 				  		<h:outputLabel for="overtimedate" value="Date: *" />
-						<p:calendar id="overtimedate" pattern="dd/MM/yyyy HH:mm:ss" value="#{userBean.overtimeReq.tranDate}" showOn="button" />
+						<p:calendar id="overtimedate" pattern="dd/MM/yyyy" mindate="#{userBean.overtimeSubmitMinDate}" maxdate="#{userBean.overtimeSubmitMaxDate}" value="#{userBean.overtimeReq.tranDate}" showOn="button" />
 				  		
-				  		<h:outputLabel for="overtimehours" value="Overtime Hours: *" />
-				  		<p:inputText id="overtimehours" value="#{userBean.overtimeReq.overtimehours}">
-				  			<p:ajax update="amt" />
-				  		</p:inputText>
+				  		<h:outputLabel for="overtimesttime" value="Start time: *" />
+						<p:calendar id="overtimesttime" pattern="HH:mm" value="#{userBean.overtimeReq.start_time}" showOn="button" timeOnly="true">
+							<p:ajax update="overtimehours,amt" />
+						</p:calendar>
+						
+						<h:outputLabel for="overtimeedtime" value="End time: *" />
+						<p:calendar id="overtimeedtime" pattern="HH:mm" value="#{userBean.overtimeReq.end_time}" showOn="button" timeOnly="true">
+							<p:ajax update="overtimehours,amt" />
+						</p:calendar>
 				  		
-				  		<h:outputLabel for="overtimerateperhour" value="Amount Per Hour: *" />
-				  		<p:inputText id="overtimerateperhour" value="#{userBean.overtimeReq.amountPerHour}">
-				  			<p:ajax update="amt" />
-				  		</p:inputText>
+				  		<h:outputLabel for="overtimehours" value="Overtime Hours: " />
+				  		<h:outputText id="overtimehours" value="#{userBean.overtimeReq.overtimehours}" />
+				  		
+				  		<h:outputLabel for="overtimerateperhour" value="Amount Per Hour: " />
+				  		<h:outputText id="overtimerateperhour" value="#{userBean.overtimeReq.amountPerHour}" />
 				  		
 				  		<h:outputLabel for="amt" value="Amount: " />
 				  		<h:outputText id="amt" value="#{userBean.overtimeReq.amount}" />
 				  		
 				  		<h:outputLabel for="overtimedesc" value="Reason: *" />
 				  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
-				  		<p:inputTextarea id="overtimedesc" value="#{userBean.overtimeReq.reason}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
-				  		<h:outputText id="counter" />
+					  		<p:inputTextarea id="overtimedesc" value="#{userBean.overtimeReq.reason}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+					  		<h:outputText id="counter" />
 				  		</p:panelGrid>
+				  		
+				  		<!-- Put staff selection here -->
+				  		<h:outputLabel value="Select staff for approval: " />
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="dept" value="Department: " />
+							<p:selectOneMenu id="dept" value="#{userBean.personel_dept_id}">
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{userBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="unt,stf" />
+							</p:selectOneMenu>
+							
+							<h:outputLabel for="unt" value="Unit: " />
+							<p:selectOneMenu id="unt" value="#{userBean.personel_unit_id}">
+								<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					  			<f:selectItems value="#{userBean.deptUnits}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+					  			<p:ajax update="stf" />
+							</p:selectOneMenu>
+							
+							<h:outputLabel for="stf" value="Staff: " />
+							<p:selectOneMenu id="stf" value="#{userBean.approver_id}">
+								<f:selectItems value="#{userBean.personels}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+							</p:selectOneMenu>
+						</p:panelGrid>
 				  		
 				  		<f:facet name="footer">
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(13)}" value="Save" icon="ui-icon-disk" style="margin:0"/>

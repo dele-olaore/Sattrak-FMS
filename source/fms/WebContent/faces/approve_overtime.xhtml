@@ -4,7 +4,7 @@
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/layout/other_layout.xhtml">
-<ui:define name="title">Approve Fueling</ui:define>
+<ui:define name="title">Approve Overtime</ui:define>
 <ui:define name="content">
 	<br/><br/>
 	<h:form id="form">
@@ -29,30 +29,31 @@
 						<p:dataTable id="myPendExpsTable" var="obj" value="#{userBean.pendingOvertimeReqs}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220">
 							<f:facet name="header">
 								Pending overtime request(s) [#{userBean.pendingOvertimeReqs.size()}]
 							</f:facet>
 							
-							<p:column id="col1" headerText="">
+							<p:column id="col1" headerText="" style="width:10px">
 								<p:selectBooleanCheckbox value="#{obj.selected}" />
 							</p:column>
-							<p:column sortBy="#{obj.tranDate}" headerText="Date">
+							<p:column sortBy="#{obj.tranDate}" headerText="Date" style="width:150px">
 								<h:outputText value="#{obj.tranDate}" />
 							</p:column>
-							<p:column sortBy="#{obj.overtimehours}" headerText="Hours">
+							<p:column sortBy="#{obj.overtimehours}" headerText="Hours" style="width:150px">
 								<h:outputText value="#{obj.overtimehours}" />
 							</p:column>
-							<p:column sortBy="#{obj.amountPerHour}" headerText="Amount Per Hour">
+							<p:column sortBy="#{obj.amountPerHour}" headerText="Amount Per Hour" style="width:150px">
 								<h:outputText value="#{obj.amountPerHour}" />
 							</p:column>
-							<p:column sortBy="#{obj.amount}" headerText="Amount">
+							<p:column sortBy="#{obj.amount}" headerText="Amount" style="width:150px">
 								<h:outputText value="#{obj.amount}" />
 							</p:column>
-							<p:column headerText="Reason" filterBy="#{obj.reason}" filterMatchMode="contains">
+							<p:column headerText="Reason" filterBy="#{obj.reason}" filterMatchMode="contains" style="width:300px">
 								<h:outputText value="#{obj.reason}" />
 							</p:column>
-							<p:column headerText="Requested" style="width: 7%">
+							<p:column headerText="Requested" style="width:300px">
 								On: <h:outputText value="#{obj.crt_dt}" /><br/>
 								By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 							</p:column>
@@ -75,6 +76,9 @@
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{userBean.save(14)}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>
 						</p:panel>
+					</p:tab>
+					<p:tab id="apvovrt" title="My Attended Overtime Request(s)">
+						
 					</p:tab>
 				</p:tabView>
 			</p:outputPanel>

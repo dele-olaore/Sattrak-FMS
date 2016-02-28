@@ -2,6 +2,7 @@ package com.dexter.fms.model.app;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Vector;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -38,12 +39,13 @@ public class VehicleFuelingRequest implements Serializable
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date request_dt;
-	@ManyToOne
+	private String approvalStatus; // PENDING, APPROVED, DENIED
+	/*@ManyToOne
 	private PartnerUser approvalUser;
 	private String approvalStatus; // PENDING, APPROVED, DENIED
 	private String approvalComment; // comment for approval status
 	@Temporal(TemporalType.TIMESTAMP)
-	private Date approval_dt;
+	private Date approval_dt;*/
 	
 	@ManyToOne
 	private VehicleFueling vehicleFueling;	
@@ -56,6 +58,8 @@ public class VehicleFuelingRequest implements Serializable
 	
 	@Transient
 	private boolean selected;
+	@Transient
+	private Vector<Approver> approvers;
 	
 	public VehicleFuelingRequest()
 	{}
@@ -132,7 +136,7 @@ public class VehicleFuelingRequest implements Serializable
 		this.request_dt = request_dt;
 	}
 
-	public PartnerUser getApprovalUser() {
+	/*public PartnerUser getApprovalUser() {
 		return approvalUser;
 	}
 
@@ -162,6 +166,14 @@ public class VehicleFuelingRequest implements Serializable
 
 	public void setApproval_dt(Date approval_dt) {
 		this.approval_dt = approval_dt;
+	}*/
+
+	public String getApprovalStatus() {
+		return approvalStatus;
+	}
+
+	public void setApprovalStatus(String approvalStatus) {
+		this.approvalStatus = approvalStatus;
 	}
 
 	public VehicleFueling getVehicleFueling() {
@@ -194,6 +206,14 @@ public class VehicleFuelingRequest implements Serializable
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	public Vector<Approver> getApprovers() {
+		return approvers;
+	}
+
+	public void setApprovers(Vector<Approver> approvers) {
+		this.approvers = approvers;
 	}
 	
 }

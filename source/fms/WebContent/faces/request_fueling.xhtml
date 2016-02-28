@@ -31,7 +31,7 @@
 			  			<p:ajax update=":form:tabs:fuelingDataPanel2,:form:tabs:flt2,:form:tabs:vch2,:form:tabs:apvu2" />
 			  		</p:selectOneMenu>
 		  		</p:panelGrid>
-			
+				
 				<p:tabView id="tabs" dynamic="true" cache="false">
 					<p:tab id="bthreqexp" title="Request Fueling - Batch">
 						<p:panel id="milreqsPanel">
@@ -85,21 +85,25 @@
 								</h:inputText>
 							</p:panelGrid>
 							<p:outputPanel id="fuelingDataPanel2">
-							<h:outputText value="Manual fueling capture not supported by partner's account setup!" rendered="#{fleetBean.partner != null and (fleetBean.partner.fuelingType == 'Automated')}" />
+							<h:outputText value="NOTE: Manual fueling capture not supported by partner's account setup!" rendered="#{fleetBean.partner != null and (fleetBean.partner.fuelingType == 'Automated')}" />
 							<p:panelGrid columns="2">
 								<h:outputLabel for="fueldt2" value="Fuel date: *" />
 								<p:calendar id="fueldt2" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.fuelingRequest.fueling_dt}" navigator="true" />
 								
 								<h:outputLabel for="fuelcost2" value="Cost: *" />
-						  		<p:inputText id="fuelcost2" value="#{fleetBean.fuelingRequest.amt}" />
+						  		<p:inputText id="fuelcost2" value="#{fleetBean.fuelingRequest.amt}">
+						  			<p:ajax update="apvu2" />
+						  		</p:inputText>
 						  		
 						  		<h:outputLabel for="fuellitres2" value="Litres: *" />
 						  		<p:inputText id="fuellitres2" value="#{fleetBean.fuelingRequest.litres}" />
 						  		
-						  		<h:outputLabel for="apvu2" value="Approval User: *" />
-								<p:selectOneMenu id="apvu2" value="#{fleetBean.approvalUser_id}">
-						  			<f:selectItems value="#{ddBean.getUsersWithFunction(fleetBean.partner.id, 'approve_fueling')}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
-						  		</p:selectOneMenu>
+						  		<h:outputLabel for="apvu2" value="Approval User(s): *" />
+						  		<p:dataGrid id="apvu2" var="it" columns="1" value="#{ddBean.getApprovingUsers(fleetBean.partner.id, fleetBean.fuelingRequest.amt, 'Fueling')}">
+						  			<f:facet name="header"></f:facet>
+						  			<p:selectBooleanCheckbox value="#{it.selected}" />
+									<h:outputText value="#{it.personel.firstname} #{it.personel.lastname}" />
+						  		</p:dataGrid>
 							</p:panelGrid>
 							</p:outputPanel>
 							<f:facet name="footer">
@@ -121,6 +125,9 @@
 							<p:column id="col1" headerText="Date">
 								<h:outputText value="#{obj.crt_dt}" />
 							</p:column>
+							<p:column id="col1_1" headerText="Vehicle">
+								<h:outputText value="#{obj.vehicle.registrationNo}" />
+							</p:column>
 							<p:column id="col2" sortBy="#{obj.fueling_dt}" headerText="Fuel date" filterBy="#{obj.fueling_dt}" filterMatchMode="contains">
 								<h:outputText value="#{obj.fueling_dt}" />
 							</p:column>
@@ -130,18 +137,25 @@
 							<p:column id="col4" sortBy="#{obj.litres}" headerText="Litres">
 								<h:outputText value="#{obj.litres}" />
 							</p:column>
-							<p:column id="col5" headerText="Approval User">
-								<h:outputText value="#{obj.approvalUser.personel.firstname} #{obj.approvalUser.personel.lastname}" rendered="#{obj.approvalUser != null}" />
-								<h:outputText value="N/A" rendered="#{obj.approvalUser == null}" />
-							</p:column>
-							<p:column id="col6" headerText="Approval Date">
-								<h:outputText value="#{obj.approval_dt}" />
-							</p:column>
-							<p:column id="col7" headerText="Approval Status" sortBy="#{obj.approvalStatus}" filterBy="#{obj.approvalStatus}" filterMatchMode="contains">
+							<p:column id="col5" sortBy="#{obj.approvalStatus}" headerText="Status">
 								<h:outputText value="#{obj.approvalStatus}" />
 							</p:column>
-							<p:column id="col8" headerText="Approval Comment">
-								<h:outputText value="#{obj.approvalComment}" />
+							<p:column id="col6" headerText="Approval(s)">
+								<p:dataTable var="ap" value="#{obj.approvers}" style="width:100%" resizableColumns="true">
+									<p:column headerText="Approval User">
+										<h:outputText value="#{ap.approvalUser.personel.firstname} #{ap.approvalUser.personel.lastname}" rendered="#{ap.approvalUser != null}" />
+										<h:outputText value="N/A" rendered="#{ap.approvalUser == null}" />
+									</p:column>
+									<p:column headerText="Approval Date">
+										<h:outputText value="#{ap.approval_dt}" />
+									</p:column>
+									<p:column headerText="Approval Status" sortBy="#{ap.approvalStatus}">
+										<h:outputText value="#{ap.approvalStatus}" />
+									</p:column>
+									<p:column headerText="Approval Comment">
+										<h:outputText value="#{ap.approvalComment}" />
+									</p:column>
+								</p:dataTable>
 							</p:column>
 						</p:dataTable>
 						</p:panel>

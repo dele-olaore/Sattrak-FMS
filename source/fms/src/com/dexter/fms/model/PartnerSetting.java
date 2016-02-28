@@ -22,9 +22,10 @@ public class PartnerSetting implements Serializable
 	private Partner partner;
 	
 	private byte[] logo;
+	private double overTimeAmountPerHour;
+	private int maxMinutesToBookTrip, maxMinutesPendingTripApproval;
 	
-	public PartnerSetting()
-	{}
+	public PartnerSetting() {}
 	
 	public Long getId() {
 		return id;
@@ -49,4 +50,29 @@ public class PartnerSetting implements Serializable
 	public void setLogo(byte[] logo) {
 		this.logo = logo;
 	}
+
+	public double getOverTimeAmountPerHour() {
+		return overTimeAmountPerHour;
+	}
+
+	public void setOverTimeAmountPerHour(double overTimeAmountPerHour) {
+		this.overTimeAmountPerHour = overTimeAmountPerHour;
+	}
+
+	public int getMaxMinutesToBookTrip() {
+		return maxMinutesToBookTrip;
+	}
+
+	public void setMaxMinutesToBookTrip(int maxMinutesToBookTrip) {
+		this.maxMinutesToBookTrip = maxMinutesToBookTrip;
+	}
+
+	public int getMaxMinutesPendingTripApproval() {
+		return maxMinutesPendingTripApproval;
+	}
+
+	public void setMaxMinutesPendingTripApproval(int maxMinutesPendingTripApproval) {
+		this.maxMinutesPendingTripApproval = maxMinutesPendingTripApproval;
+	}
+	
 }

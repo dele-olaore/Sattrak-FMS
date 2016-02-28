@@ -78,6 +78,7 @@ public class VendorMBean implements Serializable
 	{
 		if(getPartner() != null && getVendor().getName() != null)
 		{
+			String naration = "Create vendor: " + getVendor().getName();
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			getVendor().setCreatedBy(dashBean.getUser());
@@ -102,6 +103,7 @@ public class VendorMBean implements Serializable
 					}
 				}
 				gDAO.commit();
+				naration += " Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vendor created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
@@ -112,9 +114,12 @@ public class VendorMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += " Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create vendor. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{

@@ -10,6 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerDriver;
@@ -56,6 +57,9 @@ public class DriverLicense implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	@Transient
+	private String daysExpiry;
 	
 	public DriverLicense()
 	{}
@@ -170,6 +174,29 @@ public class DriverLicense implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public String getDaysExpiry() {
+		daysExpiry = "";
+		if(active && lic_end_dt != null) {
+			long endtime = lic_end_dt.getTime();
+			long nowtime = new Date().getTime();
+			
+			long diff = Math.abs(nowtime - endtime);
+			long oneday = 1000 * 60 * 60 * 24;
+			long days = diff/oneday;
+			
+			if(expired)
+				daysExpiry = days + " days ago";
+			else
+				daysExpiry = days + " days to go";
+		}
+		
+		return daysExpiry;
+	}
+
+	public void setDaysExpiry(String daysExpiry) {
+		this.daysExpiry = daysExpiry;
 	}
 	
 }

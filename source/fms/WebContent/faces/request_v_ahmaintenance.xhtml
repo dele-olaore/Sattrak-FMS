@@ -81,15 +81,6 @@
 				<h:outputLabel for="rdate" value="Maintenance date: *" />
 				<p:calendar id="rdate" pattern="dd/MM/yyyy HH:mm:ss" value="#{fleetBean.adhocRequest.maintenance_dt}" showOn="button" />
 				
-				<h:outputLabel for="rchbattery" value="Change battery?: " />
-				<p:selectBooleanCheckbox id="rchbattery" value="#{fleetBean.adhocRequest.battery}" />
-				
-				<h:outputLabel for="rchtrye" value="Change tyre?: " />
-				<p:selectBooleanCheckbox id="rchtrye" value="#{fleetBean.adhocRequest.tyre}" />
-				
-				<h:outputLabel for="rtryecount" value="Tyre count: " />
-				<p:inputText id="rtryecount" value="#{fleetBean.adhocRequest.tyre_count}" />
-			
 				<f:facet name="footer">
 		  			<p:commandButton ajax="false" action="#{fleetBean.requestAdHocMaintenance}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 		  		</f:facet>

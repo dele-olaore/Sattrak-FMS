@@ -1,0 +1,139 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Cards</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Cards" action="#{dashboardBean.gotoPage('fuelcard_cards', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panel header="Export All Data" rendered="#{fuelcardBean.cards != null and fuelcardBean.cards.size() > 0}">
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/excel.png" />
+						<p:dataExporter type="xls" target=":form:objsTable"
+							fileName="fuelcard_cards" />
+					</p:commandLink>
+					
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/csv.png" />
+						<p:dataExporter type="csv" target=":form:objsTable"
+							fileName="fuelcard_cards" />
+					</p:commandLink>
+				</p:panel>
+				<p:scrollPanel mode="native" style="width:100%;height:500px" rendered="#{fuelcardBean.cards != null and fuelcardBean.cards.size() > 0}">
+				<p:dataTable id="objsTable" var="obj" value="#{fuelcardBean.cards}"
+					paginator="true" rows="100"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true" editable="true"
+					rendered="#{fuelcardBean.cards != null and fuelcardBean.cards.size() > 0}">
+					<f:facet name="header">
+						Found card(s)
+					</f:facet>
+					<p:ajax event="rowEdit" listener="#{fuelcardBean.onEdit}" update=":messages3" />
+	        		<p:ajax event="rowEditCancel" listener="#{fuelcardBean.onCancel}" update=":messages3" />
+					
+					<p:column sortBy="#{obj.cardtype}" headerText="Type" filterBy="#{obj.cardtype}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+							<h:outputText value="#{obj.cardtype}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:selectOneMenu value="#{obj.cardtype}">
+									<f:selectItem itemLabel="NORMAL" itemValue="NORMAL" />
+									<f:selectItem itemLabel="BRANDED" itemValue="BRANDED" />
+						  		</p:selectOneMenu>
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.cardname}" headerText="Name on Card" filterBy="#{obj.cardname}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+							<h:outputText value="#{obj.cardname}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.cardname}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.cardPan}" headerText="Card Pan" filterBy="#{obj.cardPan}" filterMatchMode="contains">
+						<p:cellEditor>
+							<f:facet name="output">
+							<h:outputText value="#{obj.cardPan}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:inputText value="#{obj.cardPan}" />
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column sortBy="#{obj.balance}" headerText="Balance on Card">
+						<h:outputText value="#{obj.balance}" />
+					</p:column>
+					<p:column sortBy="#{obj.lastTranTime}" headerText="Last Transaction Time">
+						<h:outputText value="#{obj.lastTranTime}" />
+					</p:column>
+					<p:column headerText="Status">
+						<p:cellEditor>
+							<f:facet name="output">
+							<h:outputText value="#{obj.status}" />
+							</f:facet>
+							<f:facet name="input">
+								<p:selectOneMenu value="#{obj.status}">
+									<f:selectItem itemLabel="ACTIVE" itemValue="ACTIVE" />
+									<f:selectItem itemLabel="INACTIVE" itemValue="INACTIVE" />
+						  		</p:selectOneMenu>
+							</f:facet>
+						</p:cellEditor>
+					</p:column>
+					<p:column headerText="Created On">
+						<h:outputText value="#{obj.crt_dt}" />
+					</p:column>
+					<p:column headerText="" style="width: 10%">
+						<p:rowEditor />
+					</p:column>
+				</p:dataTable>
+				</p:scrollPanel>
+				<br/>
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="crdType" value="Type: " />
+						<p:selectOneMenu id="crdType" value="#{fuelcardBean.card.cardtype}">
+							<f:selectItem itemLabel="NORMAL" itemValue="NORMAL" />
+							<f:selectItem itemLabel="BRANDED" itemValue="BRANDED" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="crdName" value="Name on Card: *" />
+						<p:inputText id="crdName" value="#{fuelcardBean.card.cardname}" />
+						
+						<h:outputLabel for="crdPan" value="Pan: *" />
+						<p:inputText id="crdPan" value="#{fuelcardBean.card.cardPan}" />
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{fuelcardBean.createCard}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>
+		

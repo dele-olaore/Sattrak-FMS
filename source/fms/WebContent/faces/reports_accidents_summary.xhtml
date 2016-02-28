@@ -1,0 +1,176 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Accidents Summary Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="staffrg, brch, staffdept, unt, flt1, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="staffrg" value="Region: " />
+						<p:selectOneMenu id="staffrg" value="#{reportsBean.region_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="brch" value="Division/Branch: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="brch" value="#{reportsBean.division_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getPartnerDivisions(reportsBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="staffdept, unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="staffdept" value="Department: " />
+						<p:selectOneMenu id="staffdept" value="#{reportsBean.department_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getDivisionDepartments(reportsBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							<p:ajax update="unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="unt" value="Unit: " rendered="#{reportsBean.filterType!='byfleet'}" />
+						<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}" rendered="#{reportsBean.filterType!='byfleet'}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: " />
+						<p:selectOneMenu id="vch1" value="#{reportsBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getPartnerVehicles(reportsBean.partner.id, reportsBean.region_id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id, reportsBean.fleet_id)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+				  	</p:panelGrid>
+				  	<p:panelGrid columns="2">
+						<h:outputLabel for="stdt" value="Start date: *" />
+						<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="eddt" value="End date: *" />
+						<p:calendar id="eddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+						
+						<h:outputLabel for="rgroup" value="Grouping: " />
+						<p:selectOneMenu id="rgroup" value="#{reportsBean.rgroup}">
+							<f:selectItem itemLabel="Daily" itemValue="1" />
+							<f:selectItem itemLabel="Weekly" itemValue="2" />
+							<f:selectItem itemLabel="Monthly" itemValue="3" />
+				  		</p:selectOneMenu>
+					</p:panelGrid>
+					
+					<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchAccidentsSummary}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.accidentsSummaryReport != null and reportsBean.accidentsSummaryReport.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="accidents_summary_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="accidents_summary_report" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="accidents_summary_report" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="accidents_summary_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="accidents_summary_report" pageOnly="true" />
+						</p:commandLink>
+		
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="accidents_summary_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:pieChart id="pie"
+                    value="#{reportsBean.pieModel}"
+                    legendPosition="w"
+                    title="Pie Chart"
+                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}"/>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.accidentsSummaryReport}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.accidentsSummaryReport != null and reportsBean.accidentsSummaryReport.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj[0]}" filterBy="#{obj[0]}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Vehicle" />  
+						</f:facet>
+						<h:outputText value="#{obj[0]}" />
+					</p:column>
+					<p:column sortBy="#{obj[1]}">
+						<f:facet name="header">
+							 <h:outputText value="Start Date" />  
+						</f:facet>
+						<h:outputText value="#{obj[1]}" />
+					</p:column>
+					<p:column sortBy="#{obj[2]}">
+						<f:facet name="header">
+							 <h:outputText value="End Date" />  
+						</f:facet>
+						<h:outputText value="#{obj[2]}" />
+					</p:column>
+					<p:column sortBy="#{obj[3]}">
+						<f:facet name="header">
+							 <h:outputText value="No of Time" />  
+						</f:facet>
+						<h:outputText value="#{obj[3]}" />
+					</p:column>
+					<p:column sortBy="#{obj[4]}">
+						<f:facet name="header">
+							 <h:outputText value="Cost" />  
+						</f:facet>
+						<h:outputText value="#{obj[4]}" />
+					</p:column>
+					<p:column sortBy="#{obj[5]}">
+						<f:facet name="header">
+							 <h:outputText value="Distance Covered" />  
+						</f:facet>
+						<h:outputText value="#{obj[5]}" />
+					</p:column>
+				</p:dataTable>
+				
+			</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

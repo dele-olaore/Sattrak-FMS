@@ -42,7 +42,7 @@ public class Emailer
             String smtp_password = (String)envCtx.lookup("smtp.password");
             
             Authenticator auth = e.new SMTPAuthenticator(smtp_username, smtp_password);
-            session = Session.getDefaultInstance(session.getProperties(), auth);
+            session = Session.getInstance(session.getProperties(), auth);
             
             session.setDebug(false);
             
@@ -90,6 +90,91 @@ public class Emailer
      * @param data The byte array of the file to be attached.
      * */
     public static synchronized String sendEmail(String from, String[] to, String subject,
+            String body, byte[] data, String fname, String mimeType)
+    {
+        String ret = null;
+        
+        Emailer e = new Emailer();
+        
+        try
+        {
+            Context initCtx = new InitialContext();
+            Context envCtx = (Context) initCtx.lookup("java:comp/env");
+            Session session = (Session) envCtx.lookup("mail/Session");
+            
+            String smtp_username = (String)envCtx.lookup("smtp.username");
+            String smtp_password = (String)envCtx.lookup("smtp.password");
+            
+            Authenticator auth = e.new SMTPAuthenticator(smtp_username, smtp_password);
+            session = Session.getInstance(session.getProperties(), auth);
+            
+            session.setDebug(false);
+            
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(from));
+            InternetAddress to_address[] = new InternetAddress[to.length];
+            for(int i=0; i<to.length; i++)
+            	to_address[i] = new InternetAddress(to[i]);
+            message.setRecipients(Message.RecipientType.TO, to_address);
+            message.setSubject(subject);
+            
+            // create and fill the first message part
+            MimeBodyPart mbp1 = new MimeBodyPart();
+            mbp1.setContent(body, "text/html");
+
+            // create the second message part
+            MimeBodyPart mbp2 = new MimeBodyPart();
+
+            // attach the file to the message
+            DataSource source = new ByteArrayDataSource(data, mimeType);
+            mbp2.setDataHandler(new DataHandler(source));
+            mbp2.setFileName(fname);
+
+            // create the Multipart and add its parts to it
+            Multipart mp = new MimeMultipart();
+            mp.addBodyPart(mbp1);
+            mp.addBodyPart(mbp2);
+
+            // add the Multipart to the message
+            message.setContent(mp);
+            
+            message.setSentDate(new java.util.Date());
+            
+            Transport.send(message);
+            
+            ret = "success";
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+            
+            String exStr = ex.getMessage();
+            try
+            {
+                exStr = exStr.substring(exStr.lastIndexOf("]")+1);
+            }
+            catch(Exception ignore){}
+            
+            ret = "Error: Could not send the email, Message: " + exStr;
+        }
+        finally
+        {
+            //nothing to dispose
+        }
+        
+        return ret;
+    }
+    
+    /**
+     * Sends an email to the specified email address with PDF attachment.
+     *
+     * @param from The from email address.
+     * @param to The recipient of the email.
+     * @param subject The subject of the email.
+     * @param body The message content of the email.
+     * @param data The byte array of the file to be attached.
+     * */
+    public static synchronized String sendEmail(String from, String[] to, String subject,
             String body, byte[] data, String fname)
     {
         String ret = null;
@@ -106,7 +191,7 @@ public class Emailer
             String smtp_password = (String)envCtx.lookup("smtp.password");
             
             Authenticator auth = e.new SMTPAuthenticator(smtp_username, smtp_password);
-            session = Session.getDefaultInstance(session.getProperties(), auth);
+            session = Session.getInstance(session.getProperties(), auth);
             
             session.setDebug(false);
             
@@ -191,7 +276,7 @@ public class Emailer
             String smtp_password = (String)envCtx.lookup("smtp.password");
             
             Authenticator auth = e.new SMTPAuthenticator(smtp_username, smtp_password);
-            session = Session.getDefaultInstance(session.getProperties(), auth);
+            session = Session.getInstance(session.getProperties(), auth);
             
             session.setDebug(false);
             

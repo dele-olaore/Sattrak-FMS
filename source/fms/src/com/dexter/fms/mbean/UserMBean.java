@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import org.primefaces.model.DefaultStreamedContent;
 import org.primefaces.model.StreamedContent;
 import org.primefaces.model.UploadedFile;
 
+import com.dexter.common.util.Emailer;
 import com.dexter.common.util.Hasher;
 import com.dexter.fms.dao.GeneralDAO;
 import com.dexter.fms.model.ApplicationTypeDash;
@@ -47,6 +49,7 @@ import com.dexter.fms.model.PartnerDriverOvertime;
 import com.dexter.fms.model.PartnerDriverOvertimeRequest;
 import com.dexter.fms.model.PartnerDriverQuery;
 import com.dexter.fms.model.PartnerPersonel;
+import com.dexter.fms.model.PartnerSetting;
 import com.dexter.fms.model.PartnerSubscription;
 import com.dexter.fms.model.PartnerUser;
 import com.dexter.fms.model.PartnerUserRole;
@@ -59,6 +62,7 @@ import com.dexter.fms.model.ref.DriverGrade;
 import com.dexter.fms.model.ref.Region;
 import com.dexter.fms.model.ref.Subsidiary;
 import com.dexter.fms.model.ref.Unit;
+import com.dexter.fms.util.SMSGateway;
 
 @ManagedBean(name = "userBean")
 @SessionScoped
@@ -99,14 +103,15 @@ public class UserMBean implements Serializable
 	private UploadedFile personelsBatchExcel;
 	private boolean autoCreate;
 	
-	private Long driverGrade_id;
-	private String drvLicenseNo;
+	private Long driverGrade_id, driver_id;
+	private String drvLicenseNo, drvNo;
 	private Date drvLicenseExpiryDate;
 	private String guarantor;
 	private UploadedFile certFile, driverslicPhoto;
-	private PartnerDriver driver;
+	private PartnerDriver driver, selDriver;
 	private Vector<PartnerDriver> drivers;
 	
+	private Long approver_id;
 	private PartnerDriverOvertime overtime;
 	private Date overtimeStDate, overtimeEndDate;
 	private Vector<PartnerDriverOvertime> overtimes, myOvertimes;
@@ -114,9 +119,11 @@ public class UserMBean implements Serializable
 	private PartnerDriverOvertimeRequest overtimeReq, selectedOvertimeReq;
 	private Vector<PartnerDriverOvertimeRequest> myOvertimeReqs, pendingOvertimeReqs;
 	
-	private PartnerDriverQuery dvrQuery;
+	private PartnerDriverQuery dvrQuery, selDvrQuery;
 	private Date queryStDate, queryEndDate;
-	private Vector<PartnerDriverQuery> dvrQueries;
+	private String queryStatus, finalQueryRemarks;
+	private boolean punishDriver;
+	private Vector<PartnerDriverQuery> dvrQueries, myPendingQueries;
 	
 	private DriverGrade driverGrade;
 	private Vector<DriverGrade> driverGrades;
@@ -133,6 +140,7 @@ public class UserMBean implements Serializable
 	private PartnerUser user;
 	private Vector<PartnerUser> users;
 	
+	private Long vehicle_id;
 	private Date audit_st, audit_end;
 	private Vector<Audit> audits;
 	
@@ -152,6 +160,7 @@ public class UserMBean implements Serializable
 	{
 		if(getPartner() != null && getPersonelsBatchExcel() != null)
 		{
+			String naration = "Batch load staffs: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			try
 			{
@@ -370,7 +379,6 @@ public class UserMBean implements Serializable
 							break;
 						else
 						{
-							// TODO: create user account here if needed
 							if(isAUser != null && isAUser.trim().equalsIgnoreCase("true"))
 							{
 								if(username != null && username.trim().length() > 0 && password != null && password.trim().length() > 0
@@ -531,6 +539,7 @@ public class UserMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += " Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "All personel created successfully.");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 					
@@ -540,6 +549,7 @@ public class UserMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += " Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create all personel. " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
@@ -553,6 +563,7 @@ public class UserMBean implements Serializable
 			finally
 			{
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 		}
 	}
@@ -567,7 +578,8 @@ public class UserMBean implements Serializable
 		{
 			case 1:
 			{
-				if(getPersonel().getFirstname() != null && getPersonel().getLastname() != null)
+				if(getPersonel().getFirstname() != null && getPersonel().getLastname() != null &&
+						getPersonel().getStaff_id() != null && !getPersonel().getStaff_id().isEmpty())
 				{
 					if(getPartnerPersonelPhoto() != null)
 					{
@@ -913,6 +925,8 @@ public class UserMBean implements Serializable
 				setPersonel_dept_id(getPersonel().getDepartment().getId());
 			if(getPersonel().getRegion() != null)
 				setPersonel_region_id(getPersonel().getRegion().getId());
+			if(getPersonel().getUnit() != null)
+				setPersonel_unit_id(getPersonel().getUnit().getId());
 			
 			return "edit_staff?faces-redirect=true";
 		}
@@ -954,8 +968,10 @@ public class UserMBean implements Serializable
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void save(int i)
 	{
+		String naration = "";
 		GeneralDAO gDAO = new GeneralDAO();
 		boolean ret = false;
 		boolean validated = false;
@@ -965,6 +981,7 @@ public class UserMBean implements Serializable
 			{
 				if(getDept().getName() != null && getPartner() != null)
 				{
+					naration = "Create department: " + getDept().getName();
 					if(getDivision_id() != null)
 					{
 						Object obj = gDAO.find(Division.class, getDivision_id());
@@ -999,6 +1016,7 @@ public class UserMBean implements Serializable
 			{
 				if(getRegion().getName() != null && getPartner() != null)
 				{
+					naration = "Create region: " + getRegion().getName();
 					getRegion().setPartner(getPartner());
 					getRegion().setCreatedBy(dashBean.getUser());
 					getRegion().setCrt_dt(new Date());
@@ -1016,8 +1034,10 @@ public class UserMBean implements Serializable
 			}
 			case 3: // personel
 			{
-				if(getPersonel().getFirstname() != null && getPersonel().getLastname() != null)
+				if(getPersonel().getFirstname() != null && getPersonel().getLastname() != null &&
+						getPersonel().getStaff_id() != null && !getPersonel().getStaff_id().isEmpty())
 				{
+					naration = "Create staff: " + getPersonel().getFirstname() + " " + getPersonel().getLastname();
 					if(getPartnerPersonelPhoto() != null)
 					{
 						getPersonel().setPhoto(getPartnerPersonelPhoto().getContents());
@@ -1197,6 +1217,7 @@ public class UserMBean implements Serializable
 				{
 					if(getUser().getPassword().equals(getCpassword()))
 					{
+						naration += "Create new user: " + getUser().getUsername();
 						getUser().setActive(true);
 						getUser().setCreatedBy(dashBean.getUser());
 						getUser().setCrt_dt(new Date());
@@ -1228,6 +1249,7 @@ public class UserMBean implements Serializable
 			{
 				if(getMrole().getName() != null)
 				{
+					naration = "Create new role: " + getMrole().getName();
 					getMrole().setCreatedBy(dashBean.getUser());
 					getMrole().setCrt_dt(new Date());
 					getMrole().setDefaultRole(false);
@@ -1290,38 +1312,160 @@ public class UserMBean implements Serializable
 			}
 			case 6: // driver overtime
 			{
-				if(getDriver() != null && getOvertime().getOvertimehours() > 0 && getOvertime().getReason() != null 
-						&& getOvertime().getTranDate() != null)
-				{
+				if(getDriver() != null && getOvertimeReq().getStart_time() != null && getOvertimeReq().getReason() != null && 
+						getOvertimeReq().getTranDate() != null && getOvertimeReq().getEnd_time() != null &&
+						getApprover_id() != null) {
+					naration = "Submit driver overtime: " + getDriver().getPersonel().getFirstname() + " " + getDriver().getPersonel().getLastname();
 					validated = true;
-					getOvertime().setCreatedBy(dashBean.getUser());
-					getOvertime().setCrt_dt(new Date());
-					getOvertime().setDriver(getDriver());
-					gDAO.startTransaction();
-					ret = gDAO.save(getOvertime());
-					if(ret)
-					{
-						setOvertime(null);
-						setOvertimes(null);
+					Query q2 = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:pp_id");
+					q2.setParameter("pp_id", getApprover_id());
+					Object puObj = gDAO.search(q2, 0);
+					if(puObj != null) {
+						Vector<PartnerUser> puList = (Vector<PartnerUser>)puObj;
+						for(PartnerUser pu : puList)
+							getOvertimeReq().setApprovedBy(pu);
+					}
+					if(getOvertimeReq().getApprovedBy() != null && getOvertimeReq().getAmountPerHour() > 0 &&
+							getOvertimeReq().getOvertimehours() > 0) {
+						getOvertimeReq().setApprovalStatus("PENDING");
+						getOvertimeReq().setCreatedBy(dashBean.getUser());
+						getOvertimeReq().setCrt_dt(new Date());
+						getOvertimeReq().setDriver(getDriver());
+						getOvertimeReq().setPartner(getDriver().getPartner());
+						gDAO.startTransaction();
+						ret = gDAO.save(getOvertimeReq());
+						if(ret) {
+							StringBuilder sb = new StringBuilder("<html><body>");
+							sb.append("<p>Hello,</p>");
+							sb.append("<p>Overtime request for driver: ").append(getOvertimeReq().getDriver().getPersonel().getFirstname()).append(" ").append(getOvertimeReq().getDriver().getPersonel().getLastname()).append(" was submitted and requires your approval. Please login to the portal to attend to this request!");
+							sb.append("<p>Regards<br/>FMS</p>");
+							sb.append("</body></html>");
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{getOvertimeReq().getApprovedBy().getPersonel().getEmail()}, "Driver Overtime Request ", sb.toString());
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							try {
+								SMSGateway.sendSMS("FMS", getOvertimeReq().getApprovedBy().getPersonel().getPhone(), "Overtime request for driver " + getOvertimeReq().getDriver().getPersonel().getFirstname() + " " + getOvertimeReq().getDriver().getPersonel().getLastname() + " was submitted and requires your approval. Please login to the portal to attend to this request!");
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							setOvertimeReq(null);
+							setOvertimes(null);
+							setMyOvertimeReqs(null);
+						}
+					} else {
+						ret = false;
+						naration += " Status: Failed: Approver, overtime duration hours or amount per hour is not valid! Please contact your system administrator!";
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Approver, overtime duration hours or amount per hour is not valid! Please contact your system administrator!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
 				}
 				break;
 			}
 			case 7: // driver query
 			{
+				//TODO: A new function is required for driver to respond and then a final query is submitted.
 				if(getDriver() != null && getDvrQuery().getQueryGrade() != null && getDvrQuery().getQueryRemarks() != null 
 						&& getDvrQuery().getTranDate() != null)
 				{
+					naration = "Submit driver query: " + getDriver().getPersonel().getFirstname() + " " + getDriver().getPersonel().getLastname();
 					validated = true;
+					getDvrQuery().setStatus("PENDING");
 					getDvrQuery().setCreatedBy(dashBean.getUser());
 					getDvrQuery().setCrt_dt(new Date());
 					getDvrQuery().setDriver(getDriver());
 					gDAO.startTransaction();
 					ret = gDAO.save(getDvrQuery());
-					if(ret)
-					{
+					if(ret) {
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						sb.append("<p>You have been queried: Grade: ").append(getDvrQuery().getQueryGrade()).append(" Query: ").append(getDvrQuery().getQueryRemarks()).append(". You can login to the platform to submit your own comment to defend yourself. If you don't put your comment in soon enough, the query may be made purnishable!");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{getDvrQuery().getDriver().getPersonel().getEmail()}, "Driver Query", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						try {
+							SMSGateway.sendSMS("FMS", getDvrQuery().getDriver().getPersonel().getPhone(), "You have been queried. You can login to the platform to submit your own comment to defend yourself. If you don't put your comment in soon enough, the query may be made purnishable!");
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						
 						setDvrQuery(null);
 						setDvrQueries(null);
+					}
+				}
+				break;
+			}
+			case 77: // make final decision on driver query
+			{
+				if(getDriver() != null && getSelDvrQuery() != null && getSelDvrQuery().getId() != null && getFinalQueryRemarks() != null)
+				{
+					getSelDvrQuery().setFinalQueryRemarks(getFinalQueryRemarks());
+					getSelDvrQuery().setPunishDriver(isPunishDriver());
+					
+					naration = "Submit final decision on driver query: " + getDriver().getPersonel().getFirstname() + " " + getDriver().getPersonel().getLastname();
+					validated = true;
+					getSelDvrQuery().setStatus("CLOSED");
+					getSelDvrQuery().setFinalQueryRemarksDate(new Date());
+					gDAO.startTransaction();
+					ret = gDAO.update(getSelDvrQuery());
+					if(ret) {
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						sb.append("<p>A final decision has been submitted on your query for date: ").append(getSelDvrQuery().getTranDate()).append(". Final Decision: ").append(getSelDvrQuery().getFinalQueryRemarks()).append(" Purnishable: ").append(getSelDvrQuery().isPunishDriver() ? "Yes." : "No.");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelDvrQuery().getDriver().getPersonel().getEmail()}, "Final Decision on Driver Query", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						try {
+							SMSGateway.sendSMS("FMS", getSelDvrQuery().getDriver().getPersonel().getPhone(), "A final decision that is " + (getSelDvrQuery().isPunishDriver() ? "purnishable" : "not purnishable") + " has been made on your query submitted on " + getSelDvrQuery().getTranDate());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						
+						setSelDvrQuery(null);
+						setDvrQueries(null);
+					}
+				}
+				break;
+			}
+			case 777: // driver response to query
+			{
+				if(dashBean.getDriver() != null && getSelDvrQuery() != null && getSelDvrQuery().getId() != null && 
+						getSelDvrQuery().getDriverResponse() != null)
+				{
+					naration = "Submit query response for query on: " + getSelDvrQuery().getTranDate();
+					validated = true;
+					getSelDvrQuery().setStatus("DRIVER_RESPONDED");
+					getSelDvrQuery().setDriverResponseDate(new Date());
+					gDAO.startTransaction();
+					ret = gDAO.update(getSelDvrQuery());
+					if(ret) {
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						sb.append("<p>Driver ").append(getSelDvrQuery().getDriver().getPersonel().getFirstname()).append(" ").append(getSelDvrQuery().getDriver().getPersonel().getLastname()).append(" had responded to query you submitted for him/her on ").append(getSelDvrQuery().getTranDate()).append(".<br/><br/>Driver's Response: ").append(getSelDvrQuery().getDriverResponse()).append("<br/><br/>You can login to the platform to submit your final decision on the query.");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelDvrQuery().getCreatedBy().getPersonel().getEmail()}, "Driver Response to Query", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						try {
+							SMSGateway.sendSMS("FMS", getSelDvrQuery().getCreatedBy().getPersonel().getPhone(), "Driver " + (getSelDvrQuery().getDriver().getPersonel().getFirstname() + " " + getSelDvrQuery().getDriver().getPersonel().getLastname()) + " has responded to query you submitted for him/her on " + getSelDvrQuery().getTranDate());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						
+						setSelDvrQuery(null);
+						setMyPendingQueries(null);
 					}
 				}
 				break;
@@ -1333,6 +1477,7 @@ public class UserMBean implements Serializable
 					validated = true;
 					if(getUser().getPassword().equals(getCpassword()))
 					{
+						naration = "Create user: " + getUser().getUsername();
 						getUser().setActive(true);
 						getUser().setCreatedBy(dashBean.getUser());
 						getUser().setCrt_dt(new Date());
@@ -1379,6 +1524,9 @@ public class UserMBean implements Serializable
 			}
 			case 9: // plain new driver
 			{
+				try {
+					naration = "Create driver: " + getPersonel().getFirstname() + " " + getPersonel().getLastname();
+				} catch(Exception ex){}
 				validated = true;
 				PartnerDriver driver = new PartnerDriver();
 				driver.setActive(true);
@@ -1387,6 +1535,7 @@ public class UserMBean implements Serializable
 				driver.setPartner(getPartner());
 				driver.setPersonel(getPersonel());
 				
+				driver.setDriverNo(getDrvNo());
 				driver.setDrvLicenseNo(getDrvLicenseNo());
 				driver.setGuarantor(getGuarantor());
 				if(getCertFile() != null)
@@ -1445,6 +1594,7 @@ public class UserMBean implements Serializable
 			{
 				if(getSubsidiary().getName() != null && getPartner() != null)
 				{
+					naration = "Create subsidiary: " + getSubsidiary().getName();
 					getSubsidiary().setPartner(getPartner());
 					getSubsidiary().setCreatedBy(dashBean.getUser());
 					getSubsidiary().setCrt_dt(new Date());
@@ -1463,6 +1613,7 @@ public class UserMBean implements Serializable
 			{
 				if(getDivision().getName() != null && getPartner() != null)
 				{
+					naration = "Create division: " + getDivision().getName();
 					getDivision().setPartner(getPartner());
 					getDivision().setCreatedBy(dashBean.getUser());
 					getDivision().setCrt_dt(new Date());
@@ -1481,6 +1632,7 @@ public class UserMBean implements Serializable
 			{
 				if(getUnit().getName() != null && getPartner() != null)
 				{
+					naration = "Create unit: " + getUnit().getName();
 					if(getDepartment_id() != null)
 					{
 						Object obj = gDAO.find(Department.class, getDepartment_id());
@@ -1512,20 +1664,78 @@ public class UserMBean implements Serializable
 			}
 			case 13: // create overtime request
 			{
-				if(getOvertimeReq().getOvertimehours() > 0 && getOvertimeReq().getReason() != null && getOvertimeReq().getTranDate() != null)
-				{
+				if(getOvertimeReq().getStart_time() != null && getOvertimeReq().getReason() != null && 
+						getOvertimeReq().getTranDate() != null && getOvertimeReq().getEnd_time() != null &&
+						getApprover_id() != null) {
+					naration = "Create driver overtime request: ";
+					try {
+						naration += dashBean.getDriver().getPersonel().getFirstname() + " " + dashBean.getDriver().getPersonel().getLastname();
+					} catch(Exception ex){}
 					validated = true;
-					getOvertimeReq().setApprovalStatus("PENDING");
-					getOvertimeReq().setCreatedBy(dashBean.getUser());
-					getOvertimeReq().setCrt_dt(new Date());
-					getOvertimeReq().setDriver(dashBean.getDriver());
-					getOvertimeReq().setPartner(dashBean.getUser().getPartner());
-					gDAO.startTransaction();
-					ret = gDAO.save(getOvertimeReq());
-					if(ret)
-					{
-						setOvertimeReq(null);
-						setMyOvertimeReqs(null);
+					
+					Query q2 = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:pp_id");
+					q2.setParameter("pp_id", getApprover_id());
+					Object puObj = gDAO.search(q2, 0);
+					if(puObj != null) {
+						Vector<PartnerUser> puList = (Vector<PartnerUser>)puObj;
+						for(PartnerUser pu : puList)
+							getOvertimeReq().setApprovedBy(pu);
+					}
+					/*q2 = gDAO.createQuery("Select e from PartnerSetting e where e.partner.id=:partner_id");
+					q2.setParameter("partner_id", dashBean.getUser().getPartner().getId());
+					Object psObj = gDAO.search(q2, 0);
+					if(psObj != null) {
+						PartnerSetting sett = null;
+						Vector<PartnerSetting> psList = (Vector<PartnerSetting>)psObj;
+						for(PartnerSetting ps : psList)
+							sett = ps;
+						if(sett != null) {
+							double amtHour = sett.getOverTimeAmountPerHour();
+							long timediff = getOvertimeReq().getEnd_time().getTime() - getOvertimeReq().getStart_time().getTime();
+							long hour = 1000*60*60;
+							int divide = 0;
+							try {
+								divide = Integer.parseInt(""+timediff/hour);
+							} catch(Exception ex){}
+							if(divide <= 0)
+								divide = 1;
+							getOvertimeReq().setAmountPerHour(amtHour);
+							getOvertimeReq().setOvertimehours(divide);
+						}
+					}*/
+					if(getOvertimeReq().getApprovedBy() != null && getOvertimeReq().getAmountPerHour() > 0 &&
+							getOvertimeReq().getOvertimehours() > 0) {
+						getOvertimeReq().setApprovalStatus("PENDING");
+						getOvertimeReq().setCreatedBy(dashBean.getUser());
+						getOvertimeReq().setCrt_dt(new Date());
+						getOvertimeReq().setDriver(dashBean.getDriver());
+						getOvertimeReq().setPartner(dashBean.getUser().getPartner());
+						gDAO.startTransaction();
+						ret = gDAO.save(getOvertimeReq());
+						if(ret) {
+							StringBuilder sb = new StringBuilder("<html><body>");
+							sb.append("<p>Hello,</p>");
+							sb.append("<p>Driver ").append(getOvertimeReq().getDriver().getPersonel().getFirstname()).append(" ").append(getOvertimeReq().getDriver().getPersonel().getLastname()).append(" submitted a overtime request that requires your approval. Please login to the portal to attend to this request!");
+							sb.append("<p>Regards<br/>FMS</p>");
+							sb.append("</body></html>");
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{getOvertimeReq().getApprovedBy().getPersonel().getEmail()}, "Driver Overtime Request ", sb.toString());
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							try {
+								SMSGateway.sendSMS("FMS", getOvertimeReq().getApprovedBy().getPersonel().getPhone(), "Driver " + getOvertimeReq().getDriver().getPersonel().getFirstname() + " " + getOvertimeReq().getDriver().getPersonel().getLastname() + " submitted a overtime request that requires your approval. Please login to the portal to attend to this request!");
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							setOvertimeReq(null);
+							setMyOvertimeReqs(null);
+						}
+					} else {
+						ret = false;
+						naration += " Status: Failed: Approver, overtime duration hours or amount per hour is not valid! Please contact your system administrator!";
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Approver, overtime duration hours or amount per hour is not valid! Please contact your system administrator!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
 				}
 				
@@ -1534,24 +1744,22 @@ public class UserMBean implements Serializable
 			case 14: // attend to overtime requests
 			{
 				int selcount = 0;
-				if(getPendingOvertimeReqs() != null && getPendingOvertimeReqs().size() > 0)
-				{
-					validated = true;
+				if(getPendingOvertimeReqs() != null && getPendingOvertimeReqs().size() > 0) {
+					naration = "Attend to overtime request: ";
 					gDAO.startTransaction();
-					for(PartnerDriverOvertimeRequest e : getPendingOvertimeReqs())
-					{
-						if(e.isSelected())
-						{
-							selcount++;
+					for(PartnerDriverOvertimeRequest e : getPendingOvertimeReqs()) {
+						if(e.isSelected()) {
+							naration += e.getDriver().getPersonel().getFirstname() + " " + e.getDriver().getPersonel().getLastname() + " (" + e.getTranDate() + ")";
+							selcount+=1;
 							e.setApprovalStatus(getApprovalStatus());
 							e.setApprovedBy(dashBean.getUser());
 							e.setApprovedDate(new Date());
 							ret = gDAO.update(e);
-							if(ret)
-							{
-								if(getApprovalStatus().equalsIgnoreCase("APPROVED"))
-								{
+							if(ret) {
+								if(getApprovalStatus().equalsIgnoreCase("APPROVED")) {
 									PartnerDriverOvertime ov = new PartnerDriverOvertime();
+									ov.setStart_time(e.getStart_time());
+									ov.setEnd_time(e.getEnd_time());
 									ov.setAmountPerHour(e.getAmountPerHour());
 									ov.setCreatedBy(dashBean.getUser());
 									ov.setCrt_dt(new Date());
@@ -1569,13 +1777,12 @@ public class UserMBean implements Serializable
 								break;
 						}
 					}
-					if(selcount == 0)
-					{
+					if(selcount == 0) {
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No pending overtime request was selected!");
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
-					else
-					{
+					else {
+						validated = true;
 						setPendingOvertimeReqs(null);
 					}
 				}
@@ -1592,15 +1799,21 @@ public class UserMBean implements Serializable
 			if(ret)
 			{
 				gDAO.commit();
+				naration += " Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			else
 			{
 				gDAO.rollback();
+				if(!naration.contains("Status:"))
+					naration += " Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create entity. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1635,30 +1848,30 @@ public class UserMBean implements Serializable
 
 	@SuppressWarnings("unchecked")
 	public Partner getPartner() {
-		if(!dashBean.getUser().getPartner().isSattrak())
-		{
+		if(!dashBean.getUser().getPartner().isSattrak()) {
 			partner = dashBean.getUser().getPartner();
 			sub = dashBean.getSubscription();
 		}
-		else
-		{
+		else {
 			sub = null;
-			if(getPartner_id() != null)
-			{
-				partner = (Partner)new GeneralDAO().find(Partner.class, getPartner_id());
-				if(partner!= null && !partner.isSattrak())
-				{
-					GeneralDAO gDAO = new GeneralDAO();
+			if(getPartner_id() != null) {
+				GeneralDAO gDAO = new GeneralDAO();
+				partner = (Partner)gDAO.find(Partner.class, getPartner_id());
+				if(partner != null && !partner.isSattrak()) {
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
 					params.put("partner", partner);
 					params.put("active", true);
 					params.put("expired", false);
 					Object foundSubs = gDAO.search("PartnerSubscription", params);
-					if(foundSubs != null)
-					{
-						sub = ((Vector<PartnerSubscription>)foundSubs).get(0);
+					if(foundSubs != null) {
+						Vector<PartnerSubscription> subList = new Vector<PartnerSubscription>();
+						if(subList.size() > 0)
+							sub = ((Vector<PartnerSubscription>)foundSubs).get(0);
 					}
 				}
+				gDAO.destroy();
+			} else {
+				partner = dashBean.getUser().getPartner();
 			}
 		}
 		return partner;
@@ -2029,11 +2242,16 @@ public class UserMBean implements Serializable
 				Hashtable<String, Object> params = new Hashtable<String, Object>();
 				params.put("partner", getPartner());
 				
-				if(getPersonel_dept_id() != null && getPersonel_dept_id() > 0)
-				{
+				if(getPersonel_dept_id() != null && getPersonel_dept_id() > 0) {
 					Object dp = gDAO.find(Department.class, getPersonel_dept_id());
 					if(dp != null)
 						params.put("department", (Department)dp);
+				}
+				
+				if(getPersonel_unit_id() != null && getPersonel_unit_id() > 0) {
+					Object obj = gDAO.find(Unit.class, getPersonel_unit_id());
+					if(obj != null)
+						params.put("unit", (Unit)obj);
 				}
 				
 				if(getPersonel_region_id() != null && getPersonel_region_id() > 0)
@@ -2163,12 +2381,28 @@ public class UserMBean implements Serializable
 		this.driverGrade_id = driverGrade_id;
 	}
 
+	public Long getDriver_id() {
+		return driver_id;
+	}
+
+	public void setDriver_id(Long driver_id) {
+		this.driver_id = driver_id;
+	}
+
 	public String getDrvLicenseNo() {
 		return drvLicenseNo;
 	}
 
 	public void setDrvLicenseNo(String drvLicenseNo) {
 		this.drvLicenseNo = drvLicenseNo;
+	}
+
+	public String getDrvNo() {
+		return drvNo;
+	}
+
+	public void setDrvNo(String drvNo) {
+		this.drvNo = drvNo;
 	}
 
 	public Date getDrvLicenseExpiryDate() {
@@ -2202,6 +2436,19 @@ public class UserMBean implements Serializable
 	public void setDriverslicPhoto(UploadedFile driverslicPhoto) {
 		this.driverslicPhoto = driverslicPhoto;
 	}
+	
+	public void setCurDriver(long driver_id) {
+		System.out.println("settting driver_id: " + driver_id);
+		if(drivers != null) {
+			for(PartnerDriver pd : drivers) {
+				if(pd.getId().longValue() == driver_id) {
+					driver = pd;
+					System.out.println("set.");
+					break;
+				}
+			}
+		}
+	}
 
 	public PartnerDriver getDriver() {
 		if(driver == null)
@@ -2211,6 +2458,15 @@ public class UserMBean implements Serializable
 
 	public void setDriver(PartnerDriver driver) {
 		this.driver = driver;
+		System.out.println("setting driver");
+	}
+
+	public PartnerDriver getSelDriver() {
+		return selDriver;
+	}
+
+	public void setSelDriver(PartnerDriver selDriver) {
+		this.selDriver = selDriver;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -2218,19 +2474,15 @@ public class UserMBean implements Serializable
 		boolean research = true;
 		if(drivers == null || drivers.size() == 0)
 			research = true;
-		else if(drivers.size() > 0)
-		{
-			if(getPartner() != null)
-			{
+		else if(drivers.size() > 0) {
+			if(getPartner() != null) {
 				if(drivers.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
-		if(research)
-		{
+		if(research) {
 			drivers = null;
-			if(getPartner() != null)
-			{
+			if(getPartner() != null) {
 				GeneralDAO gDAO = new GeneralDAO();
 				Hashtable<String, Object> params = new Hashtable<String, Object>();
 				params.put("partner", getPartner());
@@ -2260,6 +2512,14 @@ public class UserMBean implements Serializable
 
 	public void setDrivers(Vector<PartnerDriver> drivers) {
 		this.drivers = drivers;
+	}
+
+	public Long getApprover_id() {
+		return approver_id;
+	}
+
+	public void setApprover_id(Long approver_id) {
+		this.approver_id = approver_id;
 	}
 
 	public PartnerDriverOvertime getOvertime() {
@@ -2332,9 +2592,25 @@ public class UserMBean implements Serializable
 		this.overtimes = overtimes;
 	}
 
+	@SuppressWarnings("unchecked")
 	public PartnerDriverOvertimeRequest getOvertimeReq() {
 		if(overtimeReq == null)
 			overtimeReq = new PartnerDriverOvertimeRequest();
+		if(overtimeReq.getAmountPerHour() <= 0) {
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q2 = gDAO.createQuery("Select e from PartnerSetting e where e.partner.id=:partner_id");
+			q2.setParameter("partner_id", dashBean.getUser().getPartner().getId());
+			Object psObj = gDAO.search(q2, 0);
+			if(psObj != null) {
+				PartnerSetting sett = null;
+				Vector<PartnerSetting> psList = (Vector<PartnerSetting>)psObj;
+				for(PartnerSetting ps : psList)
+					sett = ps;
+				if(sett != null)
+					overtimeReq.setAmountPerHour(sett.getOverTimeAmountPerHour());
+			}
+			gDAO.destroy();
+		}
 		return overtimeReq;
 	}
 
@@ -2413,27 +2689,23 @@ public class UserMBean implements Serializable
 		boolean research = true;
 		if(pendingOvertimeReqs == null || pendingOvertimeReqs.size() == 0)
 			research = true;
-		else if(pendingOvertimeReqs.size() > 0)
-		{
-			if(getPartner() != null)
-			{
+		else if(pendingOvertimeReqs.size() > 0) {
+			if(getPartner() != null) {
 				if(pendingOvertimeReqs.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
 					research = false;
 			}
 		}
-		if(research)
-		{
+		if(research) {
 			pendingOvertimeReqs = null;
-			if(getPartner() != null)
-			{
+			if(getPartner() != null) {
 				GeneralDAO gDAO = new GeneralDAO();
 				
-				Query q = gDAO.createQuery("Select e from PartnerDriverOvertimeRequest e where e.partner = :partner and e.approvalStatus = 'PENDING'");
+				Query q = gDAO.createQuery("Select e from PartnerDriverOvertimeRequest e where e.partner = :partner and e.approvalStatus = 'PENDING' and e.approvedBy=:approvedBy");
 				q.setParameter("partner", getPartner());
+				q.setParameter("approvedBy", dashBean.getUser());
 				
 				Object dpsObj = gDAO.search(q, 0);
-				if(dpsObj != null)
-				{
+				if(dpsObj != null) {
 					pendingOvertimeReqs = (Vector<PartnerDriverOvertimeRequest>)dpsObj;
 				}
 				gDAO.destroy();
@@ -2457,6 +2729,14 @@ public class UserMBean implements Serializable
 		this.dvrQuery = dvrQuery;
 	}
 
+	public PartnerDriverQuery getSelDvrQuery() {
+		return selDvrQuery;
+	}
+
+	public void setSelDvrQuery(PartnerDriverQuery selDvrQuery) {
+		this.selDvrQuery = selDvrQuery;
+	}
+
 	public Date getQueryStDate() {
 		return queryStDate;
 	}
@@ -2473,8 +2753,31 @@ public class UserMBean implements Serializable
 		this.queryEndDate = queryEndDate;
 	}
 
-	public void resetQueries()
-	{
+	public String getQueryStatus() {
+		return queryStatus;
+	}
+
+	public void setQueryStatus(String queryStatus) {
+		this.queryStatus = queryStatus;
+	}
+
+	public String getFinalQueryRemarks() {
+		return finalQueryRemarks;
+	}
+
+	public void setFinalQueryRemarks(String finalQueryRemarks) {
+		this.finalQueryRemarks = finalQueryRemarks;
+	}
+
+	public boolean isPunishDriver() {
+		return punishDriver;
+	}
+
+	public void setPunishDriver(boolean punishDriver) {
+		this.punishDriver = punishDriver;
+	}
+
+	public void resetQueries() {
 		setDvrQueries(null);
 	}
 	@SuppressWarnings("unchecked")
@@ -2497,16 +2800,25 @@ public class UserMBean implements Serializable
 			{
 				GeneralDAO gDAO = new GeneralDAO();
 				
-				Query q = gDAO.createQuery("Select e from PartnerDriverQuery e where e.driver = :driver and (e.tranDate between :stdt and :enddt)");
-				q.setParameter("driver", getDriver());
-				q.setParameter("stdt", getQueryStDate());
-				q.setParameter("enddt", getQueryEndDate());
+				Query q = null;
+				if(getQueryStatus() != null && !getQueryStatus().isEmpty()) {
+					q = gDAO.createQuery("Select e from PartnerDriverQuery e where e.driver = :driver and (e.tranDate between :stdt and :enddt) and e.status=:status");
+					q.setParameter("driver", getDriver());
+					q.setParameter("stdt", getQueryStDate());
+					q.setParameter("enddt", getQueryEndDate());
+					q.setParameter("status", getQueryStatus());
+				} else {
+					q = gDAO.createQuery("Select e from PartnerDriverQuery e where e.driver = :driver and (e.tranDate between :stdt and :enddt)");
+					q.setParameter("driver", getDriver());
+					q.setParameter("stdt", getQueryStDate());
+					q.setParameter("enddt", getQueryEndDate());
+				}
 				
 				Object dpsObj = gDAO.search(q, 0);
-				if(dpsObj != null)
-				{
+				if(dpsObj != null) {
 					dvrQueries = (Vector<PartnerDriverQuery>)dpsObj;
 				}
+				gDAO.destroy();
 			}
 		}
 		return dvrQueries;
@@ -2514,6 +2826,32 @@ public class UserMBean implements Serializable
 
 	public void setDvrQueries(Vector<PartnerDriverQuery> dvrQueries) {
 		this.dvrQueries = dvrQueries;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<PartnerDriverQuery> getMyPendingQueries() {
+		if(dashBean.getDriver() != null && dashBean.getDriver().getId() != null) {
+			if(myPendingQueries == null || myPendingQueries.size() == 0) {
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Query q = gDAO.createQuery("Select e from PartnerDriverQuery e where e.driver = :driver and e.status=:status");
+				q.setParameter("driver", dashBean.getDriver());
+				q.setParameter("status", "PENDING");
+				
+				Object dpsObj = gDAO.search(q, 0);
+				if(dpsObj != null)
+					myPendingQueries = (Vector<PartnerDriverQuery>)dpsObj;
+				else
+					myPendingQueries = new Vector<PartnerDriverQuery>();
+				gDAO.destroy();
+			}
+		} else
+			myPendingQueries = new Vector<PartnerDriverQuery>();
+		return myPendingQueries;
+	}
+
+	public void setMyPendingQueries(Vector<PartnerDriverQuery> myPendingQueries) {
+		this.myPendingQueries = myPendingQueries;
 	}
 
 	public DriverGrade getDriverGrade() {
@@ -2870,6 +3208,25 @@ public class UserMBean implements Serializable
 		this.users = users;
 	}
 	
+	public Date getOvertimeSubmitMinDate() {
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.DATE, -7);
+		return c.getTime();
+	}
+	
+	public Date getOvertimeSubmitMaxDate() {
+		Calendar c = Calendar.getInstance();
+		return c.getTime();
+	}
+	
+	public Long getVehicle_id() {
+		return vehicle_id;
+	}
+
+	public void setVehicle_id(Long vehicle_id) {
+		this.vehicle_id = vehicle_id;
+	}
+
 	public Date getAudit_st() {
 		return audit_st;
 	}
@@ -2914,7 +3271,12 @@ public class UserMBean implements Serializable
 			{
 				if(getAudit_end() != null && getAudit_st() != null)
 				{
-					Query q = gDAO.createQuery("Select e from Audit e where e.user.partner=:partner and (e.action_dt between :st and :et) order by e.action_dt desc");
+					String qry = "Select e from Audit e where e.user.partner=:partner and (e.action_dt between :st and :et) order by e.action_dt desc";
+					if(getVehicle_id() != null && getVehicle_id() > 0)
+						qry = "Select e from Audit e where e.vehicle.id=:v_id and e.user.partner=:partner and (e.action_dt between :st and :et) order by e.action_dt desc";
+					Query q = gDAO.createQuery(qry);
+					if(getVehicle_id() != null && getVehicle_id() > 0)
+						q.setParameter("v_id", getVehicle_id());
 					q.setParameter("partner", getPartner());
 					q.setParameter("st", getAudit_st());
 					q.setParameter("et", getAudit_end());
@@ -2924,6 +3286,8 @@ public class UserMBean implements Serializable
 				{
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
 					params.put("user.partner", getPartner());
+					if(getVehicle_id() != null && getVehicle_id() > 0)
+						params.put("vehicle.id", getVehicle_id());
 					auditsObj = gDAO.search("Audit", params);
 				}
 				if(auditsObj != null)

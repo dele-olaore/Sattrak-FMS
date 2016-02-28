@@ -1,0 +1,67 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Drivers without valid licenses</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Drivers without valid licenses" action="#{dashboardBean.gotoPage('dashboard_drvlic', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid id="driversWithoutLicPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header"></f:facet>
+				
+				<p:dataTable id="driversWithoutLicTable" var="obj" value="#{dashboardBean.driversWithoutLicenseList}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" resizableColumns="true" scrollable="true">
+					<f:facet name="header">
+						Found record(s) [#{dashboardBean.driversWithoutLicenseList.size()}]
+					</f:facet>
+					
+					<p:column style="width:150px" sortBy="#{obj[1]}" headerText="First name" filterBy="#{obj[1]}" filterMatchMode="contains">
+						<h:outputText value="#{obj[1]}" />
+					</p:column>
+					<p:column style="width:150px" sortBy="#{obj[2]}" headerText="Last name" filterBy="#{obj[2]}" filterMatchMode="contains">
+						<h:outputText value="#{obj[2]}" />
+					</p:column>
+					<p:column style="width:100px" headerText="Action">
+						<p:commandButton value="Renew..." action="#{fleetBean.initDrvLicRenewal(dashboardBean.user.partner.id, obj[3])}" />
+					</p:column>
+					
+				</p:dataTable>
+				<br/><br/>
+				<f:facet name="footer">
+				<p:commandLink ajax="false">
+					<p:graphicImage value="/resources/images/excel.png" />
+					<p:dataExporter type="xls" target=":form:driversWithoutLicTable" fileName="drivers_without_license" />
+				</p:commandLink>
+		  		
+		  		<h:outputText value=" | " />
+		  		
+		  		<p:commandLink action="#{dashboardBean.gotoPage('manage_drivers', false)}" ajax="false">Manage Drivers</p:commandLink>
+		  		</f:facet>
+		  		</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

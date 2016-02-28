@@ -46,13 +46,16 @@
 							</p:selectOneMenu>
 							
 							<h:outputLabel for="lictdt" value="Transaction date: *" />
-							<p:calendar id="lictdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.driverLicense.tran_dt}" navigator="true" />
+							<p:calendar id="lictdt" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.driverLicense.tran_dt}" navigator="true" />
 							
 							<h:outputLabel for="licnumber" value="License No.: *" />
 					  		<p:inputText id="licnumber" value="#{fleetBean.driverLicense.drvLicenseNo}" />
 							
 							<h:outputLabel for="licstdt" value="License issue date: *" />
-							<p:calendar id="licstdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.driverLicense.lic_start_dt}" navigator="true" />
+							<p:calendar id="licstdt" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.driverLicense.lic_start_dt}" navigator="true" />
+							
+							<h:outputLabel for="liceddt" value="License expiry date: " />
+							<p:calendar id="liceddt" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.driverLicense.lic_end_dt}" navigator="true" />
 							
 							<h:outputLabel for="liccost" value="Cost: *" />
 					  		<p:inputText id="liccost" value="#{fleetBean.driverLicense.tranAmt}" />
@@ -89,51 +92,54 @@
 				  			<p:commandButton ajax="false" action="#{fleetBean.resetDrvLicenses}" value="Search" icon="ui-icon-search" style="margin:0"/>
 				  		</f:facet>
 					</p:panelGrid>
+					
 					<p:dataTable id="licensesTable" var="obj" value="#{fleetBean.driverLicenses}"
 						paginator="true" rows="50"
 						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						rowsPerPageTemplate="10,20,50" resizableColumns="true"
+						scrollable="true">
 						<f:facet name="header">
 							Found driver license(s)
 						</f:facet>
 						
-						<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver" filterBy="#{obj.driver.personel.firstname}" filterMatchMode="contains">
+						<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver" filterBy="#{obj.driver.personel.firstname}" filterMatchMode="contains" style="width:250px">
 							<h:outputText value="#{obj.driver.personel.firstname} {obj.driver.personel.lastname}" />
 						</p:column>
 						
-						<p:column sortBy="#{obj.tran_dt}" headerText="Transaction date">
+						<p:column sortBy="#{obj.tran_dt}" headerText="Transaction date" style="width:150px">
 							<h:outputText value="#{obj.tran_dt}" />
 						</p:column>
-						<p:column sortBy="#{obj.tranType.name}" headerText="Transaction type" filterBy="#{obj.tranType.name}" filterMatchMode="contains">
+						<p:column sortBy="#{obj.tranType.name}" headerText="Transaction type" filterBy="#{obj.tranType.name}" filterMatchMode="contains" style="width:150px">
 							<h:outputText value="#{obj.tranType.name}" rendered="#{obj.tranType != null}" />
 						</p:column>
-						<p:column sortBy="#{obj.drvLicenseNo}" headerText="License No.">
+						<p:column sortBy="#{obj.drvLicenseNo}" headerText="License No." style="width:150px">
 							<h:outputText value="#{obj.drvLicenseNo}" />
 						</p:column>
-						<p:column sortBy="#{obj.lic_start_dt}" headerText="Issue date">
+						<p:column sortBy="#{obj.lic_start_dt}" headerText="Issue date" style="width:150px">
 							<h:outputText value="#{obj.lic_start_dt}" />
 						</p:column>
-						<p:column sortBy="#{obj.lic_end_dt}" headerText="Expiry date">
+						<p:column sortBy="#{obj.lic_end_dt}" headerText="Expiry date" style="width:150px">
 							<h:outputText value="#{obj.lic_end_dt}" />
 						</p:column>
-						<p:column sortBy="#{obj.amt}" headerText="Cost">
+						<p:column sortBy="#{obj.amt}" headerText="Cost" style="width:150px">
 							<h:outputText value="#{obj.tranAmt}" />
 						</p:column>
-						<p:column headerText="Document">
+						<p:column headerText="Document" style="width:150px">
 							<p:commandLink value="Download" rendered="#{obj.document != null}" />
 						</p:column>
-						<p:column sortBy="#{obj.vendor.name}" headerText="Vendor">
+						<p:column sortBy="#{obj.vendor.name}" headerText="Vendor" style="width:150px">
 							<h:outputText value="#{obj.vendor.name}" rendered="#{obj.vendor != null}" />
 							<h:outputText value="None" rendered="#{obj.vendor == null}" />
 						</p:column>
-						<p:column headerText="Created">
+						<p:column headerText="Created" style="width:250px">
 							On: <h:outputText value="#{obj.crt_dt}" /><br/>
 							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 						</p:column>
-						<p:column headerText="">
-							<p:commandLink value="Update" onclick="return false;" />
+						<p:column headerText="" style="width:100px">
+							<p:commandLink value="Update" onclick="alert('Feature not available at the moment!');return false;" />
 						</p:column>
 					</p:dataTable>
+					
 				</p:tab>
 			</p:tabView>
 			</p:outputPanel>

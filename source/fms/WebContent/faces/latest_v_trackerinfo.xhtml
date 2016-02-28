@@ -59,10 +59,11 @@
 		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.searchTrackerInfo2}" value="Search" icon="ui-icon-search" style="margin:0"/>
 		  		</f:facet>
 			</p:panelGrid>
+			<p:scrollPanel mode="native" style="width:100%;height:500px">
 			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.tvehicles2}"
 				paginator="true" rows="10"
 				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-				rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+				rowsPerPageTemplate="10,20,50" style="width:150%" resizableColumns="true">
 				<f:facet name="header">
 					Available tracker data
 				</f:facet>
@@ -88,6 +89,14 @@
 					<h:outputText value="#{obj.trackerData.get(0).odometer}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
 					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
+				<p:column headerText="Location" sortBy="#{obj.trackerData.get(0).address}">
+					<h:outputText value="#{obj.trackerData.get(0).address}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
+				</p:column>
+				<p:column headerText="Fuel Level" sortBy="#{obj.trackerData.get(0).fuelLevel}">
+					<h:outputText value="#{obj.trackerData.get(0).fuelLevel}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
+					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
+				</p:column>
 				<p:column headerText="Battery Volt." sortBy="#{obj.trackerData.get(0).batteryVoltage}">
 					<h:outputText value="#{obj.trackerData.get(0).batteryVoltage}" rendered="#{obj.trackerData != null and obj.trackerData.size() > 0}" />
 					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
@@ -101,6 +110,7 @@
 					<h:outputText value="N/A" rendered="#{obj.trackerData == null or obj.trackerData.size() == 0}" />
 				</p:column>
 			</p:dataTable>
+			</p:scrollPanel>
 		</p:outputPanel>
 		</td>
 		</tr>

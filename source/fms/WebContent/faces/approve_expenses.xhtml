@@ -26,40 +26,51 @@
 				<p:tabView id="tabs" dynamic="true" cache="false">
 					<p:tab id="reqexp" title="Pending Expense Request(s)[#{expenseBean.pendingExpRequests.size()}]">
 						<p:panel id="mypendreqsPanel">
+						
 						<p:dataTable id="myPendExpsTable" var="obj" value="#{expenseBean.pendingExpRequests}"
 							paginator="true" rows="50"
 							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"><!-- binding="#{table}" -->
+							rowsPerPageTemplate="10,20,50" resizableColumns="true"
+							scrollable="true" scrollWidth="1220"><!-- binding="#{table}" -->
 							<f:facet name="header">
 								Pending expense request(s) [#{expenseBean.pendingExpRequests.size()}]
 							</f:facet>
 							
-							<p:column id="col1" headerText="">
+							<p:column id="col1" headerText="" style="width:10px">
 								<p:selectBooleanCheckbox value="#{obj.selected}" />
 							</p:column>
-							<p:column id="col2" headerText="Request Date">
+							<p:column id="col2" headerText="Request Date" style="width:150px">
 								<h:outputText value="#{obj.crt_dt}" />
 							</p:column>
-							<p:column id="col3" sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+							<p:column id="col3" sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains" style="width:150px">
 								<h:outputText value="#{obj.type.name}" />
 							</p:column>
-							<p:column id="col4" headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+							<p:column id="col4" headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains" style="width:250px">
 								<h:outputText value="#{obj.type.description}" />
 							</p:column>
-							<p:column id="col5" sortBy="#{obj.amount}" headerText="Amount">
+							<p:column headerText="Beneficiary" style="width:150px">
+								<h:outputText value="Vehicle: #{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}"/>
+								<h:outputText value="Staff: #{obj.personel.firstname} #{obj.personel.lastname}" rendered="#{obj.personel != null}"/>
+							</p:column>
+							<p:column headerText="MIS" style="width:150px">
+								<h:outputText value="Department: #{obj.misDepartment.name}" rendered="#{obj.misDepartment != null}"/>
+								<h:outputText value="Unit: #{obj.misUnit.name}" rendered="#{obj.misUnit != null}"/>
+							</p:column>
+							<p:column id="col5" sortBy="#{obj.amount}" headerText="Amount" style="width:150px">
 								<h:outputText value="#{obj.amount}" />
 							</p:column>
-							<p:column id="col6" sortBy="#{obj.expense_dt}" headerText="Expense Date">
+							<p:column id="col6" sortBy="#{obj.expense_dt}" headerText="Expense Date" style="width:150px">
 								<h:outputText value="#{obj.expense_dt}" />
 							</p:column>
-							<p:column id="col7" headerText="Remarks">
+							<p:column id="col7" headerText="Remarks" style="width:300px">
 								<h:outputText value="#{obj.remarks}" />
 							</p:column>
-							<p:column id="col8" headerText="Requester">
+							<p:column id="col8" headerText="Requester" style="width:300px">
 								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
 								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
 							</p:column>
 						</p:dataTable>
+						
 						<br/>
 						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 							<h:outputLabel for="apvstat" value="Approval Status: *" />
@@ -78,6 +89,54 @@
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.attendToExpenseRequest}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>
 						</p:panel>
+					</p:tab>
+					<p:tab id="myappvexps" title="Attended Expense Request(s)[#{expenseBean.myAttendedExpRequests.size()}]">
+						<p:scrollPanel mode="native" style="width:100%;height:500px">
+						<p:dataTable id="myAttendedExpsTable" var="obj" value="#{expenseBean.myAttendedExpRequests}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:150%" resizableColumns="true">
+							<f:facet name="header">
+								Attended expense request(s) [#{expenseBean.myAttendedExpRequests.size()}]
+							</f:facet>
+							
+							<p:column headerText="Request Date">
+								<h:outputText value="#{obj.crt_dt}" />
+							</p:column>
+							<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.name}" />
+							</p:column>
+							<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+								<h:outputText value="#{obj.type.description}" />
+							</p:column>
+							<p:column headerText="Beneficiary">
+								<h:outputText value="Vehicle: #{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}"/>
+								<h:outputText value="Staff: #{obj.personel.firstname} #{obj.personel.lastname}" rendered="#{obj.personel != null}"/>
+							</p:column>
+							<p:column headerText="MIS" style="width:150px">
+								<h:outputText value="Department: #{obj.misDepartment.name}" rendered="#{obj.misDepartment != null}"/>
+								<h:outputText value="Unit: #{obj.misUnit.name}" rendered="#{obj.misUnit != null}"/>
+							</p:column>
+							<p:column sortBy="#{obj.amount}" headerText="Amount">
+								<h:outputText value="#{obj.amount}" />
+							</p:column>
+							<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+								<h:outputText value="#{obj.expense_dt}" />
+							</p:column>
+							<p:column headerText="Remarks" filterBy="#{obj.remarks}" filterMatchMode="contains">
+								<h:outputText value="#{obj.remarks}" />
+							</p:column>
+							<p:column id="col8" headerText="Requester">
+								<h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" />
+								<h:outputText value="N/A" rendered="#{obj.createdBy == null}" />
+							</p:column>
+							<p:column headerText="Approval" sortBy="#{obj.approval_dt}">
+								Status: <h:outputText value="#{obj.approvalStatus}" /><br/>
+								Comment: <h:outputText value="#{obj.approvalComment}" /><br/>
+								Date: <h:outputText value="#{obj.approval_dt}" />
+							</p:column>
+						</p:dataTable>
+						</p:scrollPanel>
 					</p:tab>
 				</p:tabView>
 			</p:outputPanel>

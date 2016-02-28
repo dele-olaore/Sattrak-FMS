@@ -144,8 +144,7 @@ public class AppTypesMBean implements Serializable
 	
 	public void initFunctionModuleChange()
 	{
-		if(getFunction() != null)
-		{
+		if(getFunction() != null) {
 			setModule_id(getFunction().getModule().getId());
 		}
 	}
@@ -154,8 +153,8 @@ public class AppTypesMBean implements Serializable
 	public String saveAppTypeVersionEdit()
 	{
 		if(getAppTypeVersion().getId() != null &&
-				getAppTypeVersion().getVersionName() != null && getAppTypeVersion().getVersionName().trim().length() > 0)
-		{
+				getAppTypeVersion().getVersionName() != null && getAppTypeVersion().getVersionName().trim().length() > 0) {
+			String naration = "Editing application type version: " + getAppTypeVersion().getVersionName();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			
@@ -318,13 +317,19 @@ public class AppTypesMBean implements Serializable
 				setAppTypeVersion(null);
 				setAppTypes(null);
 				setAllAppTypeVersions(null);
+				
+				naration += ", Status: Success";
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
+			
+			saveAudit(naration);
 		}
 		else
 		{
@@ -470,6 +475,8 @@ public class AppTypesMBean implements Serializable
 	{
 		if(getModule().getName() != null && getModule().getDisplay_name() != null)
 		{
+			String naration = "Create new module: " + getModule().getName();
+			
 			getModule().setActive(true);
 			getModule().setCrt_dt(new Date());
 			getModule().setCreatedBy(dashBean.getUser());
@@ -484,14 +491,20 @@ public class AppTypesMBean implements Serializable
 				
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Module created successfully!.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Success";
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			saveAudit(naration);
 		}
 		else
 		{
@@ -505,6 +518,7 @@ public class AppTypesMBean implements Serializable
 		if(getAppType().getId() != null && getAppType().getName() != null && getAppType().getName().trim().length() > 0 &&
 				getAppTypeVersion().getVersionName() != null && getAppTypeVersion().getVersionName().trim().length() > 0)
 		{
+			String naration = "Create new application type version: " + getAppType().getName() + " " + getAppTypeVersion().getVersionName();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			
@@ -581,12 +595,18 @@ public class AppTypesMBean implements Serializable
 				setAppTypeVersion(null);
 				setAppTypes(null);
 				setAllAppTypeVersions(null);
+				
+				naration += ", Status: Success";
+				saveAudit(naration);
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
+				saveAudit(naration);
 			}
 		}
 		else
@@ -602,6 +622,7 @@ public class AppTypesMBean implements Serializable
 	{
 		if(getAppType().getName() != null && getAppType().getName().trim().length() > 0)
 		{
+			String naration = "Create new app type: " + getAppType().getName() + ", " + getAppType().getDescription();
 			getAppType().setCrt_dt(new Date());
 			getAppType().setCreatedBy(dashBean.getUser());
 			GeneralDAO gDAO = new GeneralDAO();
@@ -620,6 +641,8 @@ public class AppTypesMBean implements Serializable
 				setAppTypeVersion(null);
 				setAppTypes(null);
 				setAllAppTypeVersions(null);
+				
+				naration += ", Status: Success";
 				/*getAppTypeVersion().setAppType(getAppType());
 				getAppTypeVersion().setCreatedBy(dashBean.getUser());
 				getAppTypeVersion().setCrt_dt(new Date());
@@ -689,8 +712,12 @@ public class AppTypesMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Create failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			saveAudit(naration);
 		}
 		else
 		{

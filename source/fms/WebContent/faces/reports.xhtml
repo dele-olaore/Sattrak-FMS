@@ -32,8 +32,9 @@
 						</p:accordionPanel>
 					</p:layoutUnit>
 					<p:layoutUnit position="center">
+						<p:scrollPanel mode="native" style="height:500px">
 						<ui:include src="#{reportsBean.report_page}" />
-						<br/><br/><br/>
+						</p:scrollPanel>
 					</p:layoutUnit>
 				</p:layout>
 			</p:outputPanel>

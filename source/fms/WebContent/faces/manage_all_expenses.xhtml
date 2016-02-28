@@ -38,20 +38,21 @@
 			  	<p:dataTable id="expsTable" var="obj" value="#{expenseBean.exps}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+					rowsPerPageTemplate="10,20,50" resizableColumns="true" editable="true"
+					scrollable="true" scrollWidth="1220">
 					<f:facet name="header">
 						Found expense(s) [#{expenseBean.exps.size()}]
 					</f:facet>
 					<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
        				<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
 					
-					<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+					<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains" style="width:150px">
 						<h:outputText value="#{obj.type.name}" />
 					</p:column>
-					<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+					<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains" style="width:250px">
 						<h:outputText value="#{obj.type.description}" />
 					</p:column>
-					<p:column sortBy="#{obj.amount}" headerText="Amount">
+					<p:column sortBy="#{obj.amount}" headerText="Amount" style="width:150px">
 						<p:cellEditor>
 							<f:facet name="output">
 								<h:outputText value="#{obj.amount}" />
@@ -61,7 +62,7 @@
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
-					<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+					<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date" style="width:150px">
 						<p:cellEditor>
 							<f:facet name="output">
 								<h:outputText value="#{obj.expense_dt}" />
@@ -71,7 +72,7 @@
 							</f:facet>
 						</p:cellEditor>
 					</p:column>
-					<p:column headerText="Remarks">
+					<p:column headerText="Remarks" style="width:300px">
 						<p:cellEditor>
 							<f:facet name="output">
 								<h:outputText value="#{obj.remarks}" />
@@ -84,16 +85,17 @@
 						  	</f:facet>
 						  </p:cellEditor>
 					</p:column>
-					<p:column headerText="Created">
+					<p:column headerText="Created" style="width:300px">
 						By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 						On: <h:outputText value="#{obj.crt_dt}" />
 					</p:column>
-					<p:column headerText="" style="width: 6%">
+					<p:column headerText="" style="width:60px">
 						<p:rowEditor rendered="#{dashboardBean.user.id.longValue() == obj.createdBy.id.longValue()}" />
 						<h:outputText value="Can't update" rendered="#{not (dashboardBean.user.id.longValue() == obj.createdBy.id.longValue())}" />
 					</p:column>
 					
 				</p:dataTable>
+				
 			</p:outputPanel>
 		</td>
 		</tr>

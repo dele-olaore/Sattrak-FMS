@@ -71,8 +71,10 @@
 				  		<h:outputText id="counter" />
 				  		</p:panelGrid>
 				  		
-				  		<h:outputLabel for="acddrvname" value="Driver name: " />
-				  		<p:inputText id="acddrvname" value="#{fleetBean.accident.driver_name}" />
+				  		<h:outputLabel for="acddrvname" value="Driver: " />
+				  		<p:selectOneMenu id="acddrvname" value="#{fleetBean.driver_id}">
+				  			<f:selectItems value="#{ddBean.getPartnerDrivers(fleetBean.partner.id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
 				  		
 				  		<h:outputLabel for="acddrvcmt" value="Driver comment:" />
 						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -145,6 +147,49 @@
 				  		</f:facet>
 				  	</p:panelGrid>
 				</p:tab>
+				<p:tab id="complt4" title="Manage Accidents">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="stdt" value="Start date: *" />
+						<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="eddt" value="End date: *" />
+						<p:calendar id="eddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.end_dt}" navigator="true" />
+						
+						<f:facet name="footer">
+				  			<p:commandButton ajax="true" update="accdsTable2" action="#{fleetBean.searchAccident}" value="Search" icon="ui-icon-search" style="margin:0"/>
+				  		</f:facet>
+					</p:panelGrid>
+					<p:dataTable id="accdsTable2" var="obj" value="#{fleetBean.accidents2}"
+						paginator="true" rows="50"
+						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+						<f:facet name="header">
+							Accident(s)
+						</f:facet>
+						
+						<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Reg. No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+							<h:outputText value="#{obj.vehicle.registrationNo}" />
+						</p:column>
+						
+						<p:column sortBy="#{obj.accident_dt}" headerText="Accident date">
+							<h:outputText value="#{obj.accident_dt}" />
+						</p:column>
+						<p:column headerText="Description">
+							<h:outputText value="#{obj.accidentDescription}" />
+						</p:column>
+						<p:column headerText="Driver">
+							<h:outputText value="#{obj.driver_name}" />
+						</p:column>
+						<p:column headerText="Driver comment">
+							<h:outputText value="#{obj.driverComment}" />
+						</p:column>
+						<p:column headerText="">
+							<p:commandLink value="View" oncomplete="dlg2.show();" update=":form:viewDisplay">
+								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedAccident}" />
+							</p:commandLink>
+						</p:column>
+					</p:dataTable>
+				</p:tab>
 				<p:tab id="complt" title="Manage Open Accidents [#{fleetBean.accidents.size()}]">
 					<p:dataTable id="accdsTable" var="obj" value="#{fleetBean.accidents}"
 						paginator="true" rows="50"
@@ -171,7 +216,7 @@
 							<h:outputText value="#{obj.driverComment}" />
 						</p:column>
 						<p:column headerText="">
-							<p:commandLink value="Update" oncomplete="" onclick="alert('Under Construction!');return false;">
+							<p:commandLink value="Update" oncomplete="" onclick="alert('Function currently not available!');return false;">
 								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedAccident}" />
 							</p:commandLink>
 							<h:outputText value=" / " />
@@ -182,7 +227,7 @@
 					</p:dataTable>
 				</p:tab>
 				<p:tab id="complt2" title="Manage Denied Accidents [#{fleetBean.deniedAccidents.size()}]">
-					<p:dataTable id="accdsTable2" var="obj" value="#{fleetBean.deniedAccidents}"
+					<p:dataTable id="accdsTable22" var="obj" value="#{fleetBean.deniedAccidents}"
 						paginator="true" rows="50"
 						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
 						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
@@ -213,7 +258,7 @@
 							<h:outputText value="#{obj.approvalComment}" />
 						</p:column>
 						<p:column headerText="">
-							<p:commandLink value="Update / Resend" onclick="return false;">
+							<p:commandLink value="Update / Resend" onclick="alert('Function currently not available!');return false;">
 								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedAccident}" />
 							</p:commandLink>
 							<h:outputText value=" / " />
@@ -254,8 +299,14 @@
 						<p:column headerText="Approval comment">
 							<h:outputText value="#{obj.approvalComment}" />
 						</p:column>
+						<p:column headerText="Ad-Hoc">
+							<p:commandLink value="Request Ad-Hoc" oncomplete="adhocreqdlg.show();" update=":form:adhocdisplay" rendered="#{not obj.adhocRequested}">
+								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedAccident}" />
+							</p:commandLink>
+							<h:outputText value="Requested" rendered="#{obj.adhocRequested}"/>
+						</p:column>
 						<p:column headerText="">
-							<p:commandLink value="Attend To" oncomplete="dlg.show();">
+							<p:commandLink value="Attend To" oncomplete="dlg.show();" update=":form:display">
 								<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedAccident}" />
 							</p:commandLink>
 							<h:outputText value=" / " />
@@ -272,6 +323,130 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
+	<p:dialog id="viewDialog" header="View Accident Details" widgetVar="dlg2" modal="true" dynamic="true">
+		<p:panelGrid id="viewDisplay" columns="1" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">View accident for: <h:outputText value="#{fleetBean.selectedAccident.vehicle.registrationNo}" /></f:facet>
+		
+		<p:panelGrid columns="2">
+			<h:outputLabel for="acddt2" value="Accident date: *" />
+			<p:calendar id="acddt2" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.selectedAccident.accident_dt}" navigator="true" />
+			
+			<h:outputLabel for="acdrdt2" value="Reported date: *" />
+			<p:calendar id="acdrdt2" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.selectedAccident.dateReported}" />
+			
+			<h:outputLabel for="acddesc2" value="Description: *" />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="acddesc2" value="#{fleetBean.selectedAccident.accidentDescription}" rows="3" cols="50" counter="counter11" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter11" />
+	  		</p:panelGrid>
+	  		
+	  		<h:outputLabel for="acddrvname2" value="Driver name: " />
+	  		<p:inputText id="acddrvname2" value="#{fleetBean.selectedAccident.driver_name}" />
+	  		
+	  		<h:outputLabel for="acddrvcmt2" value="Driver comment:" />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="acddrvcmt2" value="#{fleetBean.selectedAccident.driverComment}" rows="3" cols="50" counter="counter22" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter22" />
+	  		</p:panelGrid>
+		</p:panelGrid>
+		<p:panelGrid columns="2">
+			<h:outputLabel for="acdpstat2" value="Police station: " />
+	  		<p:inputText id="acdpstat2" value="#{fleetBean.selectedAccident.policeStation}" />
+	  		
+	  		<h:outputLabel for="acdpoficer2" value="Police officer: " />
+	  		<p:inputText id="acdpoficer2" value="#{fleetBean.selectedAccident.policeOfficer}" />
+	  		
+	  		<h:outputLabel for="acdpphone2" value="Police phone: " />
+	  		<p:inputText id="acdpphone2" value="#{fleetBean.selectedAccident.policePhone}" />
+	  		
+	  		<h:outputLabel for="acdpcmt2" value="Police comment:" />
+			<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="acdpcmt2" value="#{fleetBean.selectedAccident.policeComment}" rows="3" cols="50" counter="counter33" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter33" />
+	  		</p:panelGrid>
+	  		
+	  		<h:outputLabel for="acdpstdt2" value="Date taken to station: " />
+			<p:calendar id="acdpstdt2" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.selectedAccident.dateTakenToStation}" />
+	  		
+	  		<h:outputLabel for="acdpeddt2" value="Date released from station: " />
+			<p:calendar id="acdpeddt2" pattern="dd/MM/yyyy" showOn="both" mode="popup" value="#{fleetBean.selectedAccident.dateReleased}" />
+			
+			<h:outputLabel for="plrcost2" value="Police Report Cost: " />
+			<p:inputText id="plrcost2" value="#{fleetBean.selectedAccident.policeReportCost}" />
+		</p:panelGrid>
+	  	
+	  	<p:panelGrid columns="2">
+	  		<h:outputLabel for="acdrr2" value="Action required? " />
+	  		<p:selectOneMenu id="acdrr2" value="#{fleetBean.selectedAccident.requiresRepairOrReplace}">
+				<f:selectItem itemLabel="No Action" itemValue="" />
+				<f:selectItem itemLabel="Repair" itemValue="Repair" />
+				<f:selectItem itemLabel="Replace" itemValue="Replace" />
+			</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="acdrdesc2" value="Action description: " />
+	  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+	  		<p:inputTextarea id="acdrdesc2" value="#{fleetBean.selectedAccident.action_description}" rows="3" cols="50" counter="counter44" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+	  		<h:outputText id="counter44" />
+	  		</p:panelGrid>
+	  		
+	  		<h:outputLabel for="acdrtype2" value="Action entity: " />
+			<p:selectOneMenu id="acdrtype2" value="#{fleetBean.selectedAccident.repairerType}">
+				<f:selectItem itemLabel="" itemValue="" />
+				<f:selectItem itemLabel="Vendor" itemValue="Vendor" />
+				<f:selectItem itemLabel="Workshop" itemValue="Workshop" />
+			</p:selectOneMenu>
+	  	</p:panelGrid>
+		
+		</p:panelGrid>
+	</p:dialog>
+	
+	<p:dialog id="adhocReqDialog" header="Request Adhoc Maintenance" widgetVar="adhocreqdlg" modal="true" dynamic="true">
+		<p:panelGrid id="adhocdisplay" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Ad-Hoc Maintenance Request action for: <h:outputText value="#{fleetBean.selectedAccident.vehicle.registrationNo}" /></f:facet>
+		
+		<h:outputLabel for="radhocdesc" value="Description: *" />
+		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="radhocdesc" value="#{fleetBean.maintRequest.description}" rows="3" cols="30" counter="adhoccounter" maxlength="2000" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="adhoccounter" />
+  		</p:panelGrid>
+  		
+  		<h:outputLabel value="Select approver staff: " />
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+			<h:outputLabel for="adhocbrch" value="Division/Branch: " />
+			<p:selectOneMenu id="adhocbrch" value="#{reportsBean.division_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.getPartnerDivisions(dashboardBean.user.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="adhocdept, adhocunt, adhocstf" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="adhocdept" value="Department: " />
+			<p:selectOneMenu id="adhocdept" value="#{reportsBean.department_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.getDivisionDepartments(dashboardBean.user.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="adhocunt, adhocstf" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="adhocunt" value="Unit: " />
+			<p:selectOneMenu id="adhocunt" value="#{reportsBean.unit_id}">
+				<f:selectItem itemLabel="-- All --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.getDepartmentUnits(dashboardBean.user.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  			<p:ajax update="adhocstf" />
+	  		</p:selectOneMenu>
+	  		
+	  		<h:outputLabel for="adhocstf" value="Staff: " />
+			<p:selectOneMenu id="adhocstf" value="#{fleetBean.approver_id}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.getPartnerPersonels(dashboardBean.user.partner.id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+		</p:panelGrid>
+		
+		<f:facet name="footer">
+  			<p:commandButton ajax="false" action="#{fleetBean.requestAccidentMaintenance}" value="Save" onclick="return confirm('Are you sure?');" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+		
+		</p:panelGrid>
+	</p:dialog>
 	
 	<p:dialog id="repairDialog" header="Repair Action" widgetVar="dlg" modal="true" dynamic="true">
 		<p:panelGrid id="display" columns="2" cellpadding="5" style="margin-bottom:10px;">
@@ -295,6 +470,9 @@
   		
   		<h:outputLabel for="radhoc" value="Required Ad-Hoc maintenance?: " />
   		<p:selectBooleanCheckbox id="radhoc" value="#{fleetBean.repair.requiresAdHocRepair}" />
+  		
+  		<h:outputLabel for="radhocwrkordno" value="Ad-Hoc Work Order No.: " />
+		<p:inputText id="radhocwrkordno" value="#{fleetBean.repair.adhocWorkOrderNum}" />
   		
   		<h:outputLabel for="rreplacev" value="Replacement vehicle Reg. No.: " />
 		<p:inputText id="rreplacev" value="#{fleetBean.repair.replacementRegNo}" />

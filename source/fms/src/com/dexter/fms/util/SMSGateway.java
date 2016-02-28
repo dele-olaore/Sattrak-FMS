@@ -9,7 +9,7 @@ import java.net.URLEncoder;
 public class SMSGateway
 {
 	//private static final String url = "https://www.bbnplace.com/sms/bulksms/bulksms.php?username=ayo.oyeleye@fets.com.ng&password=fets123";
-	private static final String url = "http://www.joybulksms.com/smsapi/smsapi.php?action=send&username=XXXXX&password=YYYY&msgtype=0";
+	private static final String url = "http://www.joybulksms.com/smsapi/smsapi.php?action=send&username=sattrak&password=mic10c61f&msgtype=0";
 	
 	@SuppressWarnings("deprecation")
 	public static synchronized boolean sendSMS(String sender, String mobileNumber, String message)

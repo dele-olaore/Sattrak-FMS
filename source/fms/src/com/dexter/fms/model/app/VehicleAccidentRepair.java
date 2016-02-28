@@ -9,6 +9,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerUser;
@@ -32,6 +33,10 @@ public class VehicleAccidentRepair implements Serializable
 	
 	private String repairType; // REPAIR / REPLACE / GROUNDED
 	private boolean requiresAdHocRepair;
+	
+	@ManyToOne
+	private WorkOrder workOrder;
+	
 	private String replacementRegNo; // if vehicle is to be replaced, this accepts the new vehicle reg number
 	
 	private double repairAmt;
@@ -59,6 +64,9 @@ public class VehicleAccidentRepair implements Serializable
 	
 	@ManyToOne
 	private PartnerUser createdBy;
+	
+	@Transient
+	private String adhocWorkOrderNum;
 	
 	public VehicleAccidentRepair()
 	{}
@@ -101,6 +109,14 @@ public class VehicleAccidentRepair implements Serializable
 
 	public void setRequiresAdHocRepair(boolean requiresAdHocRepair) {
 		this.requiresAdHocRepair = requiresAdHocRepair;
+	}
+
+	public WorkOrder getWorkOrder() {
+		return workOrder;
+	}
+
+	public void setWorkOrder(WorkOrder workOrder) {
+		this.workOrder = workOrder;
 	}
 
 	public String getReplacementRegNo() {
@@ -221,6 +237,14 @@ public class VehicleAccidentRepair implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public String getAdhocWorkOrderNum() {
+		return adhocWorkOrderNum;
+	}
+
+	public void setAdhocWorkOrderNum(String adhocWorkOrderNum) {
+		this.adhocWorkOrderNum = adhocWorkOrderNum;
 	}
 
 }

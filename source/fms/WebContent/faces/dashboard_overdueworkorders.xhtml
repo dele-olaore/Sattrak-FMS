@@ -1,0 +1,79 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Overdue Work-Orders</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Overdue Work-Orders" action="#{dashboardBean.gotoPage('dashboard_overdueworkorders', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panelGrid id="overDueWorkOrdersPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header"></f:facet>
+				
+				<p:dataTable id="overDueWorkOrdersTable" var="obj" value="#{dashboardBean.dueWorkOrders}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" resizableColumns="true" scrollable="true">
+					<f:facet name="header">
+						Found record(s) [#{dashboardBean.dueWorkOrders.size()}]
+					</f:facet>
+					
+					<p:column style="width:150px" sortBy="#{obj.workOrderNumber}" headerText="WorkOrder #" filterBy="#{obj.workOrderNumber}" filterMatchMode="contains">
+						<h:outputText value="#{obj.workOrderNumber}" />
+					</p:column>
+					<p:column style="width:100px" sortBy="#{obj.workOrderType}" headerText="Type" filterBy="#{obj.workOrderType}" filterMatchMode="contains">
+						<h:outputText value="#{obj.workOrderType}" />
+					</p:column>
+					<p:column style="width:300px" headerText="Summary" filterBy="#{obj.summaryDetailsOfWorkOrder}" filterMatchMode="contains">
+						<h:outputText value="#{obj.summaryDetailsOfWorkOrder}" />
+					</p:column>
+					<p:column style="width:250px" sortBy="#{obj.vendor.name}" headerText="Vendor" filterBy="#{obj.vendor.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.vendor.name}" /><br/>
+						Phone: <h:outputText value="#{obj.vendor.phone}" /><br/>
+						Email: <h:outputText value="#{obj.vendor.email}" /><br/>
+						Address: <h:outputText value="#{obj.vendor.addr1}" /><br/><h:outputText value="#{obj.vendor.addr2}" />
+					</p:column>
+					<p:column style="width:150px" sortBy="#{obj.proposedCompletion_dt}" headerText="Proposed Completion Date">
+						<h:outputText value="#{obj.proposedCompletion_dt}" />
+					</p:column>
+				</p:dataTable>
+				<br/><br/>
+				<f:facet name="footer">
+				<p:commandLink ajax="false">
+					<p:graphicImage value="/resources/images/excel.png" />
+					<p:dataExporter type="xls" target=":form:overDueWorkOrdersTable" fileName="overdue_workorders" />
+				</p:commandLink>
+		  		
+		  		<h:outputText value=" | " />
+		  		
+		  		<p:commandLink action="#{dashboardBean.gotoPage('manage_v_ahmaintenance', false)}" ajax="false">Adhoc Maintenance</p:commandLink>
+		  		
+		  		<h:outputText value=" | " />
+		  		
+		  		<p:commandLink action="#{dashboardBean.gotoPage('manage_v_rmaintenance', false)}" ajax="false">Routine Maintenance</p:commandLink>
+		  		</f:facet>
+		  		</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

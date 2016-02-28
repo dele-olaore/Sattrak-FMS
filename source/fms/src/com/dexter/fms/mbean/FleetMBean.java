@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,12 +51,14 @@ import org.primefaces.model.map.Marker;
 
 import com.dexter.common.util.Emailer;
 import com.dexter.fms.dao.GeneralDAO;
+import com.dexter.fms.dto.TrackerEventSummary;
 import com.dexter.fms.model.Notification;
 import com.dexter.fms.model.Partner;
 import com.dexter.fms.model.PartnerDriver;
 import com.dexter.fms.model.PartnerLicense;
 import com.dexter.fms.model.PartnerPersonel;
 import com.dexter.fms.model.PartnerUser;
+import com.dexter.fms.model.app.Approver;
 import com.dexter.fms.model.app.DashboardVehicle;
 import com.dexter.fms.model.app.DriverLicense;
 import com.dexter.fms.model.app.Expense;
@@ -76,15 +79,19 @@ import com.dexter.fms.model.app.VehicleFueling;
 import com.dexter.fms.model.app.VehicleFuelingRequest;
 import com.dexter.fms.model.app.VehicleLicense;
 import com.dexter.fms.model.app.VehicleLocationData;
+import com.dexter.fms.model.app.VehicleMaintenanceRequest;
 import com.dexter.fms.model.app.VehicleOdometerData;
 import com.dexter.fms.model.app.VehicleParameters;
 import com.dexter.fms.model.app.VehicleRoutineMaintenance;
 import com.dexter.fms.model.app.VehicleRoutineMaintenanceSetup;
+import com.dexter.fms.model.app.VehicleSales;
 import com.dexter.fms.model.app.VehicleStatusEnum;
 import com.dexter.fms.model.app.VehicleTrackerData;
+import com.dexter.fms.model.app.VehicleTrackerEventData;
 import com.dexter.fms.model.app.WorkOrder;
 import com.dexter.fms.model.app.WorkOrderItem;
 import com.dexter.fms.model.app.WorkOrderVehicle;
+import com.dexter.fms.model.app.WorkOrderVendor;
 import com.dexter.fms.model.ref.Department;
 import com.dexter.fms.model.ref.DocumentType;
 import com.dexter.fms.model.ref.FuelType;
@@ -99,6 +106,7 @@ import com.dexter.fms.model.ref.VehicleType;
 import com.dexter.fms.model.ref.VehicleWarning;
 import com.dexter.fms.model.ref.Vendor;
 import com.dexter.fms.model.ref.VendorServices;
+import com.dexter.fms.util.SMSGateway;
 
 @ManagedBean(name = "fleetBean")
 @SessionScoped
@@ -113,7 +121,7 @@ public class FleetMBean implements Serializable
 	private Long partner_id;
 	private Partner partner;
 	
-	private Long vehicleType_id;
+	private Long vehicleType_id, approver_id;
 	private Long vehicleMake_id;
 	private VehicleType vehicleType;
 	private Vector<VehicleType> vehicleTypes;
@@ -130,7 +138,7 @@ public class FleetMBean implements Serializable
 	
 	private Long fleet_id;
 	private Long vehicleModel_id;
-	private Long vendor_id;
+	private Long vendor_id, workOrderVendor_id;
 	private Long department_id;
 	private Long region_id;
 	private Long fuelType_id, assignee_id;
@@ -145,7 +153,7 @@ public class FleetMBean implements Serializable
 	private Vector<Vendor> vsalesVendors, vserviceVendors, vrepairVendors, vinsuranceVendors, vlicensesVendors;
 	private Vehicle vehicle, selectedVehicle;
 	private VehicleParameters vehicleParam;
-	private Vector<Vehicle> vehicles, tvehicles, tvehicles2;
+	private Vector<Vehicle> vehicles, tvehicles, tvehicles2, tvehicles3, duervehicles;
 	
 	// for various documents that comes along with a vehicle
 	private Long documentType_id;
@@ -156,7 +164,7 @@ public class FleetMBean implements Serializable
 	private Long driver_id;
 	private Vector<PartnerDriver> partnerDrivers;
 	
-	private Long vehicle_id;
+	private Long vehicle_id, prev_vehicle_id;
 	private String regNo;
 	private Date stdt, eddt;
 	
@@ -165,15 +173,20 @@ public class FleetMBean implements Serializable
 	private StreamedContent vmodelsVSRMExcelTemplate;
 	private UploadedFile modelsVSRMBatchExcel;
 	
-	private WorkOrder workOrder, selectedWorkOrder, selectedPendingRoutineWorkOrder, selectedInprogressRoutineWorkOrder, selectedPendingAdhocWorkOrder, selectedInprogressAdhocWorkOrder;
-	private Vector<WorkOrder> rountineWorkOrders, pendingRoutineWorkOrders, inprogressRoutineWorkOrders, adhocWorkOrders, pendingAdhocWorkOrders, inprogressAdhocWorkOrders;
+	private VehicleMaintenanceRequest maintRequest;
+	private Vector<VehicleMaintenanceRequest> myMaintRequests, pendingMaintRequestsForMyApproval, myAdhocApprovedMaintRequests, myRoutineApprovedMaintRequests;
+	
+	private WorkOrder workOrder, selectedWorkOrder, selectedPendingNegotiateRequestWorkOrder, selectedPendingFirstLegRequestWorkOrder, selectedPendingRequestWorkOrder, selectedPendingRoutineWorkOrder, selectedInprogressRoutineWorkOrder, selectedPendingAdhocWorkOrder, selectedInprogressAdhocWorkOrder;
+	private Vector<WorkOrder> routineSetupWorkOrders, adhocSetupWorkOrders, pendingNegotiateRequestWrkOrders, negotiatedWorkOrders, pendingFirstLegRequestWrkOrders, pendingRequestWrkOrders, rountineWorkOrders, pendingRoutineWorkOrders, inprogressRoutineWorkOrders, adhocWorkOrders, pendingAdhocWorkOrders, inprogressAdhocWorkOrders;
+	private Vector<WorkOrderVendor> negotiatedWorkOrderVendors, routineSetupWorkOrderVendors, adhocSetupWorkOrderVendors;
+	private WorkOrderVendor negotiatedWv, wv;
 	private String vehSummaryDetailsOfWorkOrder, item_action;
 	private double initVehEstAmount, itmInitEstAmount;
 	private BigDecimal initVehOdometer;
 	private long item_id, workOrder_id, inprgWorkOrder_id;
 	private int itmCount;
 	private Vector<Item> items;
-	private UploadedFile workOrderVendorDoc;
+	private UploadedFile workOrderVendorDoc, vendorWorkordFile;
 	
 	private boolean nextRMSetup;
 	private VehicleRoutineMaintenanceSetup routineSetup;
@@ -185,12 +198,13 @@ public class FleetMBean implements Serializable
 	private Vector<VehicleAdHocMaintenanceRequest> adHocRequests;
 	private VehicleAdHocMaintenance adhocMain;
 	private Vector<VehicleAdHocMaintenance> adhocMains;
+	private Vehicle adHocRequestVehicle, routineRequestVehicle;
 	
 	private Long insuranceComp_id, repairComp_id;
 	private UploadedFile accidentPhoto, repairedPhoto, accidentDocument, accidentDocument2, accidentDocument3, repairAttachment;
 	private boolean accidentStatus;
 	private VehicleAccident accident, selectedAccident;
-	private Vector<VehicleAccident> accidents, pendingAccidents, reviewedAccidents, deniedAccidents, approvedAccidents;
+	private Vector<VehicleAccident> accidents, pendingAccidents, reviewedAccidents, deniedAccidents, approvedAccidents, accidents2;
 	private VehicleAccidentRepair repair;
 	
 	private MapModel vtrackingModel;
@@ -208,7 +222,8 @@ public class FleetMBean implements Serializable
 	
 	private Long approvalUser_id;
 	private VehicleFuelingRequest fuelingRequest;
-	private Vector<VehicleFuelingRequest> myFuelingRequests, mySubFuelingRequest, pendingFuelingRequests;
+	private Vector<VehicleFuelingRequest> myFuelingRequests, mySubFuelingRequests, pendingFuelingRequests, myAttendedFuelingRequests;
+	Vector<Approver> approvers = new Vector<Approver>();
 	private String approvalStatus; // PENDING, APPROVED, DENIED
 	private String approvalComment; // comment for approval status
 	
@@ -239,18 +254,28 @@ public class FleetMBean implements Serializable
 	private Vector<VehicleBehaviour> vehicleBehaviours;
 	
 	private VehicleDisposal vdisposal;
-	private Vector<VehicleDisposal> myDisposalRequests, mySubDisposalRequest, pendingDisposalRequests;
+	private Vector<VehicleDisposal> myDisposalRequests, mySubDisposalRequest, pendingDisposalRequests, myAttendedDisposalRequest;
+	
+	private Vector<PartnerUser> approveFuelingUsers;
+	
+	private VehicleSales vsale;
+	private Vector<VehicleSales> vsales;
+	
+	private Vector<WorkOrderVehicle> vehicleMaintHistoryList;
 	
 	private boolean finished;
 	private String workOrderStatus;
 	private Date start_dt, end_dt;
 	
+	private UploadedFile maintenanceExcel;
+	
 	private boolean selectAll;
 	@ManagedProperty("#{dashboardBean}")
 	DashboardMBean dashBean;
+	@ManagedProperty("#{ddBean}")
+	DropDownMBean ddBean;
 	
-	public FleetMBean()
-	{
+	public FleetMBean() {
 		vtrackpollinterval = 120;
         defaultCenterCoor = "6.427887,3.4287645";
         centerCoor = defaultCenterCoor;
@@ -268,10 +293,1019 @@ public class FleetMBean implements Serializable
         vmodelsVSRMExcelTemplate = new DefaultStreamedContent(stream4, "application/vnd.ms-excel", "fms_batchload_vsrm.xls");
 	}
 	
-	public void removeItmFromVeh()
+	@SuppressWarnings("unchecked")
+	public void searchVehicleMaintenanceHistory() {
+		vehicleMaintHistoryList = null;
+		GeneralDAO gDAO = new GeneralDAO();
+		if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null) {
+			Query q = gDAO.createQuery("Select e from WorkOrderVehicle e where e.vehicle=:vehicle order by e.crt_dt desc");
+			q.setParameter("vehicle", getSelectedVehicle());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null) {
+				vehicleMaintHistoryList = (Vector<WorkOrderVehicle>)obj;
+				for(WorkOrderVehicle wov : vehicleMaintHistoryList) {
+					if(wov.getWorkOrder().getWorkOrderType().equalsIgnoreCase("Routine")) {
+						Query q2 = gDAO.createQuery("Select e from VehicleRoutineMaintenance e where e.workOrder=:workOrder");
+						q2.setParameter("workOrder", wov.getWorkOrder());
+						Object obj2 = gDAO.search(q2, 0);
+						if(obj2 != null) {
+							Vector<VehicleRoutineMaintenance> wkList = (Vector<VehicleRoutineMaintenance>)obj2;
+							for(VehicleRoutineMaintenance vrm : wkList)
+								wov.setRoutineMaintenance(vrm);
+						}
+					} else if(wov.getWorkOrder().getWorkOrderType().equalsIgnoreCase("Adhoc")) {
+						Query q2 = gDAO.createQuery("Select e from VehicleAdHocMaintenance e where e.workOrder=:workOrder");
+						q2.setParameter("workOrder", wov.getWorkOrder());
+						Object obj2 = gDAO.search(q2, 0);
+						if(obj2 != null) {
+							Vector<VehicleAdHocMaintenance> wkList = (Vector<VehicleAdHocMaintenance>)obj2;
+							for(VehicleAdHocMaintenance vrm : wkList)
+								wov.setAdhocMaintenance(vrm);
+						}
+					}
+				}
+			}
+		}
+		gDAO.destroy();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void attendToVMaintRequest() {
+		if(getApprovalStatus() != null && getApprovalStatus().trim().length() > 0) {
+			String naration = "Attend to vehicle maintenance request(s): ";
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			int count = 0;
+			for(VehicleMaintenanceRequest vmr : pendingMaintRequestsForMyApproval) {
+				if(vmr.isSelected()) {
+					count += 1;
+					vmr.setStatus(getApprovalStatus());
+					if(vmr.getStatus().equalsIgnoreCase("DENIED"))
+						vmr.setActive(false);
+					gDAO.update(vmr);
+					Query q = gDAO.createQuery("Select e from Approver e where e.entityName='VehicleMaintenanceRequest' and e.entityId=:id");
+					q.setParameter("id", vmr.getId());
+					Object obj = gDAO.search(q, 0);
+					if(obj != null) {
+						Approver apObj = null;
+						Vector<Approver> apList = (Vector<Approver>)obj;
+						for(Approver ap : apList) {
+							if(ap.getApprovalUser().getId().longValue() == dashBean.getUser().getId().longValue()) {
+								apObj = ap;
+								break;
+							}
+						}
+						
+						if(apObj != null) {
+							apObj.setApproval_dt(new Date());
+							apObj.setApprovalComment(getApprovalComment());
+							apObj.setApprovalStatus(getApprovalStatus());
+							gDAO.update(apObj);
+						}
+					}
+				}
+			}
+			if(count > 0) {
+				if(gDAO.commit()) {
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", count + " request(s) attended to successfully!");
+					naration += " Count: " + count + " Status: Success";
+					for(VehicleMaintenanceRequest vmr : pendingMaintRequestsForMyApproval) {
+						if(vmr.isSelected()) {
+							StringBuilder sb = new StringBuilder("<html><body>");
+							sb.append("<p>Hello,</p>");
+							sb.append("<p>Your ").append(vmr.getMaintenanceType()).append(" maintenance request for vehicle ").append(vmr.getVehicle().getRegistrationNo()).append(" has been ").append(vmr.getStatus()).append("!");
+							sb.append("<p>Regards<br/>FMS</p>");
+							sb.append("</body></html>");
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{vmr.getCreatedBy().getPersonel().getEmail()}, vmr.getMaintenanceType() + " Maintenance Request " + vmr.getStatus(), sb.toString());
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							try {
+								SMSGateway.sendSMS("FMS", vmr.getCreatedBy().getPersonel().getPhone(), "Your " + vmr.getMaintenanceType() + " maintenance request for vehicle " + vmr.getVehicle().getRegistrationNo() + " has been " + vmr.getStatus() + "!");
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+						}
+					}
+					pendingMaintRequestsForMyApproval = null;
+					approvalStatus = null;
+					approvalComment = null;
+				} else {
+					gDAO.rollback();
+					naration += " Status: Failed: " + gDAO.getMessage();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Could not save: " + gDAO.getMessage());
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "No vehicle selected!");
+				naration += " Status: Failed: No vehicle selected!";
+			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
+		} else
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please input approval status and description!");
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+		
+		
+	}
+	
+	public void requestVehicleMaintenance() {
+		if(getMaintRequest().getMaintenanceType() != null && 
+				getMaintRequest().getDescription() != null && getApprover_id() != null &&
+				getApprover_id() > 0) {
+			String naration = "Submit vehicle maintenance request: ";
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			PartnerUser approver = null;
+			if(getApprover_id() != null && getApprover_id() > 0) {
+				Query q = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:id");
+				q.setParameter("id", getApprover_id());
+				Object obj = gDAO.search(q, 1);
+				if(obj != null)
+					approver = (PartnerUser)obj;
+			}
+			if(approver != null) {
+				String approverName = approver.getPersonel().getFirstname() + " " + approver.getPersonel().getLastname();
+				gDAO.startTransaction();
+				int count = 0;
+				for(Vehicle v : getVehicles()) {
+					if(v.isSelected()) {
+						naration += v.getRegistrationNo() + ", ";
+						count+=1;
+						VehicleMaintenanceRequest vmr = new VehicleMaintenanceRequest();
+						vmr.setActive(true);
+						vmr.setCreatedBy(dashBean.getUser());
+						vmr.setCrt_dt(new Date());
+						vmr.setDescription(getMaintRequest().getDescription());
+						vmr.setMaintenanceType(getMaintRequest().getMaintenanceType());
+						vmr.setStatus("PENDING");
+						vmr.setVehicle(v);
+						gDAO.save(vmr);
+						Approver ap = new Approver();
+						ap.setApprovalUser(approver);
+						ap.setApprovalStatus("PENDING");
+						ap.setApproverLevel(1);
+						ap.setCreatedBy(dashBean.getUser());
+						ap.setCrt_dt(new Date());
+						ap.setEntityId(vmr.getId());
+						ap.setEntityName("VehicleMaintenanceRequest");
+						gDAO.save(ap);
+						Notification n = new Notification();
+						n.setCrt_dt(new Date());
+						n.setUser(approver);
+						n.setMessage("You have pending " + getMaintRequest().getMaintenanceType() + " maintenance request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "' for vehicle: " + v.getRegistrationNo() + "'. Submitted: " + new Date().toLocaleString());
+						n.setNotified(false);
+						n.setSubject("Vehicle Maintenance Request");
+						n.setPage_url("approve_v_maintenance");
+						gDAO.save(n);
+					}
+				}
+				if(count > 0) {
+					if(gDAO.commit()) {
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request saved successfully!");
+						naration += " Status: Success";
+						StringBuilder sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						sb.append("<p>Your ").append(getMaintRequest().getMaintenanceType()).append(" maintenance request has been submitted to ").append(approverName).append(" for review and approval!</p>");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{dashBean.getUser().getPersonel().getEmail()}, getMaintRequest().getMaintenanceType() + " Maintenance Request Submitted", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						try {
+							SMSGateway.sendSMS("FMS", dashBean.getUser().getPersonel().getPhone(), "Your " + getMaintRequest().getMaintenanceType() + " maintenance request has been submitted to " + approverName + " for review and approval!");
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						sb = new StringBuilder("<html><body>");
+						sb.append("<p>Hello,</p>");
+						sb.append("<p>A ").append(getMaintRequest().getMaintenanceType()).append(" maintenance request was just submitted by ").append(dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname()).append(" for your review and approval!</p>");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{approver.getPersonel().getEmail()}, getMaintRequest().getMaintenanceType() + " Maintenance Request", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						try {
+							SMSGateway.sendSMS("FMS", approver.getPersonel().getPhone(), "A " + getMaintRequest().getMaintenanceType() + " maintenance request was just submitted by " + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + " for your review and approval!");
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						setMaintRequest(null);
+						setApprover_id(0L);
+						setVehicles(null);
+					} else {
+						gDAO.rollback();
+						naration += " Status: Failed: " + gDAO.getMessage();
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Could not save the request: " + gDAO.getMessage());
+					}
+				} else {
+					naration += " Status: Failed: Please select at least one vehicle!";
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please select at least one vehicle!");
+				}
+			} else {
+				naration += " Status: Failed: Approver not valid!";
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Approver not valid!");
+			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
+		} else
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please input maintenance type and description!");
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void searchSales() {
+		setVsales(null);
+		if(getStart_dt() != null && getEnd_dt() != null) {
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from VehicleSales e where (e.salesDate between :st_dt and :ed_dt) and e.createdBy.id=:u_id");
+			q.setParameter("st_dt", getStart_dt());
+			q.setParameter("ed_dt", getEnd_dt());
+			q.setParameter("u_id", dashBean.getUser().getId());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null)
+				setVsales((Vector<VehicleSales>)obj);
+			gDAO.destroy();
+			
+			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", ((getVsales() != null) ? getVsales().size() : "0") + " record(s) found!");
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "A valid fleet group, year and month must be selected!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void enterSales() {
+		if(getVsale().getSales() > 0 && getVsale().getSalesDate() != null) {
+			String naration = "Entered sales: ";
+			
+			getVsale().setCreatedBy(dashBean.getUser());
+			getVsale().setCrt_dt(new Date());
+			getVsale().setStaff(dashBean.getUser().getPersonel());
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			gDAO.save(getVsale());
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Sales submitted successfully!");
+				naration += ", Status: Success";
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not save sales! " + gDAO.getMessage());
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+			
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "A valid fleet group must be selected!");
+		
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	/*
+	 * This should go to the request page first instead of the workorder setup page, but since that page is not ready, let it go here now.
+	 * */
+	public String initWorkOrder(String vReg, String maintType) {
+		if(vReg != null && !vReg.isEmpty()) {
+			GeneralDAO gDAO = new GeneralDAO();
+			try {
+				Query q = gDAO.createQuery("Select e from Vehicle e where e.registrationNo = :vReg");
+				q.setParameter("vReg", vReg);
+				Object v = gDAO.search(q, 1);
+				if(v != null) {
+					Vehicle vh = (Vehicle)v;
+					setVehicle_id(vh.getId());
+					setFleet_id(vh.getFleet().getId());
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "You can now setup the workorder for " + vh.getRegistrationNo());
+				}
+			} catch(Exception ex){}
+			gDAO.destroy();
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Vehicle id is not valid!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+		getMaintRequest().setMaintenanceType(maintType);
+		return "request_v_maintenance?faces-redirect=true";
+		/*if(maintType.equalsIgnoreCase("routine"))
+			return "manage_v_rmaintenance?faces-redirect=true";
+		else
+			return "manage_v_ahmaintenance?faces-redirect=true";*/
+	}
+	
+	public String initLicRenewal(String licId) {
+		GeneralDAO gDAO = new GeneralDAO();
+		try {
+			Object obj = gDAO.find(VehicleLicense.class, Long.parseLong(licId));
+			if(obj != null) {
+				VehicleLicense vl = (VehicleLicense)obj;
+				setPartner_id(vl.getVehicle().getPartner().getId());
+				setFleet_id(vl.getVehicle().getFleet().getId());
+				setVehicle_id(vl.getVehicle().getId());
+				setLicenseType_id(vl.getLicType().getId());
+			}
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		gDAO.destroy();
+		return "manage_v_licenseinfo?faces-redirect=true";
+	}
+	
+	public String initDrvLicRenewal(String licId) {
+		GeneralDAO gDAO = new GeneralDAO();
+		try {
+			Object obj = gDAO.find(DriverLicense.class, Long.parseLong(licId));
+			if(obj != null) {
+				DriverLicense dl = (DriverLicense)obj;
+				setPartner_id(dl.getDriver().getPartner().getId());
+				setDriver_id(dl.getDriver().getId());
+			}
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		gDAO.destroy();
+		return "manage_drvlicense?faces-redirect=true";
+	}
+	
+	public String initDrvLicRenewal(String partner_id, String d_id) {
+		try {
+			setPartner_id(Long.parseLong(partner_id));
+			setDriver_id(Long.parseLong(d_id));
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return "manage_drvlicense?faces-redirect=true";
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void UploadZonMaintenance() {
+		if(getMaintenanceExcel() != null) {
+			GeneralDAO gDAO = new GeneralDAO();
+			try
+			{
+				ByteArrayInputStream byteIn = new ByteArrayInputStream(getMaintenanceExcel().getContents());
+				//Get the workbook instance for XLS file
+				HSSFWorkbook workbook = new HSSFWorkbook(byteIn);
+				//Get first sheet from the workbook
+				HSSFSheet sheet = workbook.getSheetAt(0);
+				
+				//Get iterator to all the rows in current sheet starting from row 2
+				Iterator<Row> rowIterator = sheet.iterator();
+				int pos = 1;
+				gDAO.startTransaction();
+				boolean ret = false;
+				while(rowIterator.hasNext()) {
+					String timestamp = null, unit = null, comment1 = null, comment2 = null, comment3 = null, value = null, updateTime = null;
+					Row row = rowIterator.next();
+					if(pos > 1) {
+						//Get iterator to all cells of current row
+						Iterator<Cell> cellIterator = row.cellIterator();
+						while(cellIterator.hasNext()) {
+							Cell cell = cellIterator.next();
+							String val = "";
+							switch(cell.getCellType()) {
+								case Cell.CELL_TYPE_BLANK:
+									val = "";
+									break;
+								case Cell.CELL_TYPE_BOOLEAN:
+									val = ""+cell.getBooleanCellValue();
+									break;
+								case Cell.CELL_TYPE_ERROR:
+									val = "";
+									break;
+								case Cell.CELL_TYPE_NUMERIC:
+									val = ""+cell.getNumericCellValue();
+									break;
+								case Cell.CELL_TYPE_STRING:
+									val = cell.getStringCellValue();
+									break;
+								default: {
+									try {
+										val = cell.getStringCellValue();
+									} catch(Exception ex){}
+									break;
+								}
+							}
+							switch(cell.getColumnIndex()) {
+								case 0:
+									timestamp = val;
+									break;
+								case 1:
+									unit = val;
+									break;
+								case 2:
+									comment1 = val;
+									break;
+								case 3:
+									comment2 = val;
+									break;
+								case 4:
+									comment3 = val;
+									break;
+								case 5:
+									value = val;
+									break;
+								case 7:
+									updateTime = val;
+									break;
+							}
+							String regNo = null;
+							Vehicle v = null;
+							Vendor vendor = null;
+							try {
+								if(unit != null && unit.contains("-")) {
+									regNo = unit.substring(0, unit.indexOf("-"));
+								} else if(unit != null)
+									regNo = unit;
+								
+								if(regNo!=null)
+									regNo = regNo.trim();
+							} catch(Exception ex) {
+								System.out.println("Reg No parsing exception on row index: " + pos);
+								ex.printStackTrace();
+							}
+							if(regNo != null) {
+								Query q = gDAO.createQuery("Select e from Vehicle e where e.registrationNo=:regNo and e.partner.id=:partner_id");
+								q.setParameter("regNo", regNo);
+								q.setParameter("partner_id", partner_id);
+								Object vobj = gDAO.search(q, 1);
+								if(vobj != null) {
+									v = (Vehicle)vobj;
+								}
+							}
+							if(v != null) {
+								if(comment2 != null && comment2.trim().length() > 0) {
+									Query q = gDAO.createQuery("Select e from Vendor e where e.name=:vname and e.partner.id=:partner_id");
+									q.setParameter("vname", comment2);
+									q.setParameter("partner_id", partner_id);
+									Object venobjs = gDAO.search(q, 0);
+									if(venobjs != null) {
+										List<Vendor> venlist = (List<Vendor>)venobjs;
+										for(Vendor e : venlist)
+											vendor = e;
+									}
+									if(vendor == null) {
+										vendor = new Vendor();
+										vendor.setCreatedBy(dashBean.getUser());
+										vendor.setCrt_dt(new Date());
+										vendor.setName(comment2);
+										vendor.setPartner(getPartner());
+										gDAO.save(vendor);
+									}
+								}
+								Date start_dt = null, end_dt = null;
+								if(comment3 != null && comment3.trim().length() > 0) {
+									
+								}
+								
+								if(comment1 != null && comment1.trim().length() > 0 && comment1.startsWith("Routine Service")) {
+									VehicleRoutineMaintenance vrm = new VehicleRoutineMaintenance();
+									
+									
+								} else if(comment1 != null && comment1.trim().length() > 0) {
+									VehicleAdHocMaintenance vahm = new VehicleAdHocMaintenance();
+								}
+							}
+						}
+					}
+					pos+=1;
+				}
+			} catch(Exception ex) {
+				ex.printStackTrace();
+			}
+			gDAO.destroy();
+		}
+	}
+	
+	public void deleteVparam(long id) {
+		if(id > 0) {
+			for(VehicleParameters e : getSelectedVehicle().getParams()) {
+				if(e.getId().longValue() == id) {
+					String naration = "Delete vehicle parameters: " + e.getVehicle().getRegistrationNo();
+					GeneralDAO gDAO = new GeneralDAO();
+					gDAO.startTransaction();
+					gDAO.remove(e);
+					if(gDAO.commit()) {
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle parameter deleted successfully!");
+						
+						naration += ", Status: Success";
+						
+						setSelectedVehicle(null);
+						setVehicles(null);
+					} else {
+						gDAO.rollback();
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not delete the vehicle parameter. Message: " + gDAO.getMessage());
+						
+						naration += ", Status: Failed: " + gDAO.getMessage();
+					}
+					gDAO.destroy();
+					
+					dashBean.saveAudit(naration, "", e.getVehicle());
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					break;
+				}
+			}
+		}
+		
+	}
+	
+	public void submitWorkOrderApproval() {
+		if(getSelectedPendingRequestWorkOrder() != null && getSelectedPendingRequestWorkOrder().getId() != null) {
+			getSelectedPendingRequestWorkOrder().setFinalApprove_dt(new Date());
+			getSelectedPendingRequestWorkOrder().setFinalApproveBy(dashBean.getUser());
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			gDAO.update(getSelectedPendingRequestWorkOrder());
+			
+			if(getSelectedPendingRequestWorkOrder().getStatus().equalsIgnoreCase("NEW")) { // The work order was approved
+				StringBuilder sb = new StringBuilder("<html><body>");
+				sb.append("<p>Hello,</p>");
+				sb.append("<p>Work-order ").append(getSelectedPendingRequestWorkOrder().getWorkOrderNumber()).append(" was just approved by ").append(getSelectedPendingRequestWorkOrder().getFinalApproveBy().getPersonel().getFirstname()).append(" ").append(getSelectedPendingRequestWorkOrder().getFinalApproveBy().getPersonel().getLastname()).append(".</p>");
+				sb.append("<p>Regards<br/>FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelectedPendingRequestWorkOrder().getCreatedBy().getPersonel().getEmail()}, "Work-order " + getSelectedPendingRequestWorkOrder().getWorkOrderNumber() + " Approved", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				try {
+					SMSGateway.sendSMS("FMS", getSelectedPendingRequestWorkOrder().getCreatedBy().getPersonel().getPhone(), "Work-order " + getSelectedPendingRequestWorkOrder().getWorkOrderNumber() + " approved.");
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			} else {
+				StringBuilder sb = new StringBuilder("<html><body>");
+				sb.append("<p>Hello,</p>");
+				sb.append("<p>Work-order ").append(getSelectedPendingRequestWorkOrder().getWorkOrderNumber()).append(" was just denied by ").append(getSelectedPendingRequestWorkOrder().getFinalApproveBy().getPersonel().getFirstname()).append(" ").append(getSelectedPendingRequestWorkOrder().getFinalApproveBy().getPersonel().getLastname()).append(". Comment: ").append(getSelectedPendingRequestWorkOrder().getFinalApproveComment()).append(".</p>");
+				sb.append("<p>Regards<br/>Sattrak FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelectedPendingRequestWorkOrder().getCreatedBy().getPersonel().getEmail()}, "Work-order " + getSelectedPendingRequestWorkOrder().getWorkOrderNumber() + " Denied", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				try {
+					SMSGateway.sendSMS("FMS", getSelectedPendingRequestWorkOrder().getCreatedBy().getPersonel().getPhone(), "Work-order " + getSelectedPendingRequestWorkOrder().getWorkOrderNumber() + " denied.");
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			
+			String naration = "Approved workorder: " + getSelectedPendingRequestWorkOrder().getWorkOrderNumber();
+			
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Work order attended to successfully!");
+				
+				naration += ", Status: Success";
+				setSelectedPendingRequestWorkOrder(null);
+				setPendingRequestWrkOrders(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit approval: " + gDAO.getMessage() + "!");
+				
+				naration+= ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void submitWorkOrderFirstLegApproval() {
+		if(getSelectedPendingFirstLegRequestWorkOrder() != null && getSelectedPendingFirstLegRequestWorkOrder().getId() != null) {
+			String naration = "Submit workorder RFQ for second leg final approval: ";
+			GeneralDAO gDAO = new GeneralDAO();
+			PartnerUser approver = null;
+			if(getSelectedPendingFirstLegRequestWorkOrder().getStatus().equalsIgnoreCase("REQUEST")) {
+				if(getApprover_id() != null && getApprover_id() > 0) {
+					Query q = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:id");
+					q.setParameter("id", getApprover_id());
+					Object obj = gDAO.search(q, 1);
+					if(obj != null)
+						approver = (PartnerUser)obj;
+				}
+				
+				if(approver == null) {
+					gDAO.destroy();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Approver is required!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					return;
+				} else {
+					getSelectedPendingFirstLegRequestWorkOrder().setFinalApproveBy(approver);
+					Notification n = new Notification();
+					n.setCrt_dt(new Date());
+					n.setUser(approver);
+					n.setMessage("You have pending " + getSelectedPendingFirstLegRequestWorkOrder().getWorkOrderType() + " work-order request from '" + getSelectedPendingFirstLegRequestWorkOrder().getCreatedBy().getPersonel().getFirstname() + " " + getSelectedPendingFirstLegRequestWorkOrder().getCreatedBy().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
+					n.setNotified(false);
+					n.setSubject("Work-order RFQ Final Request");
+					n.setPage_url("attend_workorder");
+					gDAO.save(n);
+				}
+			}
+			getSelectedPendingFirstLegRequestWorkOrder().setApprove_dt(new Date());
+			gDAO.startTransaction();
+			gDAO.update(getSelectedPendingFirstLegRequestWorkOrder());
+			
+			naration += getSelectedPendingFirstLegRequestWorkOrder().getWorkOrderNumber() + ", Approval: " + getSelectedPendingFirstLegRequestWorkOrder().getStatus();
+			
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Work order final approval submitted successfully!");
+				
+				naration += ", Status: Success";
+				if(approver != null) {
+					StringBuilder sb = new StringBuilder();
+					sb.append("<html><body>");
+					sb.append("<p>Dear <strong>").append(approver.getPersonel().getFirstname()).append("</strong>,</p>");
+					sb.append("<p>A ").append(getSelectedPendingFirstLegRequestWorkOrder().getWorkOrderType()).append(" work-order request has been submitted for your approval.</p>");
+					sb.append("<br/><br/>");
+					sb.append("<p>Regards<br/>FMS</p>");
+					sb.append("</body></html>");
+					
+					try {
+						Emailer.sendEmail("fms@sattrakservices.com", new String[]{approver.getPersonel().getEmail()}, "Work-order Request", sb.toString());
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
+				
+				setSelectedPendingFirstLegRequestWorkOrder(null);setWorkOrderVendor_id(null);setRoutineSetupWorkOrderVendors(null);
+				setRoutineSetupWorkOrders(null);setWorkOrder_id(0);setPendingRequestWrkOrders(null);
+				setPendingFirstLegRequestWrkOrders(null);
+				setAdhocSetupWorkOrders(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit request: " + gDAO.getMessage() + "!");
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void submitWorkOrderFinalRequest() {
+		if(getNegotiatedWv() != null && getNegotiatedWv().getId() != null && getApprover_id() != null) {
+			String naration = "Submit workorder RFQ for final approval: ";
+			getNegotiatedWv().getWorkOrder().setStatus("REQUEST-FINAL1");
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			PartnerUser approver = null;
+			if(getApprover_id() != null && getApprover_id() > 0) {
+				Query q = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:id");
+				q.setParameter("id", getApprover_id());
+				Object obj = gDAO.search(q, 1);
+				if(obj != null)
+					approver = (PartnerUser)obj;
+			}
+			
+			if(approver == null) {
+				gDAO.destroy();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Approver is required!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				return;
+			}
+			getNegotiatedWv().getWorkOrder().setApproveBy(approver);
+			gDAO.startTransaction();
+			gDAO.update(getNegotiatedWv().getWorkOrder());
+			//gDAO.update(getNegotiatedWv()); // nothing changed so no need to update this object
+			
+			Notification n = new Notification();
+			n.setCrt_dt(new Date());
+			n.setUser(approver);
+			n.setMessage("You have pending " + getNegotiatedWv().getWorkOrder().getWorkOrderType() + " work-order request from '" + getNegotiatedWv().getWorkOrder().getCreatedBy().getPersonel().getFirstname() + " " + getNegotiatedWv().getWorkOrder().getCreatedBy().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
+			n.setNotified(false);
+			n.setSubject("Work-order Request");
+			n.setPage_url("attend_workorder_1");
+			gDAO.save(n);
+			
+			naration += getNegotiatedWv().getWorkOrder().getWorkOrderNumber() + " Vendor: " + getNegotiatedWv().getVendor().getName();
+			
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request for work order final approval submitted successfully!");
+				
+				naration += ", Status: Success";
+				
+				StringBuilder sb = new StringBuilder();
+				sb.append("<html><body>");
+				sb.append("<p>Dear <strong>").append(approver.getPersonel().getFirstname()).append("</strong>,</p>");
+				sb.append("<p>A ").append(getNegotiatedWv().getWorkOrder().getWorkOrderType()).append(" work-order request has been submitted for your approval.</p>");
+				sb.append("<br/><br/>");
+				sb.append("<p>Regards<br/>Sattrak FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{approver.getPersonel().getEmail()}, "Work-order Request", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				setNegotiatedWv(null);setWorkOrderVendor_id(null);setRoutineSetupWorkOrderVendors(null);
+				setRoutineSetupWorkOrders(null);setWorkOrder_id(0);setPendingRequestWrkOrders(null);
+				setAdhocSetupWorkOrders(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit request: " + gDAO.getMessage() + "!");
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void submitWorkOrderRFQNegotiated() {
+		if(getSelectedPendingNegotiateRequestWorkOrder() != null && getSelectedPendingNegotiateRequestWorkOrder().getId() != null &&
+				getWorkOrderVendor_id() != null) {
+			WorkOrderVendor v = null;
+			if(getSelectedPendingNegotiateRequestWorkOrder().getStatus().equalsIgnoreCase("NEGOTIATED")) {
+				for(WorkOrderVendor wov : getSelectedPendingNegotiateRequestWorkOrder().getWvendors()) {
+					if(getWorkOrderVendor_id().longValue() == wov.getVendor().getId().longValue()) {
+						wov.setApproverComment(getSelectedPendingNegotiateRequestWorkOrder().getApproveVendorComment());
+						wov.setApproverApproved(true);
+						wov.setNegotiated_cost(getSelectedPendingNegotiateRequestWorkOrder().getNegotiated_cost());
+						wov.setNegotiated_days_of_completion(getSelectedPendingNegotiateRequestWorkOrder().getNegotiated_days_of_completion());
+						
+						if(getVendorWorkordFile() != null) {
+							wov.setNegotiatedDocument(getVendorWorkordFile().getContents());
+						}
+						
+						v = wov;
+						break;
+					}
+				}
+			}
+			getSelectedPendingNegotiateRequestWorkOrder().setNegotiated_dt(new Date());
+			
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			if(v != null)
+				gDAO.update(v);
+			gDAO.update(getSelectedPendingNegotiateRequestWorkOrder());
+			
+			if(getSelectedPendingNegotiateRequestWorkOrder().getStatus().equalsIgnoreCase("NEGOTIATED")) { // The work order was negotiated
+				StringBuilder sb = new StringBuilder("<html><body>");
+				sb.append("<p>Hello,</p>");
+				sb.append("<p>Work-order ").append(getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber()).append(" RFQ was just negotiated and approved by ").append(getSelectedPendingNegotiateRequestWorkOrder().getNegotiatedBy().getPersonel().getFirstname()).append(" ").append(getSelectedPendingNegotiateRequestWorkOrder().getNegotiatedBy().getPersonel().getLastname()).append(".</p>");
+				sb.append("<p>Regards<br/>FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelectedPendingNegotiateRequestWorkOrder().getCreatedBy().getPersonel().getEmail()}, "Work-order " + getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber() + " RFQ Negotiated", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				try {
+					SMSGateway.sendSMS("FMS", getSelectedPendingNegotiateRequestWorkOrder().getCreatedBy().getPersonel().getPhone(), "Work-order " + getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber() + " negotiated.");
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			} else {
+				StringBuilder sb = new StringBuilder("<html><body>");
+				sb.append("<p>Hello,</p>");
+				sb.append("<p>Work-order ").append(getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber()).append(" RFQ failed negotiation by ").append(getSelectedPendingNegotiateRequestWorkOrder().getNegotiatedBy().getPersonel().getFirstname()).append(" ").append(getSelectedPendingNegotiateRequestWorkOrder().getNegotiatedBy().getPersonel().getLastname()).append(". Comment: ").append(getSelectedPendingNegotiateRequestWorkOrder().getNegotiateComment()).append(".</p>");
+				sb.append("<p>Regards<br/>Sattrak FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{getSelectedPendingNegotiateRequestWorkOrder().getCreatedBy().getPersonel().getEmail()}, "Work-order " + getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber() + " RFQ Failed Negotiation", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				try {
+					SMSGateway.sendSMS("FMS", getSelectedPendingNegotiateRequestWorkOrder().getCreatedBy().getPersonel().getPhone(), "Work-order " + getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber() + " RFQ failed negotiation.");
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+			
+			String naration = "Negotiate workorder RFQ: " + getSelectedPendingNegotiateRequestWorkOrder().getWorkOrderNumber() + ", Status: " + getSelectedPendingNegotiateRequestWorkOrder().getStatus();
+			
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Work order RFQ negotiation submitted successfully!");
+				
+				naration += ", Status: Success";
+				setSelectedPendingNegotiateRequestWorkOrder(null);
+				setPendingNegotiateRequestWrkOrders(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit negotiation: " + gDAO.getMessage() + "!");
+				
+				naration+= ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	@SuppressWarnings({ "deprecation" })
+	public void submitWorkOrderRequest() {
+		if(getWv() != null && getWv().getId() != null && getApprover_id() != null && getWv().getWorkOrder() != null) {
+			String naration = "Submit workorder RFQ for negotiation: ";
+			getWv().getWorkOrder().setStatus("REQUEST-NEGOTIATION");
+			getWv().setRequesterRecommended(true);
+			GeneralDAO gDAO = new GeneralDAO();
+			
+			PartnerUser approver = null;
+			if(getApprover_id() != null && getApprover_id() > 0) {
+				Query q = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:id");
+				q.setParameter("id", getApprover_id());
+				Object obj = gDAO.search(q, 1);
+				if(obj != null)
+					approver = (PartnerUser)obj;
+			}
+			
+			if(approver == null) {
+				gDAO.destroy();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Approver is required!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+				return;
+			}
+			getWv().getWorkOrder().setNegotiatedBy(approver);
+			gDAO.startTransaction();
+			gDAO.update(getWv().getWorkOrder());
+			gDAO.update(getWv());
+			
+			Notification n = new Notification();
+			n.setCrt_dt(new Date());
+			n.setUser(approver);
+			n.setMessage("You have pending " + getWv().getWorkOrder().getWorkOrderType() + " work-order RFQ negotiation request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
+			n.setNotified(false);
+			n.setSubject("Work-order RFQ Negotiation Request");
+			n.setPage_url("negotiate_workorder_rfq");
+			gDAO.save(n);
+			
+			naration += getWv().getWorkOrder().getWorkOrderNumber() + " Vendor: " + getWv().getVendor().getName();
+			
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request for work order negotiation submitted successfully!");
+				
+				naration += ", Status: Success";
+				
+				StringBuilder sb = new StringBuilder();
+				sb.append("<html><body>");
+				sb.append("<p>Dear <strong>").append(approver.getPersonel().getFirstname()).append("</strong>,</p>");
+				sb.append("<p>A ").append(getWv().getWorkOrder().getWorkOrderType()).append(" work-order RFQ negotiation request has been submitted for your review.</p>");
+				sb.append("<br/><br/>");
+				sb.append("<p>Regards<br/>Sattrak FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{approver.getPersonel().getEmail()}, "Work-order Request", sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				setWv(null);setWorkOrderVendor_id(null);setRoutineSetupWorkOrderVendors(null);
+				setRoutineSetupWorkOrders(null);setWorkOrder_id(0);setPendingRequestWrkOrders(null);
+				setAdhocSetupWorkOrders(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit request: " + gDAO.getMessage() + "!");
+				
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void submitVendorBid() {
+		if(getWv() != null && getWv().getId() != null) {
+			String naration = "Submit vendor estimate: " + wv.getVendor().getName() + ", Cost: " + (wv.getCost() != null ? wv.getCost().toPlainString() : "N/A");
+			if(getVendorWorkordFile() != null) {
+				try {
+					wv.setVendorDocument(getVendorWorkordFile().getContents());
+				} catch(Exception ex){ ex.printStackTrace(); }
+			} else {
+				System.out.println("Vendor document is null!");
+			}
+			wv.setVendorResponse_dt(new Date());
+			GeneralDAO gDAO = new GeneralDAO();
+			gDAO.startTransaction();
+			gDAO.update(wv);
+			if(gDAO.commit()) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Bid for Vendor submitted successfully!");
+				naration += ", Status: Success";
+				StringBuilder sb = new StringBuilder("<html><body>");
+				sb.append("<p>Hello,</p>");
+				sb.append("<p>Vendor ").append(wv.getVendor().getName()).append(" just submitted a bid for work-order ").append(wv.getWorkOrder().getWorkOrderNumber()).append(".</p>");
+				sb.append("<p>Regards<br/>Sattrak FMS</p>");
+				sb.append("</body></html>");
+				
+				try {
+					Emailer.sendEmail("fms@sattrakservices.com", new String[]{wv.getWorkOrder().getCreatedBy().getPersonel().getEmail()}, "Bid Submit for Work-order " + wv.getWorkOrder().getWorkOrderNumber(), sb.toString());
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+				
+				setWv(null);setWorkOrderVendor_id(null);setWorkOrder_id(0);setVendorWorkordFile(null);
+				setRoutineSetupWorkOrders(null);setRoutineSetupWorkOrderVendors(null);
+			} else {
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Could not submit bid: " + gDAO.getMessage() + "!");
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please fill all fields!");
+		}
+		FacesContext.getCurrentInstance().addMessage(null, msg);
+	}
+	
+	public void downloadWorkOrderVendorBidDoc(long id)
 	{
-		if(getWorkOrder().getSelectedVehicle().getSelectedItem() != null)
-		{
+		GeneralDAO gDAO = new GeneralDAO();
+		try {
+			Object obj = gDAO.find(WorkOrderVendor.class, id);
+			if(obj != null) {
+				WorkOrderVendor wv = (WorkOrderVendor)obj;
+				if(wv.getVendorDocument() != null) {
+					FacesContext context = FacesContext.getCurrentInstance();
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			        baos.write(wv.getVendorDocument());
+			        
+			        String fileName = wv.getWorkOrder().getWorkOrderNumber() + "_" + wv.getVendor().getName() + ".docx";
+			        
+			        writeFileToResponse(context.getExternalContext(), baos, fileName, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+					
+					context.responseComplete();
+				} else {
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", "No uploaded estimate document for this vendor!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", "Vendor estimate not found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", ex.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		gDAO.destroy();
+	}
+	
+	public void downloadWorkOrderVendorNegotiatedDoc(long id) {
+		GeneralDAO gDAO = new GeneralDAO();
+		try {
+			Object obj = gDAO.find(WorkOrderVendor.class, id);
+			if(obj != null) {
+				WorkOrderVendor wv = (WorkOrderVendor)obj;
+				if(wv.getNegotiatedDocument() != null) {
+					FacesContext context = FacesContext.getCurrentInstance();
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			        baos.write(wv.getNegotiatedDocument());
+			        
+			        String fileName = wv.getWorkOrder().getWorkOrderNumber() + "_" + wv.getVendor().getName() + ".docx";
+			        
+			        writeFileToResponse(context.getExternalContext(), baos, fileName, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+					
+					context.responseComplete();
+				} else {
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", "No uploaded negotiated document for this vendor!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", "Vendor estimate not found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", ex.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+		gDAO.destroy();
+	}
+	
+	public void removeItmFromVeh() {
+		if(getWorkOrder().getSelectedVehicle().getSelectedItem() != null) {
 			int size = getWorkOrder().getSelectedVehicle().getItems().size();
 			for(int i=0; i<size; i++)
 			{
@@ -287,30 +1321,24 @@ public class FleetMBean implements Serializable
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
-	public void addItmToVeh()
-	{
+	public void addItmToVeh() {
 		GeneralDAO gDAO = new GeneralDAO();
 		
-		if(getItem_id() > 0L && getItem_action() != null && getItmCount() > 0)
-		{
+		if(getItem_id() > 0L && getItem_action() != null && getItmCount() > 0) {
 			boolean exist = false;
 			int size = getWorkOrder().getSelectedVehicle().getItems().size();
-			for(int i=0; i<size; i++)
-			{
+			for(int i=0; i<size; i++) {
 				WorkOrderItem e = getWorkOrder().getSelectedVehicle().getItems().get(i);
-				if(e.getItem().getId().longValue() == getItem_id())
-				{
+				if(e.getItem().getId().longValue() == getItem_id()) {
 					exist = true;
 					break;
 				}
 			}
 			
-			if(!exist)
-			{
+			if(!exist) {
 				WorkOrderItem wrkItm = new WorkOrderItem();
 				Object iobj = gDAO.find(Item.class, getItem_id());
-				if(iobj != null)
-				{
+				if(iobj != null) {
 					wrkItm.setItem((Item)iobj);
 					wrkItm.setAction(getItem_action());
 					wrkItm.setCount(getItmCount());
@@ -320,14 +1348,11 @@ public class FleetMBean implements Serializable
 					
 					getWorkOrder().getSelectedVehicle().getItems().add(wrkItm);
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Item added successfully!");
-				}
-				else
+				} else
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Item not found!");
-			}
-			else
+			} else
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Item exists in the list already!");
-		}
-		else
+		} else
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please select an item and enter the action required and count!");
 		
 		FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -337,14 +1362,11 @@ public class FleetMBean implements Serializable
 	
 	public void removeVehFromWorkOrd()
 	{
-		if(getWorkOrder().getSelectedVehicle() != null)
-		{
+		if(getWorkOrder().getSelectedVehicle() != null) {
 			int size = getWorkOrder().getVehicles().size();
-			for(int i=0; i<size; i++)
-			{
+			for(int i=0; i<size; i++) {
 				WorkOrderVehicle e = getWorkOrder().getVehicles().get(i);
-				if(e.getVehicle().getId().longValue() == getWorkOrder().getSelectedVehicle().getVehicle().getId().longValue())
-				{
+				if(e.getVehicle().getId().longValue() == getWorkOrder().getSelectedVehicle().getVehicle().getId().longValue()) {
 					getWorkOrder().getVehicles().remove(i);
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle removed successfully!");
 					break;
@@ -354,51 +1376,88 @@ public class FleetMBean implements Serializable
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
-	public void addVehToWorkOrd()
-	{
+	/*public boolean adHocRequestAlreadyAdded(long id) {
+		boolean ret = false;
+		
+		int size = getAdHocRequests().size();
+		for(int i=0; i<size; i++) {
+			VehicleAdHocMaintenanceRequest e = getAdHocRequests().get(i);
+			if(e.getId().longValue() == id) {
+				ret = true;
+				break;
+			}
+		}
+		
+		return ret;
+	}*/
+	
+	public boolean isAlreadyAdded(long v_id) {
+		boolean ret = false;
+		
+		int size = getWorkOrder().getVehicles().size();
+		for(int i=0; i<size; i++) {
+			WorkOrderVehicle e = getWorkOrder().getVehicles().get(i);
+			if(e.getVehicle().getId().longValue() == v_id) {
+				ret = true;
+				break;
+			}
+		}
+		
+		return ret;
+	}
+	
+	public void addVehToWorkOrd() {
 		GeneralDAO gDAO = new GeneralDAO();
 		
 		if(getVehicle_id() != null && getVehicle_id().longValue() > 0L && getVehSummaryDetailsOfWorkOrder() != null && 
-				getVehSummaryDetailsOfWorkOrder().trim().length() > 0 && getInitVehOdometer() != null)
-		{
+				getVehSummaryDetailsOfWorkOrder().trim().length() > 0 && getInitVehOdometer() != null) {
 			boolean exist = false;
 			int size = getWorkOrder().getVehicles().size();
-			for(int i=0; i<size; i++)
-			{
-				WorkOrderVehicle e = getWorkOrder().getVehicles().get(i);
-				if(e.getVehicle().getId().longValue() == getVehicle_id().longValue())
-				{
-					exist = true;
-					break;
+			if(size > 0) {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Only one vehicle is allowed per RFQ!");
+			} else {
+				for(int i=0; i<size; i++) {
+					WorkOrderVehicle e = getWorkOrder().getVehicles().get(i);
+					if(e.getVehicle().getId().longValue() == getVehicle_id().longValue()) {
+						exist = true;
+						break;
+					}
 				}
-			}
-			
-			if(!exist)
-			{
-				WorkOrderVehicle vWorkOrd = new WorkOrderVehicle();
-				Object vobj = gDAO.find(Vehicle.class, getVehicle_id());
-				if(vobj != null)
-				{
-					vWorkOrd.setVehicle((Vehicle)vobj);
-					vWorkOrd.setCreatedBy(dashBean.getUser());
-					vWorkOrd.setCrt_dt(new Date());
-					vWorkOrd.setDetailsOfWork(getVehSummaryDetailsOfWorkOrder());
-					vWorkOrd.setInitEstAmount(getInitVehEstAmount());
-					vWorkOrd.setCurrentVehOdometer(getInitVehOdometer());
-					
-					getWorkOrder().getVehicles().add(vWorkOrd);
-					
-					setVehSummaryDetailsOfWorkOrder(null);
-					setInitVehOdometer(null);
-					setInitVehEstAmount(0);
-					
-					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle added successfully!");
+				
+				if(!exist) {
+					WorkOrderVehicle vWorkOrd = new WorkOrderVehicle();
+					Object vobj = gDAO.find(Vehicle.class, getVehicle_id());
+					if(vobj != null) {
+						vWorkOrd.setVehicle((Vehicle)vobj);
+						vWorkOrd.setCreatedBy(dashBean.getUser());
+						vWorkOrd.setCrt_dt(new Date());
+						vWorkOrd.setDetailsOfWork(getVehSummaryDetailsOfWorkOrder());
+						vWorkOrd.setInitEstAmount(getInitVehEstAmount());
+						vWorkOrd.setCurrentVehOdometer(getInitVehOdometer());
+						
+						if(getApproved_adhoc_req_id() > 0L) {
+							VehicleMaintenanceRequest adhocMainRequest = null;
+							Object obj = gDAO.find(VehicleMaintenanceRequest.class, getApproved_adhoc_req_id());
+							if(obj != null)
+								adhocMainRequest = (VehicleMaintenanceRequest)obj;
+							
+							vWorkOrd.setMaintRequest(adhocMainRequest);
+						}
+						
+						getWorkOrder().getVehicles().add(vWorkOrd);
+						
+						setVehSummaryDetailsOfWorkOrder(null);
+						setInitVehOdometer(null);
+						setInitVehEstAmount(0);
+						
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle added successfully!");
+					}
+					else
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Vehicle not found!");
 				}
 				else
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Vehicle not found!");
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Vehicle exists in the list already!");
 			}
-			else
-				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Vehicle exists in the list already!");
 		}
 		else
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please select a vehicle and enter the work description!");
@@ -714,10 +1773,141 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	private byte[] generateWorkOrderWordDoc(WorkOrder workder, Vendor vendor) {
+		byte[] data = null;
+		try {
+			if(workder != null) {
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				XWPFDocument document = new XWPFDocument();
+				
+				XWPFParagraph paragraphOne = document.createParagraph();
+		        paragraphOne.setAlignment(ParagraphAlignment.LEFT);
+		        /*paragraphOne.setBorderBottom(Borders.SINGLE);
+		        paragraphOne.setBorderTop(Borders.SINGLE);
+		        paragraphOne.setBorderRight(Borders.SINGLE);
+		        paragraphOne.setBorderLeft(Borders.SINGLE);
+		        paragraphOne.setBorderBetween(Borders.SINGLE);
+		        */
+		        XWPFRun paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Work Order No. - " + workder.getWorkOrderNumber());
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Type - " + workder.getWorkOrderType());
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Prepared by - " + workder.getCreatedBy().getPersonel().getFirstname() + " " + workder.getCreatedBy().getPersonel().getLastname());
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Prepared on - " + workder.getCrt_dt());
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Description - " + workder.getSummaryDetailsOfWorkOrder());
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Status - BIDDING");
+		        paragraphOneRunOne.addBreak();
+		        
+		        paragraphOneRunOne = paragraphOne.createRun();
+		        paragraphOneRunOne.setBold(true);
+		        paragraphOneRunOne.setItalic(true);
+		        paragraphOneRunOne.setText("Vendor - " + vendor.getName());
+		        paragraphOneRunOne.addBreak();
+		        
+		        XWPFParagraph paragraph2 = document.createParagraph();
+		        paragraph2.setAlignment(ParagraphAlignment.CENTER);
+		        XWPFRun paragraph2Run = paragraph2.createRun();
+		        paragraph2Run.setBold(true);
+		        paragraph2Run.setItalic(true);
+		        paragraph2Run.setUnderline(UnderlinePatterns.DOUBLE);
+		        paragraph2Run.setText("Vehicles");
+		        paragraph2Run.addBreak();
+		        
+		        for(WorkOrderVehicle v : workder.getVehicles()) {
+		        	XWPFParagraph paragraph = document.createParagraph();
+		        	paragraph.setAlignment(ParagraphAlignment.LEFT);
+			        XWPFRun paragraphRun = paragraph.createRun();
+			        paragraphRun.setBold(true);
+			        paragraphRun.setItalic(true);
+			        paragraphRun.setText("Registration Number: " + v.getVehicle().getRegistrationNo());
+			        paragraphRun.addBreak();
+			        
+			        paragraphRun = paragraph.createRun();
+			        paragraphRun.setBold(true);
+			        paragraphRun.setItalic(true);
+			        paragraphRun.setText("Model: " + v.getVehicle().getModel().getName() + "[" + v.getVehicle().getModel().getYear() + "]");
+			        paragraphRun.addBreak();
+			        
+			        paragraphRun = paragraph.createRun();
+			        paragraphRun.setBold(true);
+			        paragraphRun.setItalic(true);
+			        paragraphRun.setText("Work Required: " + v.getDetailsOfWork());
+			        paragraphRun.addBreak();
+			        
+			        paragraphRun = paragraph.createRun();
+			        paragraphRun.setBold(true);
+			        paragraphRun.setItalic(true);
+			        paragraphRun.setText("Vendor Cost: <please fill your cost here>");
+			        paragraphRun.addBreak();
+			        
+			        XWPFTable table = paragraph.getDocument().createTable();
+			        XWPFTableRow tableRowOne = table.getRow(0);
+					addHeaderCell(tableRowOne, "Item", true);
+					addHeaderCell(tableRowOne, "Type", false);
+					addHeaderCell(tableRowOne, "Action", false);
+					addHeaderCell(tableRowOne, "Count", false);
+					
+					addHeaderCell(tableRowOne, "Vendor Cost", false);
+					addHeaderCell(tableRowOne, "Comment", false);
+					
+					for(WorkOrderItem itm : v.getItems()) {
+						XWPFTableRow tableRow = table.createRow();
+						tableRow.getCell(0).setText(itm.getItem().getName());
+						tableRow.getCell(1).setText(itm.getItem().getType().getName());
+						tableRow.getCell(2).setText(itm.getAction());
+						tableRow.getCell(3).setText(String.valueOf(itm.getCount()));
+						
+						tableRow.getCell(4).setText("");
+						tableRow.getCell(5).setText("");
+					}
+		        }
+		        gDAO.destroy();
+		        
+		        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		        document.write(baos);
+		        
+		        data = baos.toByteArray();
+			}
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+		return data;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void createWorkOrd(String type)
 	{
+		String naration = "Create workorder RFQ: ";
 		GeneralDAO gDAO = new GeneralDAO();
+		
 		String workOrderNumber = type + "-";
 		
 		Hashtable<String, Object> params = new Hashtable<String, Object>();
@@ -729,8 +1919,7 @@ public class FleetMBean implements Serializable
 			Vector<WorkOrder> ords = (Vector<WorkOrder>)objs;
 			int size = ords.size();
 			String seq = String.valueOf(size);
-			for(int i=0; i<5; i++)
-			{
+			for(int i=0; i<5; i++) {
 				if(seq.length() == 5)
 					break;
 				else
@@ -739,66 +1928,119 @@ public class FleetMBean implements Serializable
 			workOrderNumber = workOrderNumber + seq;
 		}
 		
-		if(type.equalsIgnoreCase("Adhoc") && getApproved_adhoc_req_id() > 0L)
-		{
-			VehicleAdHocMaintenanceRequest adhocMainRequest = null;
-			
-			Object obj = gDAO.find(VehicleAdHocMaintenanceRequest.class, getApproved_adhoc_req_id());
-			if(obj != null)
-				adhocMainRequest = (VehicleAdHocMaintenanceRequest)obj;
-			
-			getWorkOrder().setAdhocMainRequest(adhocMainRequest);
+		Vector<Vendor> workOrderVendors = new Vector<Vendor>();
+		
+		if(type.equalsIgnoreCase("routine")) {
+			for(Vendor v : getVserviceVendors()) {
+				if(v.isSelected())
+					workOrderVendors.add(v);
+			}
+		} else if(type.equalsIgnoreCase("adhoc")) {
+			for(Vendor v : getVrepairVendors()) {
+				if(v.isSelected())
+					workOrderVendors.add(v);
+			}
 		}
-		
-		getWorkOrder().setCreatedBy(dashBean.getUser());
-		getWorkOrder().setCrt_dt(new Date());
-		getWorkOrder().setPartner(getPartner());
-		getWorkOrder().setWorkOrderType(type);
-		getWorkOrder().setFinished(false);
-		getWorkOrder().setStatus("NEW");
-		
-		Vector<WorkOrderVehicle> wrkVehs = getWorkOrder().getVehicles();
-		
-		getWorkOrder().setWorkOrderNumber(workOrderNumber);
-		
-		gDAO.startTransaction();
-		if(gDAO.save(getWorkOrder()))
-		{
-			for(WorkOrderVehicle v : wrkVehs)
-			{
-				Vector<WorkOrderItem> wrkItms = v.getItems();
-				v.setWorkOrder(getWorkOrder());
-				if(gDAO.save(v))
-				{
-					for(WorkOrderItem itm : wrkItms)
-					{
-						itm.setWorkOrderVehicle(v);
-						gDAO.save(itm);
+		if(workOrderVendors.size() > 0) {
+			getWorkOrder().setCreatedBy(dashBean.getUser());
+			getWorkOrder().setCrt_dt(new Date());
+			getWorkOrder().setPartner(getPartner());
+			getWorkOrder().setWorkOrderType(type);
+			getWorkOrder().setFinished(false);
+			getWorkOrder().setStatus("SETUP"); // SETUP, then REQUEST, if approved then NEW
+			
+			Vector<WorkOrderVehicle> wrkVehs = getWorkOrder().getVehicles();
+			Vector<WorkOrderVendor> wrkVendors = new Vector<WorkOrderVendor>();
+			
+			getWorkOrder().setWorkOrderNumber(workOrderNumber);
+			
+			naration += "" + getWorkOrder().getWorkOrderNumber();
+			
+			gDAO.startTransaction();
+			if(gDAO.save(getWorkOrder())) {
+				for(Vendor v : workOrderVendors) {
+					WorkOrderVendor wv = new WorkOrderVendor();
+					wv.setVendor(v);
+					wv.setWorkOrder(getWorkOrder());
+					wv.setCrt_dt(new Date());
+					wv.setCreatedBy(dashBean.getUser());
+					wv.setSubmittionStatus("PENDING");
+					gDAO.save(wv);
+					wrkVendors.add(wv);
+				}
+				
+				for(WorkOrderVehicle v : wrkVehs) {
+					Vector<WorkOrderItem> wrkItms = v.getItems();
+					v.setWorkOrder(getWorkOrder());
+					if(gDAO.save(v)) {
+						for(WorkOrderItem itm : wrkItms) {
+							itm.setWorkOrderVehicle(v);
+							gDAO.save(itm);
+						}
+						
+						if(v.getMaintRequest() != null) {
+							v.getMaintRequest().setStatus("NEW");
+							gDAO.update(v.getMaintRequest());
+						}
 					}
 				}
 			}
-		}
-		
-		try
-		{
-			gDAO.commit();
-			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Work order '" + workOrderNumber + "' created successfully!");
-			setWorkOrder(null);
-		}
-		catch(Exception ex)
-		{
-			gDAO.rollback();
-			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+			
+			try
+			{
+				gDAO.commit();
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Work order '" + workOrderNumber + "' RFQ created successfully!");
+				naration += ", Status: Success";
+				for(WorkOrderVendor v : wrkVendors) {
+					byte[] data = generateWorkOrderWordDoc(getWorkOrder(), v.getVendor());
+					if(data != null && v.getVendor().getEmail() != null) {
+						StringBuilder sb = new StringBuilder();
+						sb.append("<html><body>");
+						sb.append("<p>Dear <strong>").append(v.getVendor().getName()).append("</strong>,</p>");
+						sb.append("<p>Your organization has been selected to submit a bid for the attached work from <strong>").append(getPartner().getName()).append("</strong>. Please see the attached document for more information and also click the link below to submit your bid when ready.</p>");
+						sb.append("<p><a href=\"http://sattrakservices.com/fms/faces/submitbid.xhtml?id=").append(v.getId()).append("\">Click Here to Submit Your Bid</a></p>");
+						sb.append("<br/><br/>");
+						sb.append("<p><strong>NOTE: You must submit your bid on or before ").append(getWorkOrder().getMaxBidSubmission_dt()).append("</strong></p>");
+						sb.append("<br/><br/>");
+						sb.append("<p>Regards<br/>Sattrak FMS</p>");
+						sb.append("</body></html>");
+						
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{v.getVendor().getEmail()}, "Estimate Submit Request", sb.toString(), data, getWorkOrder().getWorkOrderNumber() + ".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				}
+				
+				setWorkOrder(null);
+				setMyAdhocApprovedMaintRequests(null);
+				setMyRoutineApprovedMaintRequests(null);
+				setPendingAdhocWorkOrders(null);
+				setPendingRoutineWorkOrders(null);
+				setDuervehicles(null);
+			} catch(Exception ex) {
+				ex.printStackTrace();
+				gDAO.rollback();
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += ", Status: Failed: " + gDAO.getMessage();
+			}
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please select at least one Vendor for this work order.");
+			naration += ", Status: Failed: Please select at least one Vendor for this work order.";
 		}
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 		
 		gDAO.destroy();
+		
+		dashBean.saveAudit(naration, "", null);
 	}
 	
 	public void attendToDisposalRequest()
 	{
 		if(getPendingDisposalRequests() != null && getPendingDisposalRequests().size() > 0)
 		{
+			String naration = "Attend to disposal request: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -809,6 +2051,8 @@ public class FleetMBean implements Serializable
 					expR.setApprovalComment(getApprovalComment());
 					expR.setApprovalStatus(getApprovalStatus());
 					expR.setApproval_dt(new Date());
+					
+					naration += " Vehicle: " + expR.getVehicle().getRegistrationNo() + ": " + expR.getApprovalStatus() + ",";
 					
 					ret = gDAO.update(expR);
 					if(!ret)
@@ -825,23 +2069,40 @@ public class FleetMBean implements Serializable
 								break;
 						}
 					}
+					
+					StringBuilder sb = new StringBuilder();
+					sb.append("<html><body>");
+					sb.append("<p>Dear <strong>").append(expR.getCreatedBy().getPersonel().getFirstname()).append("</strong>,</p>");
+					sb.append("<p>Your disposal request for vehicle <strong>").append(expR.getVehicle().getRegistrationNo()).append("</strong> has been ").append(expR.getApprovalStatus()).append("</p>");
+					sb.append("<br/><br/>");
+					sb.append("<p>Regards<br/>FMS</p>");
+					sb.append("</body></html>");
+					
+					try {
+						Emailer.sendEmail("fms@sattrakservices.com", new String[]{expR.getCreatedBy().getPersonel().getEmail()}, "Disposal Request " + expR.getApprovalStatus(), sb.toString());
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 			}
 			if(ret)
 			{
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle disposal request(s) attended to successfully!");
-				
+				naration += " Status: Success";
 				setPendingDisposalRequests(null);
 				setApprovalComment(null);
 				setApprovalStatus(null);
+				setMyAttendedDisposalRequest(null);
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += " Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -855,12 +2116,14 @@ public class FleetMBean implements Serializable
 	{
 		if(getMyDisposalRequests() != null && getMyDisposalRequests().size() > 0)
 		{
+			String naration = "Create disposal request: ";
 			ArrayList<String> emails = new ArrayList<String>(), usernames = new ArrayList<String>();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
 			for(VehicleDisposal expR : getMyDisposalRequests())
 			{
+				naration += expR.getVehicle().getRegistrationNo() + ", ";
 				ret = gDAO.save(expR);
 				if(ret)
 				{
@@ -897,7 +2160,7 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle disposal request(s) save successfully!");
-				
+				naration += " Status: Success";
 				if(emails.size() > 0)
 				{
 					final String[] to = new String[emails.size()];
@@ -908,7 +2171,7 @@ public class FleetMBean implements Serializable
 					sb.append("<html><body>");
 					sb.append("<p><strong>Hello All</strong><br/></p>");
 					sb.append("<p>Please be informed that User: '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "' just submitted a batch disposal request to " + to.length + " person(s), which you are one of, for approval.<br/></p>");
-					sb.append("<p>Regards<br/>FMS Team</p>");
+					sb.append("<p>Regards<br/>FMS</p>");
 					sb.append("</body></html>");
 					final String body = sb.toString();
 					Thread t = new Thread()
@@ -931,6 +2194,7 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += " Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
 		}
@@ -1020,11 +2284,14 @@ public class FleetMBean implements Serializable
 			if(getVdisposal().getNegoVal() > 0 && getVdisposal().getNetbookVal() > 0 &&
 					getVdisposal().getSoldTo() != null && getVdisposal().getSoldTo().trim().length() > 0)
 			{
+				String naration = "Create disposal request: ";
 				getVdisposal().setCreatedBy(dashBean.getUser());
 				getVdisposal().setCrt_dt(new Date());
 				getVdisposal().setRequest_dt(new Date());
 				getVdisposal().setVehicle(getSelectedVehicle());
 				getVdisposal().setApprovalStatus("PENDING");
+				
+				naration += getVdisposal().getVehicle().getRegistrationNo();
 				
 				GeneralDAO gDAO = new GeneralDAO();
 				
@@ -1086,16 +2353,19 @@ public class FleetMBean implements Serializable
 					
 					gDAO.commit();
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Disposal request submitted successfully!");
-					
+					naration += ", Status: Success";
 					setVdisposal(null);
 					setSelectedVehicle(null);
-					
 				}
 				else
 				{
 					gDAO.rollback();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", gDAO.getMessage());
+					naration += ", Status: Failed: " + gDAO.getMessage();
 				}
+				gDAO.destroy();
+				
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
@@ -1110,12 +2380,14 @@ public class FleetMBean implements Serializable
 	{
 		if(getVehicleDocuments() != null)
 		{
+			String naration = "Create vehicle documents: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			gDAO.startTransaction();
 			boolean ret = false;
 			for(VehicleDocument vd : getVehicleDocuments())
 			{
+				naration += vd.getDocumentType().getName() + ":" + vd.getVehicle().getRegistrationNo() + ", ";
 				ret = gDAO.save(vd);
 				if(!ret)
 					break;
@@ -1124,15 +2396,17 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Documents saved successfully.");
-				
+				naration += " Status: Success";
 				setVehicleDocuments(null);
 			}
 			else
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Save failed. Message: " + gDAO.getMessage());
+				naration += " Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1147,6 +2421,7 @@ public class FleetMBean implements Serializable
 		{
 			if(getDocumentContent().getContentType() != null && getDocumentContent().getContentType().toLowerCase().indexOf("pdf") >= 0)
 			{
+				String naration = "Create document type: ";
 				GeneralDAO gDAO = new GeneralDAO();
 				
 				Object dtObj = gDAO.find(DocumentType.class, getDocumentType_id());
@@ -1159,13 +2434,15 @@ public class FleetMBean implements Serializable
 					getVehicleDocument().setDocumentData(getDocumentContent().getContents());
 					getVehicleDocument().setVehicle(getSelectedVehicle());
 					
+					naration += getVehicleDocument().getDocumentType().getName() + ":" + getVehicleDocument().getVehicle().getRegistrationNo();
+					
 					gDAO.startTransaction();
 					boolean ret = gDAO.save(getVehicleDocument());
 					if(ret)
 					{
 						gDAO.commit();
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Document saved successfully.");
-						
+						naration += ", Status: Success";
 						setVehicleDocument(null);
 						setSelectedVehicleDocuments(null);
 					}
@@ -1173,13 +2450,16 @@ public class FleetMBean implements Serializable
 					{
 						gDAO.rollback();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Save failed. Message: " + gDAO.getMessage());
+						naration += ", Status: Failed: " + gDAO.getMessage();
 					}
 				}
 				else
 				{
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid document type selected!");
+					naration += ", Status: Failed: Invalid document type selected!";
 				}
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -1234,24 +2514,29 @@ public class FleetMBean implements Serializable
 	{
 		if(getVehicle_id() != null && getWarning_id() != null && getVehicleBehaviour().getEventDate() != null && getDriver_id() != null)
 		{
+			String naration = "Create driving warning";
 			GeneralDAO gDAO = new GeneralDAO();
 			Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
 			if(vObj != null)
 			{
 				Vehicle v = (Vehicle)vObj;
 				getVehicleBehaviour().setVehicle(v);
-				
+				naration += ":" + v.getRegistrationNo();
 				Object wObj = gDAO.find(VehicleWarning.class, getWarning_id());
 				if(wObj != null)
 				{
 					VehicleWarning vw = (VehicleWarning)wObj;
 					getVehicleBehaviour().setWarning(vw);
+					naration += ":" + vw.getName();
+					if(vw.getWarningValue() > 0)
+						getVehicleBehaviour().setWarningValue(vw.getWarningValue());
 					
 					Object pdObj = gDAO.find(PartnerDriver.class, getDriver_id());
 					if(pdObj != null)
 					{
 						PartnerDriver pd = (PartnerDriver)pdObj;
 						getVehicleBehaviour().setDriver(pd);
+						naration += ":" + pd.getPersonel().getFirstname() + " " + pd.getPersonel().getLastname();
 					}
 					
 					/*Hashtable<String, Object> params = new Hashtable<String, Object>();
@@ -1276,7 +2561,7 @@ public class FleetMBean implements Serializable
 					{
 						gDAO.commit();
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Warning saved successfully.");
-						
+						naration += ", Status: Success";
 						setVehicleBehaviour(null);
 						setVehicleBehaviours(null);
 					}
@@ -1284,17 +2569,22 @@ public class FleetMBean implements Serializable
 					{
 						gDAO.rollback();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Save failed. Message: " + gDAO.getMessage());
+						naration += ", Status: Failed: " + gDAO.getMessage();
 					}
 				}
 				else
 				{
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid warning selected!");
+					naration += ", Status: Failed: Invalid warning selected!";
 				}
 			}
 			else
 			{
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid vehicle selected!");
+				naration += ", Status: Failed: Invalid vehicle selected!";
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1322,20 +2612,25 @@ public class FleetMBean implements Serializable
 	public void onEdit(RowEditEvent event)
 	{
 		GeneralDAO gDAO = new GeneralDAO();
-		boolean ret = false;
 		Object eventSource = event.getObject();
 		
 		gDAO.startTransaction();
-		ret = gDAO.update(eventSource);
+		if(eventSource instanceof VehicleModel) {
+			VehicleModel vm = (VehicleModel)eventSource;
+			Object oldVmObj = gDAO.find(VehicleModel.class, vm.getId());
+			if(oldVmObj != null) {
+				VehicleModel nowVm = (VehicleModel)oldVmObj;
+				nowVm.setName(vm.getName());
+				nowVm.setYear(vm.getYear());
+				gDAO.update(nowVm);
+			}
+		} else
+			gDAO.update(eventSource);
 		
-		if(ret)
-		{
-			gDAO.commit();
+		if(gDAO.commit()) {
 			msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity updated successfully.");
 			FacesContext.getCurrentInstance().addMessage(null, msg);
-		}
-		else
-		{
+		} else {
 			gDAO.rollback();
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to update entity. " + gDAO.getMessage());
 			FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -1355,7 +2650,7 @@ public class FleetMBean implements Serializable
 		{
 			getWarnType().setCrt_dt(new Date());
 			getWarnType().setCreatedBy(dashBean.getUser());
-			
+			String naration = "Create warn type: " + getWarnType().getName() + ": " + getWarnType().getDescription();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -1368,7 +2663,7 @@ public class FleetMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Driving warning type saved successfully!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				naration += ", Status: Success";
 				setWarnType(null);
 				setWarnTypes(null);
 			}
@@ -1377,8 +2672,11 @@ public class FleetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1391,6 +2689,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getDocType().getName() != null)
 		{
+			String naration = "Create document type: " + getDocType().getName() + ":" + getDocType().getDescription();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -1403,7 +2702,7 @@ public class FleetMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Document type saved successfully!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				naration += ", Status: Success";
 				setDocType(null);
 				setDocTypes(null);
 			}
@@ -1412,8 +2711,11 @@ public class FleetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1426,6 +2728,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getLicType().getName() != null)
 		{
+			String naration = "Create license type: " + getLicType().getName();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -1438,7 +2741,7 @@ public class FleetMBean implements Serializable
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "License type saved successfully!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
+				naration += ", Status: Success";
 				setLicType(null);
 				setLicTypes(null);
 			}
@@ -1447,8 +2750,11 @@ public class FleetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1457,80 +2763,112 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void saveDrvLicense()
 	{
 		if(getDriver_id() != null && getDriverLicense().getTran_dt() != null && getDriverLicense().getLic_start_dt() != null &&
 				getTransactionType_id() != null && getTransactionType_id() > 0)
 		{
+			String naration = "Create driver's license: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object drvObj = gDAO.find(PartnerDriver.class, getDriver_id());
 			if(drvObj != null)
 			{
 				getDriverLicense().setDriver((PartnerDriver)drvObj);
+				naration += getDriverLicense().getDriver().getPersonel().getFirstname() + " " + getDriverLicense().getDriver().getPersonel().getLastname();
 				
 				Object ttObj = gDAO.find(TransactionType.class, getTransactionType_id());
-				if(ttObj != null)
+				if(ttObj != null) {
 					getDriverLicense().setTranType((TransactionType)ttObj);
+					naration += ":" + getDriverLicense().getTranType().getName();
+				}
 				
 				Object vendorObj = gDAO.find(Vendor.class, getVendor_id());
-				if(vendorObj != null)
+				if(vendorObj != null) {
 					getDriverLicense().setVendor((Vendor)vendorObj);
+					naration += ":" + getDriverLicense().getVendor().getName();
+				}
 				
 				if(getDriverLicenseDocument() != null)
 					getDriverLicense().setDocument(getDriverLicenseDocument().getContents());
 				
-				Calendar c = Calendar.getInstance();
-				c.setTime(getDriverLicense().getLic_start_dt());
-				c.add(Calendar.YEAR, 1);
-				getDriverLicense().setLic_end_dt(c.getTime());
+				if(getDriverLicense().getLic_end_dt() == null) {
+					Calendar c = Calendar.getInstance();
+					c.setTime(getDriverLicense().getLic_start_dt());
+					naration += ":" + getDriverLicense().getLic_start_dt();
+					c.add(Calendar.YEAR, 1);
+					getDriverLicense().setLic_end_dt(c.getTime());
+				}
+				naration += ":" + getDriverLicense().getLic_end_dt();
 				
+				boolean exists = false;
 				// Below commented to allow the ApplicationMBean to activate it
 				if(getDriverLicense().getLic_end_dt().after(new Date()))
 				{
 					getDriverLicense().setActive(true);
 					getDriverLicense().setExpired(false);
+					
+					//TODO: Check if there's an active license, if yes, then prevent this one from been saved as driver can only have one active license at a time
+					Query q = gDAO.createQuery("Select e from DriverLicense e where e.driver.id=d_id and e.active=:active and e.expired=:expired");
+					q.setParameter("d_id", getDriverLicense().getDriver().getId());
+					q.setParameter("active", true);
+					q.setParameter("expired", false);
+					Object obj = gDAO.search(q, 0);
+					if(obj != null) {
+						Vector<DriverLicense> objList = (Vector<DriverLicense>)obj;
+						if(objList.size() > 0) {
+							exists = true;
+						}
+					}
 				}
 				else
 				{
 					getDriverLicense().setActive(false);
 					getDriverLicense().setExpired(true);
 				}
-				
-				gDAO.startTransaction();
-				boolean ret = false;
-				if(getDriverLicense().getId() != null)
-				{
-					getDriverLicense().setCreatedBy(dashBean.getUser());
-					ret = gDAO.update(getDriverLicense());
-				}
-				else
-				{
-					getDriverLicense().setCrt_dt(new Date());
-					getDriverLicense().setCreatedBy(dashBean.getUser());
-					ret = gDAO.save(getDriverLicense());
-				}
-				
-				if(ret)
-				{
-					gDAO.commit();
-					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Drivers' License captured/updated successfully!");
-					FacesContext.getCurrentInstance().addMessage(null, msg);
+				if(!exists) {
+					gDAO.startTransaction();
+					boolean ret = false;
+					if(getDriverLicense().getId() != null)
+					{
+						getDriverLicense().setCreatedBy(dashBean.getUser());
+						ret = gDAO.update(getDriverLicense());
+					}
+					else
+					{
+						getDriverLicense().setCrt_dt(new Date());
+						getDriverLicense().setCreatedBy(dashBean.getUser());
+						ret = gDAO.save(getDriverLicense());
+					}
 					
-					setDriverLicense(null);
-					setDriverLicenses(null);
-					setDriver_id(null);
-					setTransactionType_id(null);
-					setDriverLicenseDocument(null);
-					setVendor_id(null);
-				}
-				else
-				{
-					gDAO.rollback();
-					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
+					if(ret)
+					{
+						gDAO.commit();
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Drivers' License captured/updated successfully!");
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						naration += ", Status: Success";
+						setDriverLicense(null);
+						setDriverLicenses(null);
+						setDriver_id(null);
+						setTransactionType_id(null);
+						setDriverLicenseDocument(null);
+						setVendor_id(null);
+					}
+					else
+					{
+						gDAO.rollback();
+						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
+						FacesContext.getCurrentInstance().addMessage(null, msg);
+						naration += ", Status: Failed: " + gDAO.getMessage();
+					}
+				} else {
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Driver has an active license already!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
+					naration += ", Status: Failed: Driver has an active license already!";
 				}
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -1545,38 +2883,83 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	public void downloadLicenseDoc(long id)
+	{
+		try
+		{
+			GeneralDAO gDAO = new GeneralDAO();
+			Object obj = gDAO.find(VehicleLicense.class, id);
+			gDAO.destroy();
+			if(obj != null) {
+				VehicleLicense lc = (VehicleLicense)obj;
+				if(lc.getDocument() != null) {
+					FacesContext context = FacesContext.getCurrentInstance();
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			        baos.write(lc.getDocument());
+			        
+			        String fileName = lc.getVehicle().getRegistrationNo() + "-" + lc.getSubLicType() + ".pdf";
+			        
+			        writeFileToResponse(context.getExternalContext(), baos, fileName, "application/pdf");
+					
+					context.responseComplete();
+				} else {
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "License does not have a document attached to it!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+			} else {
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "License not found!");
+				FacesContext.getCurrentInstance().addMessage(null, msg);
+			}
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "ERROR: ", ex.getMessage());
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+	}
+	
 	public void saveLicense()
 	{
 		if(getVehicle_id() != null && getLicense().getTran_dt() != null && getLicense().getLic_start_dt() != null &&
-				getLicenseType_id() != null && getLicenseType_id() > 0 && getTransactionType_id() != null && 
+				getLicense().getLic_end_dt() != null && getLicenseType_id() != null && getLicenseType_id() > 0 && getTransactionType_id() != null && 
 				getTransactionType_id() > 0)
 		{
+			String naration = "Create license:";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
 			if(vObj != null)
 			{
 				getLicense().setVehicle((Vehicle)vObj);
+				naration += getLicense().getVehicle().getRegistrationNo();
 				
 				Object ltObj = gDAO.find(LicenseType.class, getLicenseType_id());
-				if(ltObj != null)
+				if(ltObj != null) {
 					getLicense().setLicType((LicenseType)ltObj);
+					naration += ":" + getLicense().getLicType().getName();
+				}
 				
 				Object ttObj = gDAO.find(TransactionType.class, getTransactionType_id());
-				if(ttObj != null)
+				if(ttObj != null) {
 					getLicense().setTranType((TransactionType)ttObj);
+					naration += ":" + getLicense().getTranType().getName();
+				}
 				
 				Object vendorObj = gDAO.find(Vendor.class, getVendor_id());
-				if(vendorObj != null)
+				if(vendorObj != null) {
 					getLicense().setVendor((Vendor)vendorObj);
+					naration += ":" + getLicense().getVendor().getName();
+				}
 				
 				if(getLicenseDocument() != null)
 					getLicense().setDocument(getLicenseDocument().getContents());
 				
-				Calendar c = Calendar.getInstance();
+				// Commented this out because its now supplied from the frontend by the user
+				/*Calendar c = Calendar.getInstance();
 				c.setTime(getLicense().getLic_start_dt());
 				c.add(Calendar.YEAR, 1);
-				getLicense().setLic_end_dt(c.getTime());
+				getLicense().setLic_end_dt(c.getTime());*/
 				
 				if(getLicense().getLic_end_dt().after(new Date()))
 				{
@@ -1608,7 +2991,7 @@ public class FleetMBean implements Serializable
 					gDAO.commit();
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "License captured/updated successfully!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
-					
+					naration += " Status: Success";
 					setLicense(null);
 					setLicenses(null);
 					setVehicle_id(null);
@@ -1622,14 +3005,18 @@ public class FleetMBean implements Serializable
 					gDAO.rollback();
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
+					naration += " Status: Failed: " + gDAO.getMessage();
 				}
-				gDAO.destroy();
 			}
 			else
 			{
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid vehicle selected!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += " Status: Failed: Invalid vehicle selected!";
 			}
+			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1643,6 +3030,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getPendingFuelingRequests() != null && getPendingFuelingRequests().size() > 0)
 		{
+			String naration = "Attend to fueling request: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
@@ -1650,16 +3038,69 @@ public class FleetMBean implements Serializable
 			{
 				if(expR.isSelected())
 				{
-					expR.setApprovalComment(getApprovalComment());
-					expR.setApprovalStatus(getApprovalStatus());
-					expR.setApproval_dt(new Date());
+					Vector<Approver> list = null;
+					Query q = gDAO.createQuery("Select e from Approver e where e.entityId=:entityId and e.entityName='Fueling'");
+					q.setParameter("entityId", expR.getId());
+					Object approverObj = gDAO.search(q, 0);
+					if(approverObj != null) {
+						list = (Vector<Approver>)approverObj;
+						String expRStatus = "APPROVED";
+						for(Approver ap : list) {
+							if(ap.getApprovalUser().getId().longValue() == dashBean.getUser().getId().longValue()) {
+								ap.setApprovalComment(getApprovalComment());
+								ap.setApprovalStatus(getApprovalStatus());
+								ap.setApproval_dt(new Date());
+								ret = gDAO.update(ap);
+								naration += expR.getVehicle().getRegistrationNo() + ":" + expR.getAmt() + ":" + ap.getApprovalStatus();
+							}
+							if(expRStatus.equals("APPROVED") && ap.getApprovalStatus().equalsIgnoreCase("PENDING"))
+								expRStatus = "PENDING";
+							else if(ap.getApprovalStatus().equalsIgnoreCase("DENIED"))
+								expRStatus = "DENIED";
+						}
+						expR.setApprovalStatus(expRStatus);
+					}
 					
 					ret = gDAO.update(expR);
 					if(!ret)
 						break;
 					else
 					{
-						if(getApprovalStatus().equalsIgnoreCase("APPROVED"))
+						StringBuilder sb = new StringBuilder();
+						sb.append("<html><body>");
+						sb.append("<p>Dear <strong>").append(expR.getCreatedBy().getPersonel().getFirstname()).append("</strong>,</p>");
+						sb.append("<p>This is to notify you of approval update on fueling request you submitted for vehicle: ").append(expR.getVehicle().getRegistrationNo()).append(" on ").append(expR.getRequest_dt()).append("</p>");
+						sb.append("<p>The approval status of the request is <strong>").append((expR.getApprovalStatus().equals("DENIED") ? "<font color='red'>" : (expR.getApprovalStatus().equals("APPROVED") ? "<font color='green'>" : "<font color='yellow'>"))).append(expR.getApprovalStatus()).append("</font></strong></p>");
+						sb.append("<p>Below is the list of approvers and their comments: -</p>");
+						sb.append("<table width='100%' border='1'>");
+						sb.append("<tr><th>Approver</th><th>Status</th><th>Date</th><th>Comment</th></tr>");
+						if(list != null) {
+							for(Approver ap : list) {
+								sb.append("<tr><th>").append(ap.getApprovalUser().getPersonel().getFirstname() + " " + ap.getApprovalUser().getPersonel().getLastname()).append("</th><th>")
+									.append(ap.getApprovalStatus()!=null ? ap.getApprovalStatus() : "N/A").append("</th><th>")
+									.append(ap.getApproval_dt() != null ? ap.getApproval_dt() : "N/A").append("</th><th>")
+									.append(ap.getApprovalComment() != null ? ap.getApprovalComment() : "N/A").append("</th></tr>");
+							}
+						}
+						sb.append("</table>");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						final String[] to = new String[]{expR.getCreatedBy().getPersonel().getEmail()};
+						final String body = sb.toString();
+						Thread t = new Thread()
+						{
+							public void run()
+							{
+								try {
+									Emailer.sendEmail("fms@sattrakservices.com", to, "Fueling Request Approval Update", body);
+								} catch(Exception ex){}
+							}
+						};
+						t.start();
+						
+						//TODO: We can't capture the fueling expense here. We have to now make the approve fuelings available as a dropdown for fuel capture, 
+						//then it goes to the expense, for now, its just approved.
+						/*if(expR.getApprovalStatus().equalsIgnoreCase("APPROVED"))
 						{
 							Hashtable<String, Object> params = new Hashtable<String, Object>();
 							params.put("name", "Fueling");
@@ -1679,7 +3120,7 @@ public class FleetMBean implements Serializable
 									exp.setExpense_dt(expR.getFueling_dt());
 									exp.setPartner(expR.getCreatedBy().getPartner());
 									exp.setRemarks("Fueling for vehicle: " + expR.getVehicle().getRegistrationNo() + " on " + getFueling().getCaptured_dt());
-									
+									exp.setVehicle(expR.getVehicle());
 									exp.setType(et);
 									
 									ret = gDAO.save(exp);
@@ -1732,7 +3173,7 @@ public class FleetMBean implements Serializable
 								if(!ret)
 									break;
 							}
-						}
+						}*/
 					}
 				}
 			}
@@ -1740,7 +3181,7 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Fueling request(s) attended to successfully!");
-				
+				naration += ", Status: Success";
 				setPendingFuelingRequests(null);
 				setApprovalComment(null);
 				setApprovalStatus(null);
@@ -1749,8 +3190,11 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1764,38 +3208,41 @@ public class FleetMBean implements Serializable
 	{
 		if(getMyFuelingRequests() != null && getMyFuelingRequests().size() > 0)
 		{
+			String naration = "Save batch fueling requests: ";
 			ArrayList<String> emails = new ArrayList<String>(), usernames = new ArrayList<String>();
 			GeneralDAO gDAO = new GeneralDAO();
 			gDAO.startTransaction();
 			boolean ret = false;
 			for(VehicleFuelingRequest expR : getMyFuelingRequests())
 			{
+				expR.setApprovalStatus("PENDING");
 				ret = gDAO.save(expR);
+				naration += expR.getVehicle().getRegistrationNo() + ":" + expR.getAmt() + ", ";
 				if(ret)
 				{
-					try
-					{
-						String to = expR.getApprovalUser().getPersonel().getEmail();
-						if(to != null && to.trim().length() > 0 && !emails.contains(to))
-							emails.add(to);
-					} catch(Exception ex){}
-					try
-					{
-						if(!usernames.contains(expR.getApprovalUser().getUsername()))
-						{
-							usernames.add(expR.getApprovalUser().getUsername());
-							// Send notification and email to the approval user
-							Notification n = new Notification();
-							n.setCrt_dt(new Date());
-							n.setUser(expR.getApprovalUser());
-							n.setMessage("You have pending fueling request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
-							n.setNotified(false);
-							n.setSubject("Fueling Request");
-							n.setPage_url("approve_fueling");
+					try {
+						for(Approver ap : getApprovers()) {
+							ap.setEntityId(expR.getId());
+							gDAO.update(ap);
+							try {
+								String to = ap.getApprovalUser().getPersonel().getEmail();
+								if(to != null && to.trim().length() > 0 && !emails.contains(to))
+									emails.add(to);
+							} catch(Exception ex) {}
 							
-							ret = gDAO.save(n);
-							if(!ret)
-								break;
+							if(!usernames.contains(ap.getApprovalUser().getUsername())) {
+								usernames.add(ap.getApprovalUser().getUsername());
+								// Send notification and email to the approval user
+								Notification n = new Notification();
+								n.setCrt_dt(new Date());
+								n.setUser(ap.getApprovalUser());
+								n.setMessage("You have pending fueling request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
+								n.setNotified(false);
+								n.setSubject("Fueling Request");
+								n.setPage_url("approve_fueling");
+								
+								gDAO.save(n);
+							}
 						}
 					} catch(Exception ex){}
 				}
@@ -1806,7 +3253,7 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.commit();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Fueling request(s) save successfully!");
-				
+				naration += " Status: Success";
 				if(emails.size() > 0)
 				{
 					final String[] to = new String[emails.size()];
@@ -1817,7 +3264,7 @@ public class FleetMBean implements Serializable
 					sb.append("<html><body>");
 					sb.append("<p><strong>Hello All</strong><br/></p>");
 					sb.append("<p>Please be informed that User: '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "' just submitted a batch fueling request to " + to.length + " person(s), which you are one of, for approval.<br/></p>");
-					sb.append("<p>Regards<br/>FMS Team</p>");
+					sb.append("<p>Regards<br/>FMS</p>");
 					sb.append("</body></html>");
 					final String body = sb.toString();
 					Thread t = new Thread()
@@ -1833,6 +3280,7 @@ public class FleetMBean implements Serializable
 					t.start();
 				}
 				
+				setApprovers(null);
 				setMyFuelingRequests(null);
 				setPendingFuelingRequests(null);
 			}
@@ -1840,8 +3288,10 @@ public class FleetMBean implements Serializable
 			{
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+				naration += " Status: Failed: " + gDAO.getMessage();
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -1850,10 +3300,33 @@ public class FleetMBean implements Serializable
 		FacesContext.getCurrentInstance().addMessage(null, msg);
 	}
 	
+	public Vector<PartnerUser> getApproveFuelingUsers() {
+		boolean research = false;
+		if(approveFuelingUsers == null)
+			research = true;
+		else if(approveFuelingUsers.size() == 0)
+			research = true;
+		else {
+			try {
+				if(approveFuelingUsers.get(0).getPartner().getId().longValue() == getPartner().getId().longValue());
+				else
+					research = true;
+			} catch(Exception e){
+				research = true;
+			}
+		}
+		if(research) {
+			try {
+				approveFuelingUsers = ddBean.getUsersWithFunction(getPartner().getId(), "approve_fueling");
+			} catch(Exception ex) {}
+		}
+		return approveFuelingUsers;
+	}
+	
 	public void addFuelingRequestToBatch()
 	{
 		if(getVehicle_id() != null && getFuelingRequest().getFueling_dt() != null && getFuelingRequest().getAmt() > 0 &&
-				getFuelingRequest().getLitres() > 0 && getApprovalUser_id() != null)
+				getFuelingRequest().getLitres() > 0)
 		{
 			GeneralDAO gDAO = new GeneralDAO();
 			
@@ -1862,13 +3335,25 @@ public class FleetMBean implements Serializable
 			{
 				getFuelingRequest().setVehicle((Vehicle)vObj);
 				
-				Object uObj = gDAO.find(PartnerUser.class, getApprovalUser_id());
-				if(uObj != null)
-				{
-					PartnerUser approveUser = (PartnerUser)uObj;
-					getFuelingRequest().setApprovalUser(approveUser);
+				try {
+					for(PartnerUser pu : getApproveFuelingUsers()) {
+						if(pu.isSelected()) {
+							Approver ap = new Approver();
+							ap.setCrt_dt(new Date());
+							ap.setEntityName("Fueling");
+							ap.setApprovalUser(pu);
+							ap.setApprovalStatus("PENDING");
+							ap.setCreatedBy(dashBean.getUser());
+							getApprovers().add(ap);
+						}
+					}
+				} catch(Exception ex){}
+				
+				if(getApprovers().size() > 0) {
+					/*PartnerUser approveUser = (PartnerUser)uObj;
+					getFuelingRequest().setApprovalUser(approveUser);*/
 					
-					getFuelingRequest().setApprovalStatus("PENDING");
+					//getFuelingRequest().setApprovalStatus("PENDING");
 					getFuelingRequest().setCreatedBy(dashBean.getUser());
 					getFuelingRequest().setCrt_dt(new Date());
 					getFuelingRequest().setRequest_dt(new Date());
@@ -1883,7 +3368,7 @@ public class FleetMBean implements Serializable
 				}
 				else
 				{
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid approval user selected!");
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Please select at least one approver user!");
 				}
 			}
 			else
@@ -1926,20 +3411,23 @@ public class FleetMBean implements Serializable
 		if(getVehicle_id() != null && getFuelingRequest().getFueling_dt() != null && getFuelingRequest().getAmt() > 0 &&
 					getFuelingRequest().getLitres() > 0 && getApprovalUser_id() != null)
 		{
+			String naration = "Create fueling request: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
 			if(vObj != null)
 			{
 				getFuelingRequest().setVehicle((Vehicle)vObj);
+				naration += getFuelingRequest().getVehicle().getRegistrationNo() + ":" + getFuelingRequest().getAmt();
 				
 				Object uObj = gDAO.find(PartnerUser.class, getApprovalUser_id());
 				if(uObj != null)
 				{
-					PartnerUser approveUser = (PartnerUser)uObj;
+					//TODO: Fix this with now multiple approval users
+					/*PartnerUser approveUser = (PartnerUser)uObj;
 					getFuelingRequest().setApprovalUser(approveUser);
 					
-					getFuelingRequest().setApprovalStatus("PENDING");
+					getFuelingRequest().setApprovalStatus("PENDING");*/
 					getFuelingRequest().setCreatedBy(dashBean.getUser());
 					getFuelingRequest().setCrt_dt(new Date());
 					getFuelingRequest().setRequest_dt(new Date());
@@ -1952,7 +3440,7 @@ public class FleetMBean implements Serializable
 						// Send notification and email to the approval user
 						Notification n = new Notification();
 						n.setCrt_dt(new Date());
-						n.setUser(approveUser);
+						//n.setUser(approveUser);
 						n.setMessage("You have pending fueling request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "'. Submitted: " + new Date().toLocaleString());
 						n.setNotified(false);
 						n.setSubject("Fueling Request");
@@ -1961,8 +3449,9 @@ public class FleetMBean implements Serializable
 						gDAO.save(n);
 						
 						gDAO.commit();
-						
-						if(approveUser.getPersonel().getEmail() != null && approveUser.getPersonel().getEmail().trim().length() > 0)
+						naration += ", Status: Success";
+						//TODO: Work on this section with multiple approver users style
+						/*if(approveUser.getPersonel().getEmail() != null && approveUser.getPersonel().getEmail().trim().length() > 0)
 						{
 							final String to = approveUser.getPersonel().getEmail();
 							final String subject = "Fueling Request";
@@ -1984,7 +3473,7 @@ public class FleetMBean implements Serializable
 								}
 							};
 							t.start();
-						}
+						}*/
 						
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Fueling request saved successfully!");
 						setFuelingRequest(null);
@@ -1995,18 +3484,22 @@ public class FleetMBean implements Serializable
 					{
 						gDAO.rollback();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during save: " + gDAO.getMessage());
+						naration += ", Status: Failed: " + gDAO.getMessage();
 					}
 				}
 				else
 				{
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid approval user selected!");
+					naration += ", Status: Failed: Invalid approval user selected!";
 				}
 			}
 			else
 			{
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Invalid vehicle selected!");
+				naration += ", Status: Failed: Invalid vehicle selected!";
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2022,13 +3515,14 @@ public class FleetMBean implements Serializable
 		if(getVehicle_id() != null && getFueling().getCaptured_dt() != null && getFueling().getAmt() > 0 &&
 				getFueling().getLitres() > 0)
 		{
+			String naration = "Create fueling: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
 			if(vObj != null)
 			{
 				getFueling().setVehicle((Vehicle)vObj);
-			
+				naration += getFueling().getVehicle().getRegistrationNo() + ":" + getFueling().getAmt();
 				gDAO.startTransaction();
 				boolean ret = false;
 				if(getFueling().getId() != null)
@@ -2062,7 +3556,7 @@ public class FleetMBean implements Serializable
 							exp.setExpense_dt(getFueling().getCaptured_dt());
 							exp.setPartner(getPartner());
 							exp.setRemarks("Fueling for vehicle: " + getFueling().getVehicle().getRegistrationNo() + " on " + getFueling().getCaptured_dt());
-							
+							exp.setVehicle(getFueling().getVehicle());
 							exp.setType(expTypes.get(0));
 							
 							gDAO.save(exp);
@@ -2094,6 +3588,7 @@ public class FleetMBean implements Serializable
 					}
 					
 					gDAO.commit();
+					naration += ", Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Fueling captured/updated successfully!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 					
@@ -2106,8 +3601,11 @@ public class FleetMBean implements Serializable
 					gDAO.rollback();
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
+					naration += ", Status: Failed: " + gDAO.getMessage();
 				}
 				gDAO.destroy();
+				
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -2122,15 +3620,133 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	public void requestAccidentMaintenance() {
+		if(getSelectedAccident() != null && getSelectedAccident().getId() != null) {
+			if(getMaintRequest().getDescription() != null && getApprover_id() != null &&
+					getApprover_id() > 0) {
+				getMaintRequest().setMaintenanceType("Adhoc");
+				String naration = "Submit vehicle maintenance request: ";
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				PartnerUser approver = null;
+				if(getApprover_id() != null && getApprover_id() > 0) {
+					Query q = gDAO.createQuery("Select e from PartnerUser e where e.personel.id=:id");
+					q.setParameter("id", getApprover_id());
+					Object obj = gDAO.search(q, 1);
+					if(obj != null)
+						approver = (PartnerUser)obj;
+				}
+				if(approver != null) {
+					String approverName = approver.getPersonel().getFirstname() + " " + approver.getPersonel().getLastname();
+					gDAO.startTransaction();
+					int count = 1;
+					
+					Vehicle v = getSelectedAccident().getVehicle();
+					naration += v.getRegistrationNo() + ", ";
+					VehicleMaintenanceRequest vmr = new VehicleMaintenanceRequest();
+					vmr.setActive(true);
+					vmr.setCreatedBy(dashBean.getUser());
+					vmr.setCrt_dt(new Date());
+					vmr.setDescription(getMaintRequest().getDescription());
+					vmr.setMaintenanceType(getMaintRequest().getMaintenanceType());
+					vmr.setStatus("PENDING");
+					vmr.setVehicle(v);
+					gDAO.save(vmr);
+					Approver ap = new Approver();
+					ap.setApprovalUser(approver);
+					ap.setApprovalStatus("PENDING");
+					ap.setApproverLevel(1);
+					ap.setCreatedBy(dashBean.getUser());
+					ap.setCrt_dt(new Date());
+					ap.setEntityId(vmr.getId());
+					ap.setEntityName("VehicleMaintenanceRequest");
+					gDAO.save(ap);
+					Notification n = new Notification();
+					n.setCrt_dt(new Date());
+					n.setUser(approver);
+					n.setMessage("You have pending " + getMaintRequest().getMaintenanceType() + " maintenance request from '" + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + "' for vehicle: " + v.getRegistrationNo() + "'. Submitted: " + new Date().toLocaleString());
+					n.setNotified(false);
+					n.setSubject("Vehicle Maintenance Request");
+					n.setPage_url("approve_v_maintenance");
+					gDAO.save(n);
+					
+					getSelectedAccident().setAdhocRequested(true);
+					gDAO.update(getSelectedAccident());
+					
+					if(count > 0) {
+						if(gDAO.commit()) {
+							msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Request saved successfully!");
+							naration += " Status: Success";
+							StringBuilder sb = new StringBuilder("<html><body>");
+							sb.append("<p>Hello,</p>");
+							sb.append("<p>Your ").append(getMaintRequest().getMaintenanceType()).append(" maintenance request has been submitted to ").append(approverName).append(" for review and approval!</p>");
+							sb.append("<p>Regards<br/>FMS</p>");
+							sb.append("</body></html>");
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{dashBean.getUser().getPersonel().getEmail()}, getMaintRequest().getMaintenanceType() + " Maintenance Request Submitted", sb.toString());
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							try {
+								SMSGateway.sendSMS("FMS", dashBean.getUser().getPersonel().getPhone(), "Your " + getMaintRequest().getMaintenanceType() + " maintenance request has been submitted to " + approverName + " for review and approval!");
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							sb = new StringBuilder("<html><body>");
+							sb.append("<p>Hello,</p>");
+							sb.append("<p>A ").append(getMaintRequest().getMaintenanceType()).append(" maintenance request was just submitted by ").append(dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname()).append(" for your review and approval!</p>");
+							sb.append("<p>Regards<br/>FMS</p>");
+							sb.append("</body></html>");
+							try {
+								Emailer.sendEmail("fms@sattrakservices.com", new String[]{approver.getPersonel().getEmail()}, getMaintRequest().getMaintenanceType() + " Maintenance Request", sb.toString());
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							try {
+								SMSGateway.sendSMS("FMS", approver.getPersonel().getPhone(), "A " + getMaintRequest().getMaintenanceType() + " maintenance request was just submitted by " + dashBean.getUser().getPersonel().getFirstname() + " " + dashBean.getUser().getPersonel().getLastname() + " for your review and approval!");
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+							setMaintRequest(null);
+							setApprover_id(0L);
+							setVehicles(null);
+						} else {
+							gDAO.rollback();
+							naration += " Status: Failed: " + gDAO.getMessage();
+							msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Could not save the request: " + gDAO.getMessage());
+						}
+					} else {
+						naration += " Status: Failed: Please select at least one vehicle!";
+						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please select at least one vehicle!");
+					}
+				} else {
+					naration += " Status: Failed: Approver not valid!";
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Approver not valid!");
+				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
+			} else
+				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Please input maintenance description!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		} else {
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required! Also ensure you selected a vehicle accident!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
 	public void repairAccident()
 	{
 		if(getSelectedAccident() != null && getSelectedAccident().getId() != null)
 		{
+			String naration = "Repair Accident: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			getRepair().setAccident(getSelectedAccident());
 			getRepair().setCreatedBy(dashBean.getUser());
 			getRepair().setCrt_dt(new Date());
+			
+			naration += getRepair().getAccident().getVehicle().getRegistrationNo() + ":" + getRepair().getRepairDate();
 			
 			if(getRepairComp_id() != null)
 			{
@@ -2153,74 +3769,103 @@ public class FleetMBean implements Serializable
 				getRepair().setAttachment(getRepairAttachment().getContents());
 			}
 			
-			boolean ret = false;
-			
-			gDAO.startTransaction();
-			ret = gDAO.save(getRepair());
-			if(ret)
-			{
-				if(getRepair().getRepairerType().equals("REPAIR"))
-				{
-					if(getRepair().isRequiresAdHocRepair())
-					{
-						VehicleAdHocMaintenance maint = new VehicleAdHocMaintenance();
-						
-						maint.setCreatedBy(dashBean.getUser());
-						maint.setCrt_dt(new Date());
-						maint.setVehicle(getRepair().getAccident().getVehicle());
-						maint.setActive(true);
-						maint.setStatus("Started");
-						
-						ret = gDAO.save(maint);
-						if(ret)
-						{
-							maint.getVehicle().setActive(false);
-							maint.getVehicle().setActiveStatus(VehicleStatusEnum.UNDER_MAINTENANCE.getStatus());
-							gDAO.update(maint.getVehicle());
+			boolean proceed = true;
+			if(getRepair().getRepairerType().equals("REPAIR")) {
+				if(getRepair().isRequiresAdHocRepair()) {
+					if(getRepair().getAdhocWorkOrderNum() != null && !getRepair().getAdhocWorkOrderNum().isEmpty()) {
+						Query q = gDAO.createQuery("Select e from WorkOrder e where e.workOrderNumber=:workOrderNumber");
+						q.setParameter("workOrderNumber", getRepair().getAdhocWorkOrderNum());
+						Object obj = gDAO.search(q, 0);
+						if(obj != null) {
+							Vector<WorkOrder> objList = (Vector<WorkOrder>)obj;
+							for(WorkOrder e : objList)
+								getRepair().setWorkOrder(e);
 						}
 					}
-					else
-					{
-						getRepair().getAccident().getVehicle().setActive(true);
-						getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.ACTIVE.getStatus());
-						gDAO.update(getRepair().getAccident().getVehicle());
+					if(getRepair().getWorkOrder() == null) {
+						proceed = false;
 					}
 				}
-				else if(getRepair().getRepairerType().equals("REPLACE"))
-				{
-					getRepair().getAccident().getVehicle().setActive(false);
-					getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.REPLACED.getStatus());
-					gDAO.update(getRepair().getAccident().getVehicle());
-				}
-				else if(getRepair().getRepairerType().equals("GROUNDED"))
-				{
-					getRepair().getAccident().getVehicle().setActive(false);
-					getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.GROUNDED.getStatus());
-					gDAO.update(getRepair().getAccident().getVehicle());
-				}
-				
-				getRepair().getAccident().setActive(false);
-				getRepair().getAccident().setRepairApprovedDesc("DONE");
-				gDAO.update(getRepair().getAccident());
-				
-				gDAO.commit();
-				
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Accident repaired successfully!");
-				FacesContext.getCurrentInstance().addMessage(null, msg);
-				
-				setApprovedAccidents(null);
-				setSelectedAccident(null);
-				setRepair(null);
 			}
-			else
-			{
-				gDAO.rollback();
+			
+			if(proceed) {
+				boolean ret = false;
 				
-				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
+				gDAO.startTransaction();
+				ret = gDAO.save(getRepair());
+				if(ret)
+				{
+					if(getRepair().getRepairerType().equals("REPAIR"))
+					{
+						if(getRepair().isRequiresAdHocRepair())
+						{
+							//TODO: This should not start an adhoc maintenance, instead, it should go to a list of vehicles that require adhoc maintenance, 
+							// for someone to the request for the maintenance and follow the due process.
+							/*VehicleAdHocMaintenance maint = new VehicleAdHocMaintenance();
+							
+							maint.setCreatedBy(dashBean.getUser());
+							maint.setCrt_dt(new Date());
+							maint.setVehicle(getRepair().getAccident().getVehicle());
+							maint.setActive(true);
+							maint.setStatus("Started");
+							
+							ret = gDAO.save(maint);
+							if(ret)
+							{
+								maint.getVehicle().setActive(false);
+								maint.getVehicle().setActiveStatus(VehicleStatusEnum.UNDER_MAINTENANCE.getStatus());
+								gDAO.update(maint.getVehicle());
+							}*/
+							//TODO: I'm not sure what status I should keep the vehicle or the repair so I can create the vehicle list that requires adhoc accidents
+						}
+						else
+						{
+							getRepair().getAccident().getVehicle().setActive(true);
+							getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.ACTIVE.getStatus());
+							gDAO.update(getRepair().getAccident().getVehicle());
+						}
+					}
+					else if(getRepair().getRepairerType().equals("REPLACE"))
+					{
+						getRepair().getAccident().getVehicle().setActive(false);
+						getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.REPLACED.getStatus());
+						gDAO.update(getRepair().getAccident().getVehicle());
+					}
+					else if(getRepair().getRepairerType().equals("GROUNDED"))
+					{
+						getRepair().getAccident().getVehicle().setActive(false);
+						getRepair().getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.GROUNDED.getStatus());
+						gDAO.update(getRepair().getAccident().getVehicle());
+					}
+					
+					getRepair().getAccident().setActive(false);
+					getRepair().getAccident().setRepairApprovedDesc("DONE");
+					gDAO.update(getRepair().getAccident());
+					
+					gDAO.commit();
+					
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Accident repaired successfully!");
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+					naration += " Status: Success";
+					setApprovedAccidents(null);
+					setSelectedAccident(null);
+					setRepair(null);
+				}
+				else
+				{
+					gDAO.rollback();
+					naration += " Status: Failed: " + gDAO.getMessage();
+					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
+					FacesContext.getCurrentInstance().addMessage(null, msg);
+				}
+			} else {
+				naration += " Status: Failed: Can't find the work order specified for the accident repair!";
+				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Can't find the work order specified for the accident repair!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 	}
 	
@@ -2230,6 +3875,7 @@ public class FleetMBean implements Serializable
 		{
 			if(getAccident().getRepairApprovedDesc() != null && getAccident().getApprovalComment() != null)
 			{
+				String naration = "Attend to accident: " + getAccident().getVehicle().getRegistrationNo() + ":" + getAccident().getAccident_dt();
 				getAccident().setApprovalUser(dashBean.getUser());
 				
 				GeneralDAO gDAO = new GeneralDAO();
@@ -2238,7 +3884,7 @@ public class FleetMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
-					
+					naration += ", Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Accident attended to successfully!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 					
@@ -2249,11 +3895,12 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
-					
+					naration += ", Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Action failed: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -2272,6 +3919,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getSelectedAccident() != null && getSelectedAccident().getId() != null)
 		{
+			String naration = "Cancel accident: " + getSelectedAccident().getVehicle().getRegistrationNo() + ":" + getSelectedAccident().getAccident_dt();
 			getSelectedAccident().setActive(false);
 			getSelectedAccident().setRepairApprovedDesc("CANCELED");
 			
@@ -2286,7 +3934,7 @@ public class FleetMBean implements Serializable
 				gDAO.update(getSelectedAccident().getVehicle());
 				
 				gDAO.commit();
-				
+				naration += ", Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Accident canceled successfully!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
@@ -2298,11 +3946,13 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
-				
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Action failed: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 	}
 	
@@ -2312,17 +3962,39 @@ public class FleetMBean implements Serializable
 		if(getVehicle_id() != null && getAccident().getAccident_dt() != null && getAccident().getAccidentDescription() != null &&
 				getAccident().getDriverComment() != null)
 		{
+			String naration = "Save accident: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			
+			PartnerPersonel fleetManager = null;
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("partner", getPartner());
+			params.put("fleetManager", true);
+			Object obj = gDAO.search("PartnerPersonel", params);
+			if(obj != null) {
+				Vector<PartnerPersonel> list = (Vector<PartnerPersonel>)obj;
+				for(PartnerPersonel e : list)
+					fleetManager = e;
+			}
+			
 			Object vObj = gDAO.find(Vehicle.class, getVehicle_id());
-			if(vObj != null)
-			{
+			if(vObj != null) {
 				getAccident().setVehicle((Vehicle)vObj);
+				getAccident().setAgeOfVehicle(getAccident().getVehicle().getAge());
 				
-				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				naration += getAccident().getVehicle().getRegistrationNo();
+				params = new Hashtable<String, Object>();
+				params.put("vehicle", getAccident().getVehicle());
+				Object tdobj = gDAO.search("VehicleTrackerData", params);
+				if(tdobj != null) {
+					Vector<VehicleTrackerData> tdList = (Vector<VehicleTrackerData>)tdobj;
+					if(tdList != null && tdList.size() > 0) {
+						getAccident().setOdometer(tdList.get(tdList.size()-1).getOdometer());
+					}
+				}
+				
+				params = new Hashtable<String, Object>();
 				params.put("vehicle", getAccident().getVehicle());
 				params.put("active", true);
-				
 				Object drvObj = gDAO.search("VehicleDriver", params);
 				if(drvObj != null)
 				{
@@ -2330,9 +4002,18 @@ public class FleetMBean implements Serializable
 					if(drvList != null && drvList.size() > 0)
 					{
 						getAccident().setAssignedDriver(drvList.get(0).getDriver());
+						naration += ":" + getAccident().getAssignedDriver().getPersonel().getFirstname() + " " + getAccident().getAssignedDriver().getPersonel().getLastname();
 					}
 				}
 			}
+			if(getDriver_id() != null && getDriver_id() > 0) {
+				Object drvobj = gDAO.find(PartnerDriver.class, getDriver_id());
+				if(drvobj != null) {
+					getAccident().setAccidentDriver((PartnerDriver)drvobj);
+					getAccident().setDriver_name(getAccident().getAccidentDriver().getPersonel().getFirstname() + " " + getAccident().getAccidentDriver().getPersonel().getLastname());
+				}
+			}
+			
 			/*if(getRepairComp_id() != null)
 			{
 				Object repairVendor = gDAO.find(Vendor.class, getRepairComp_id());
@@ -2379,13 +4060,10 @@ public class FleetMBean implements Serializable
 			
 			gDAO.startTransaction();
 			boolean ret = false;
-			if(getAccident().getId() != null)
-			{
+			if(getAccident().getId() != null) {
 				getAccident().setCreatedBy(dashBean.getUser());
 				ret = gDAO.update(getAccident());
-			}
-			else
-			{
+			} else {
 				getAccident().setCrt_dt(new Date());
 				getAccident().setCreatedBy(dashBean.getUser());
 				ret = gDAO.save(getAccident());
@@ -2393,8 +4071,7 @@ public class FleetMBean implements Serializable
 			
 			if(ret)
 			{
-				if(getAccident().getRequiresRepairOrReplace().trim().length() > 0)
-				{
+				if(getAccident().getRequiresRepairOrReplace().trim().length() > 0) {
 					getAccident().getVehicle().setActive(false);
 					getAccident().getVehicle().setActiveStatus(VehicleStatusEnum.ACCIDENTED.getStatus());
 					
@@ -2402,8 +4079,25 @@ public class FleetMBean implements Serializable
 				}
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Accident captured/updated successfully!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				
+				if(fleetManager != null && fleetManager.getEmail() != null && getAccident().getRequiresRepairOrReplace().trim().length() > 0) {
+					StringBuilder sb = new StringBuilder();
+					sb.append("<html><body>");
+					sb.append("<p>Dear <strong>").append(fleetManager.getFirstname()).append("</strong>,</p>");
+					sb.append("<p>An accident to vehicle: ").append(getAccident().getVehicle().getRegistrationNo()).append(" that requires ").append(getAccident().getRequiresRepairOrReplace()).append(" of the vehicle has been submitted for your attention.</p>");
+					sb.append("<br/><br/>");
+					sb.append("<p>Regards<br/>Sattrak FMS</p>");
+					sb.append("</body></html>");
+					
+					try {
+						Emailer.sendEmail("fms@sattrakservices.com", new String[]{fleetManager.getEmail()}, "Accident Repair/Replace Request", sb.toString());
+					} catch(Exception ex) {
+						ex.printStackTrace();
+					}
+				}
 				
 				setAccidentStatus(false);
 				setRepairComp_id(null);
@@ -2417,10 +4111,13 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Failed: ", "Error occured during save: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2434,6 +4131,7 @@ public class FleetMBean implements Serializable
 		if(getAdhocMain().getId() != null && getAdhocMain().getClose_dt() != null &&
 				getAdhocMain().getClosed_cost() != null && getAdhocMain().getClosed_cost().doubleValue() > 0)
 		{
+			String naration = "Finished adhoc maintenance: " + getAdhocMain().getVehicle().getRegistrationNo();
 			getAdhocMain().setActive(false);
 			getAdhocMain().setStatus("Finished");
 			
@@ -2447,6 +4145,7 @@ public class FleetMBean implements Serializable
 				gDAO.update(getAdhocMain().getVehicle());
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				setAdhocMain(null);
 				setAdhocMains(null);
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Ad-Hoc maintenance started for successfully!");
@@ -2455,9 +4154,13 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance completion: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2471,12 +4174,25 @@ public class FleetMBean implements Serializable
 	{
 		if(getSelectedInprogressAdhocWorkOrder() != null && getSelectedInprogressAdhocWorkOrder().getVehicles().size() > 0)
 		{
+			String naration = "Complete adhoc workorder: " + getSelectedInprogressAdhocWorkOrder().getWorkOrderNumber();
 			boolean ret = false;
 			GeneralDAO gDAO = new GeneralDAO();
+			ExpenseType et = null;
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("name", "Maintenance");
+			params.put("systemObj", true);
+			Object expTypesObj = gDAO.search("ExpenseType", params);
+			if(expTypesObj != null)
+			{
+				Vector<ExpenseType> expTypes = (Vector<ExpenseType>)expTypesObj;
+				if(expTypes.size() > 0)
+					et = expTypes.get(0);
+			}
+			
 			gDAO.startTransaction();
 			for(WorkOrderVehicle wrdv : getSelectedInprogressAdhocWorkOrder().getVehicles())
 			{
-				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params = new Hashtable<String, Object>();
 				params.put("vehicle", wrdv.getVehicle());
 				params.put("workOrder", getSelectedInprogressAdhocWorkOrder());
 				
@@ -2497,6 +4213,19 @@ public class FleetMBean implements Serializable
 						vrm.getVehicle().setActive(true);
 						vrm.getVehicle().setActiveStatus(VehicleStatusEnum.ACTIVE.getStatus());
 						ret = gDAO.update(vrm.getVehicle());
+						
+						if(et!=null){
+							Expense exp = new Expense();
+							exp.setAmount(wrdv.getClosed_amount().doubleValue());
+							exp.setCreatedBy(dashBean.getUser());
+							exp.setCrt_dt(new Date());
+							exp.setExpense_dt(wrdv.getClose_dt());
+							exp.setPartner(wrdv.getVehicle().getPartner());
+							exp.setRemarks("Adhoc maintenance for vehicle: " + wrdv.getVehicle().getRegistrationNo() + " that finished on " + wrdv.getClose_dt());
+							exp.setVehicle(wrdv.getVehicle());
+							exp.setType(et);
+							gDAO.save(exp);
+						}
 					}
 				}
 			}
@@ -2526,6 +4255,7 @@ public class FleetMBean implements Serializable
 				gDAO.update(getSelectedInprogressAdhocWorkOrder());
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				setSelectedInprogressAdhocWorkOrder(null);
 				setInprgWorkOrder_id(0L);
 				resetInprogressAdhocWorkOrderVehicles();
@@ -2536,10 +4266,13 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance finish: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+			
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2555,6 +4288,7 @@ public class FleetMBean implements Serializable
 		{
 			if(getSelectedPendingAdhocWorkOrder().getVehicles() != null && getSelectedPendingAdhocWorkOrder().getVehicles().size() > 0)
 			{
+				String naration = "Start adhoc maintenance workorder: " + getSelectedPendingAdhocWorkOrder().getWorkOrderNumber();
 				int count = 0;
 				boolean ret = false;
 				GeneralDAO gDAO = new GeneralDAO();
@@ -2565,6 +4299,16 @@ public class FleetMBean implements Serializable
 					if(vobj != null)
 						vendor = (Vendor)vobj;
 				}
+				
+				for(WorkOrderVendor wov : getSelectedPendingAdhocWorkOrder().getWvendors()) {
+					if(wov.isApproverApproved()) {
+						Calendar c = Calendar.getInstance();
+						c.setTime(getAdhocMain().getStart_dt());
+						c.add(Calendar.DATE, wov.getNegotiated_days_of_completion());
+						getSelectedPendingAdhocWorkOrder().setProposedCompletion_dt(c.getTime());
+					}
+				}
+				
 				gDAO.startTransaction();
 				for(WorkOrderVehicle wrdv : getSelectedPendingAdhocWorkOrder().getVehicles())
 				{
@@ -2587,6 +4331,12 @@ public class FleetMBean implements Serializable
 						break;
 					else if(vr.getStatus().equalsIgnoreCase("Start"))
 					{
+						if(wrdv.getMaintRequest() != null && wrdv.getMaintRequest().getId() != null) {
+							wrdv.getMaintRequest().setActive(false);
+							wrdv.getMaintRequest().setStatus("Attended");
+							gDAO.update(wrdv.getMaintRequest());
+						}
+						
 						// vehicle is under maintenance
 						v.setActive(false);
 						v.setActiveStatus(VehicleStatusEnum.UNDER_MAINTENANCE.getStatus());
@@ -2605,11 +4355,23 @@ public class FleetMBean implements Serializable
 						getSelectedPendingAdhocWorkOrder().setVendor(vendor);
 						gDAO.update(getSelectedPendingAdhocWorkOrder());
 						
-						getSelectedPendingAdhocWorkOrder().getAdhocMainRequest().setActive(false);
-						getSelectedPendingAdhocWorkOrder().getAdhocMainRequest().setStatus("Attended");
-						gDAO.update(getSelectedPendingAdhocWorkOrder().getAdhocMainRequest());
-						
 						gDAO.commit();
+						naration += ", Status: Success";
+						
+						StringBuilder sb = new StringBuilder();
+						sb.append("<html><body>");
+						sb.append("<p>Dear <strong>").append(vendor.getName()).append("</strong>,</p>");
+						sb.append("<p>Work order ").append(getSelectedPendingAdhocWorkOrder().getWorkOrderNumber()).append(" assigned to your organization is now marked as started. Please note that expected completion date for this work is on ").append(getSelectedPendingAdhocWorkOrder().getProposedCompletion_dt()).append(".</p>");
+						sb.append("<br/><br/>");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{vendor.getEmail()}, "Work-order Started", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						
 						setAdhocMain(null);
 						setVendor_id(null);
 						setSelectedPendingAdhocWorkOrder(null);
@@ -2621,6 +4383,7 @@ public class FleetMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += ", Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance start: " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
@@ -2630,6 +4393,8 @@ public class FleetMBean implements Serializable
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "No vehicle selected!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -2650,6 +4415,7 @@ public class FleetMBean implements Serializable
 				getAdhocMain().getDescription() != null && getAdhocMain().getInitial_cost() != null && 
 				getAdhocMain().getInitial_cost().doubleValue() > 0)
 		{
+			String naration = "Start adhoc maintenance for " + getAdhocMain().getVehicle().getRegistrationNo();
 			getAdhocMain().setCreatedBy(dashBean.getUser());
 			getAdhocMain().setCrt_dt(new Date());
 			getAdhocMain().setVehicle(getAdhocRequest().getVehicle());
@@ -2670,6 +4436,7 @@ public class FleetMBean implements Serializable
 				gDAO.update(getAdhocRequest());
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				setAdhocMain(null);
 				setAdhocMains(null);
 				setAdhocRequest(null);
@@ -2682,7 +4449,10 @@ public class FleetMBean implements Serializable
 				gDAO.rollback();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance start: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
+				naration += ", Status: Failed: " + gDAO.getMessage();
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2697,6 +4467,7 @@ public class FleetMBean implements Serializable
 		{
 			if(getVehicles() != null && getVehicles().size() > 0)
 			{
+				String naration = "Create adhoc maintenance request for: ";
 				int count = 0;
 				boolean ret = false;
 				GeneralDAO gDAO = new GeneralDAO();
@@ -2705,14 +4476,21 @@ public class FleetMBean implements Serializable
 				{
 					if(v.isSelected())
 					{
+						naration += v.getRegistrationNo() + ", ";
 						count++;
-						getAdhocRequest().setActive(true);
-						getAdhocRequest().setCreatedBy(dashBean.getUser());
-						getAdhocRequest().setCrt_dt(new Date());
-						getAdhocRequest().setStatus("Pending");
-						getAdhocRequest().setVehicle(v);
+						VehicleAdHocMaintenanceRequest vamr = new VehicleAdHocMaintenanceRequest();
+						vamr.setDescription(getAdhocRequest().getDescription());
+						vamr.setMaintenance_dt(getAdhocRequest().getMaintenance_dt());
+						vamr.setActive(true);
+						vamr.setCreatedBy(dashBean.getUser());
+						vamr.setCrt_dt(new Date());
+						vamr.setStatus("Pending");
+						vamr.setVehicle(v);
+						vamr.setBattery(getAdhocRequest().isBattery());
+						vamr.setTyre(getAdhocRequest().isTyre());
+						vamr.setTyre_count(getAdhocRequest().getTyre_count());
 						
-						ret = gDAO.save(getAdHocRequests());
+						ret = gDAO.save(vamr);
 						if(!ret)
 							break;
 					}
@@ -2722,7 +4500,9 @@ public class FleetMBean implements Serializable
 					if(ret)
 					{
 						gDAO.commit();
+						naration += "Status: Success";
 						setAdhocRequest(null);
+						setAdHocRequests(null);
 						resetVehicles();
 						msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Ad-Hoc maintenance request submitted for " + count + " vehicle(s) successfully!");
 						FacesContext.getCurrentInstance().addMessage(null, msg);
@@ -2730,6 +4510,7 @@ public class FleetMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += "Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance request: " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
@@ -2739,6 +4520,8 @@ public class FleetMBean implements Serializable
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "No vehicle selected!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -2761,6 +4544,7 @@ public class FleetMBean implements Serializable
 				getRoutine().getClose_dt() != null && getRoutine().getClosed_amount() != null &&
 				getRoutine().getClosed_amount().doubleValue() > 0)
 		{
+			String naration = "Finished rotuine maintenance: " + getRoutine().getVehicle().getRegistrationNo() + " Odometer"+ getRoutine().getOdometer().toPlainString();
 			getRoutine().setFinished(true);
 			getRoutine().setStatus("Finished");
 			boolean ret = false;
@@ -2801,6 +4585,7 @@ public class FleetMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += ", Status: Success";
 					setRoutine(null);
 					setVendor_id(null);
 					resetRoutines();
@@ -2810,6 +4595,7 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += ", Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance finish: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
@@ -2817,9 +4603,12 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance finish: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2833,12 +4622,25 @@ public class FleetMBean implements Serializable
 	{
 		if(getSelectedInprogressRoutineWorkOrder() != null && getSelectedInprogressRoutineWorkOrder().getVehicles().size() > 0)
 		{
+			String naration = "Complete routine workorder: " + getSelectedInprogressRoutineWorkOrder().getWorkOrderNumber();
 			boolean ret = false;
 			GeneralDAO gDAO = new GeneralDAO();
+			ExpenseType et = null;
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("name", "Maintenance");
+			params.put("systemObj", true);
+			Object expTypesObj = gDAO.search("ExpenseType", params);
+			if(expTypesObj != null)
+			{
+				Vector<ExpenseType> expTypes = (Vector<ExpenseType>)expTypesObj;
+				if(expTypes.size() > 0)
+					et = expTypes.get(0);
+			}
+			
 			gDAO.startTransaction();
 			for(WorkOrderVehicle wrdv : getSelectedInprogressRoutineWorkOrder().getVehicles())
 			{
-				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params = new Hashtable<String, Object>();
 				params.put("vehicle", wrdv.getVehicle());
 				params.put("workOrder", getSelectedInprogressRoutineWorkOrder());
 				
@@ -2876,6 +4678,19 @@ public class FleetMBean implements Serializable
 							vr.setVehicle(vrm.getVehicle());
 							ret = gDAO.save(vr);
 						}
+						
+						if(et!=null){
+							Expense exp = new Expense();
+							exp.setAmount(wrdv.getClosed_amount().doubleValue());
+							exp.setCreatedBy(dashBean.getUser());
+							exp.setCrt_dt(new Date());
+							exp.setExpense_dt(wrdv.getClose_dt());
+							exp.setPartner(wrdv.getVehicle().getPartner());
+							exp.setRemarks("Routine maintenance for vehicle: " + wrdv.getVehicle().getRegistrationNo() + " that finished on " + wrdv.getClose_dt());
+							exp.setVehicle(wrdv.getVehicle());
+							exp.setType(et);
+							gDAO.save(exp);
+						}
 					}
 				}
 			}
@@ -2905,6 +4720,7 @@ public class FleetMBean implements Serializable
 				gDAO.update(getSelectedInprogressRoutineWorkOrder());
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				setSelectedInprogressRoutineWorkOrder(null);
 				setInprgWorkOrder_id(0L);
 				resetInprogressRoutineWorkOrderVehicles();
@@ -2915,10 +4731,12 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance finish: " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -2928,13 +4746,13 @@ public class FleetMBean implements Serializable
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void startRMaintenance()
-	{
+	public void startRMaintenance() {
 		if(getSelectedPendingRoutineWorkOrder() != null && getSelectedPendingRoutineWorkOrder().getVehicles().size() > 0 && 
 				getRoutine().getStart_dt() != null)
 		{
 			if(getSelectedPendingRoutineWorkOrder().getVehicles() != null && getSelectedPendingRoutineWorkOrder().getVehicles().size() > 0)
 			{
+				String naration = "Start routine maintenance for workorder: " + getSelectedPendingRoutineWorkOrder().getWorkOrderNumber();
 				int count = 0;
 				boolean ret = false;
 				GeneralDAO gDAO = new GeneralDAO();
@@ -2945,6 +4763,16 @@ public class FleetMBean implements Serializable
 					if(vobj != null)
 						vendor = (Vendor)vobj;
 				}
+				
+				for(WorkOrderVendor wov : getSelectedPendingRoutineWorkOrder().getWvendors()) {
+					if(wov.isApproverApproved()) {
+						Calendar c = Calendar.getInstance();
+						c.setTime(getRoutine().getStart_dt());
+						c.add(Calendar.DATE, wov.getNegotiated_days_of_completion());
+						getSelectedPendingRoutineWorkOrder().setProposedCompletion_dt(c.getTime());
+					}
+				}
+				
 				gDAO.startTransaction();
 				for(WorkOrderVehicle wrdv : getSelectedPendingRoutineWorkOrder().getVehicles())
 				{
@@ -2969,6 +4797,12 @@ public class FleetMBean implements Serializable
 						break;
 					else if(vr.getStatus().equalsIgnoreCase("Start"))
 					{
+						if(wrdv.getMaintRequest() != null && wrdv.getMaintRequest().getId() != null) {
+							wrdv.getMaintRequest().setActive(false);
+							wrdv.getMaintRequest().setStatus("Attended");
+							gDAO.update(wrdv.getMaintRequest());
+						}
+						
 						// vehicle is under maintenance
 						v.setActive(false);
 						v.setActiveStatus(VehicleStatusEnum.UNDER_MAINTENANCE.getStatus());
@@ -2992,7 +4826,7 @@ public class FleetMBean implements Serializable
 							{
 								for(VehicleRoutineMaintenanceSetup vrm : vrmsList)
 								{
-									if(vrm.getOdometer().doubleValue() <= getRoutine().getOdometer().doubleValue())
+									if(vrm.getOdometer().doubleValue() <= wrdv.getOdometer().doubleValue())
 									{
 										vrm.setActive(false);
 										gDAO.update(vrm);
@@ -3011,6 +4845,22 @@ public class FleetMBean implements Serializable
 						gDAO.update(getSelectedPendingRoutineWorkOrder());
 						
 						gDAO.commit();
+						naration += ", Status: Success";
+						
+						StringBuilder sb = new StringBuilder();
+						sb.append("<html><body>");
+						sb.append("<p>Dear <strong>").append(vendor.getName()).append("</strong>,</p>");
+						sb.append("<p>Work order ").append(getSelectedPendingRoutineWorkOrder().getWorkOrderNumber()).append(" assigned to your organization is now marked as started. Please note that expected completion date for this work is on ").append(getSelectedPendingRoutineWorkOrder().getProposedCompletion_dt()).append(".</p>");
+						sb.append("<br/><br/>");
+						sb.append("<p>Regards<br/>FMS</p>");
+						sb.append("</body></html>");
+						
+						try {
+							Emailer.sendEmail("fms@sattrakservices.com", new String[]{vendor.getEmail()}, "Work-order Started", sb.toString());
+						} catch(Exception ex) {
+							ex.printStackTrace();
+						}
+						
 						setRoutine(null);
 						setVendor_id(null);
 						setSelectedPendingRoutineWorkOrder(null);
@@ -3022,15 +4872,19 @@ public class FleetMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += ", Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during maintenance start: " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
 				}
 				else
 				{
+					naration += ", Status: Failed: No vehicle selected!";
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "No vehicle selected!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -3049,6 +4903,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getVehicles() != null && getVehicles().size() > 0)
 		{
+			String naration = "Setup routine maintenance: ";
 			int count = 0;
 			boolean ret = false;
 			GeneralDAO gDAO = new GeneralDAO();
@@ -3073,6 +4928,7 @@ public class FleetMBean implements Serializable
 						ret = gDAO.save(vr);
 						if(!ret)
 							break;
+						naration += v.getRegistrationNo() + "(" + vr.getOdometer().toPlainString() + "),";
 					}
 					else
 					{
@@ -3088,6 +4944,7 @@ public class FleetMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += " Status: Success";
 					setRoutineSetup(null);
 					resetVehicles();
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Routine maintenance setup for " + count + " vehicle(s) successfully!");
@@ -3096,15 +4953,19 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += " Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "Error occured during setup: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
 			}
 			else
 			{
+				naration += " Status: Failed: No vehicle selected!";
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error: ", "No vehicle selected!");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -3126,6 +4987,19 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	public void searchTrackerEventsInfo()
+	{
+		if(getPartner() != null && getFleet_id() != null && getFleet_id() > 0 && getStdt() != null && getEddt() != null)
+		{
+			setTvehicles3(null);
+		}
+		else
+		{
+			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
+			FacesContext.getCurrentInstance().addMessage(null, msg);
+		}
+	}
+	
 	public void searchTrackerInfo2()
 	{
 		if(getPartner() != null && getFleet_id() != null && getFleet_id() > 0)
@@ -3139,6 +5013,168 @@ public class FleetMBean implements Serializable
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
+	public Vector<Vehicle> getTvehicles3() {
+		if(tvehicles3 == null)
+		{
+			tvehicles3 = new Vector<Vehicle>();
+			
+			if(getPartner() != null && getFleet_id() != null && getFleet_id() > 0)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				
+				if(getFleet_id() != null && getFleet_id() > 0)
+				{
+					Object fobj = gDAO.find(Fleet.class, getFleet_id());
+					if(fobj != null)
+						params.put("fleet", (Fleet)fobj);
+				}
+				
+				boolean found_one = false;
+				if(getVehicle_id() != null && getVehicle_id() > 0)
+				{
+					Object vobj = gDAO.find(Vehicle.class, getVehicle_id());
+					if(vobj != null)
+					{
+						tvehicles3 = new Vector<Vehicle>();
+						tvehicles3.add((Vehicle)vobj);
+					}
+					found_one = true;
+				}
+				else if(getRegNo() != null && getRegNo().trim().length() > 0)
+				{
+					params.put("registrationNo", getRegNo());
+				}
+				if(!found_one)
+				{
+					Object vhsObj = gDAO.search("Vehicle", params);
+					if(vhsObj != null)
+					{
+						tvehicles3 = (Vector<Vehicle>)vhsObj;
+					}
+				}
+				
+				if(tvehicles3 != null && tvehicles3.size() > 0)
+				{
+					for(Vehicle v : tvehicles3)
+					{
+						Query q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle = :vehicle and (e.captured_dt between :stdt and :eddt) order by e.captured_dt desc");
+						
+						q.setParameter("vehicle", v);
+						q.setParameter("stdt", getStdt());
+						q.setParameter("eddt", getEddt());
+						
+						Object retObj = gDAO.search(q, 0);
+						if(retObj != null) {
+							v.setTrackerEventData((Vector<VehicleTrackerEventData>)retObj);
+							v.setTrackerEventSummary(new Vector<TrackerEventSummary>());
+							for(VehicleTrackerEventData vted : v.getTrackerEventData()) {
+								boolean exists = false;
+								for(TrackerEventSummary tes2 : v.getTrackerEventSummary()) {
+									if(tes2.getEventName().equals(vted.getEvent_name())) {
+										tes2.getTrackerEventData().add(vted);
+										exists = true;
+										break;
+									}
+								}
+								if(!exists) {
+									TrackerEventSummary tes = new TrackerEventSummary();
+									tes.setEventName(vted.getEvent_name());
+									tes.getTrackerEventData().add(vted);
+									v.getTrackerEventSummary().add(tes);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return tvehicles3;
+	}
+
+	public void setTvehicles3(Vector<Vehicle> tvehicles3) {
+		this.tvehicles3 = tvehicles3;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<Vehicle> getDuervehicles() {
+		boolean research = true;
+		if(duervehicles == null || duervehicles.size() == 0)
+			research = true;
+		else if(duervehicles.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(duervehicles.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research) {
+			if(getPartner() != null) {
+				duervehicles = new Vector<Vehicle>();
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Hashtable<String, Object> params = new Hashtable<String, Object>();
+				params.put("partner", getPartner());
+				Object vhsObj = gDAO.search("Vehicle", params);
+				if(vhsObj != null)
+				{
+					Vector<Vehicle> duervehicles2 = (Vector<Vehicle>)vhsObj;
+					for(Vehicle v : duervehicles2)
+					{
+						double currentOdometer = 0;
+						// Get the current odometer reading
+						Query q = gDAO.createQuery("Select MAX(e.odometer) from VehicleOdometerData e where e.vehicle=:vehicle");
+						q.setParameter("vehicle", v);
+						
+						Object ret = gDAO.search(q, 1);
+						if(ret != null) {
+							try {
+								currentOdometer = (Double)ret;
+							} catch(Exception ex) {
+								ex.printStackTrace();
+							}
+						}
+						
+						if(currentOdometer > 0) {
+							// Get the current routine setup that is still active, that means its not done
+							params = new Hashtable<String, Object>();
+							params.put("vehicle", v);
+							params.put("active", true);
+							
+							Object maintsObj = gDAO.search("VehicleRoutineMaintenanceSetup", params);
+							if(maintsObj != null) {
+								Vector<VehicleRoutineMaintenanceSetup> maints = (Vector<VehicleRoutineMaintenanceSetup>)maintsObj;
+								for(VehicleRoutineMaintenanceSetup vms : maints) {
+									if(vms.getAlert_odometer().doubleValue() < currentOdometer) {
+										Vector<String> statusList = new Vector<String>();
+										statusList.add("SETUP");statusList.add("REQUEST");statusList.add("NEW");statusList.add("IN-PROGRESS");
+										q = gDAO.createQuery("Select e from WorkOrderVehicle e where e.vehicle=:vehicle and e.workOrder.status IN :statusList");
+										q.setParameter("vehicle", v);
+										q.setParameter("statusList", statusList);
+										Object wovObj = gDAO.search(q, 0);
+										if(wovObj == null) {
+											duervehicles.add(v);
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return duervehicles;
+	}
+
+	public void setDuervehicles(Vector<Vehicle> duervehicles) {
+		this.duervehicles = duervehicles;
+	}
+
 	@SuppressWarnings("unchecked")
 	public Vector<Vehicle> getTvehicles() {
 		if(tvehicles == null)
@@ -3353,6 +5389,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getSelectedVehicle().getId() != null)
 		{
+			String naration = "Add Vehicle to Dash Track: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			boolean exists = false;
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
@@ -3374,12 +5411,14 @@ public class FleetMBean implements Serializable
 				dv.setCrt_dt(new Date());
 				dv.setUser(dashBean.getUser());
 				dv.setVehicle(getSelectedVehicle());
+				
+				naration += dv.getVehicle().getRegistrationNo();
 				gDAO.startTransaction();
 				boolean ret = gDAO.save(dv);
 				if(ret)
 				{
 					gDAO.commit();
-					
+					naration += ", Status: Success";
 					dashBean.setDashVehicles(null);
 					
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle added to dashboard successfully.");
@@ -3388,6 +5427,7 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += ", Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to add vehicle. " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
@@ -3397,6 +5437,8 @@ public class FleetMBean implements Serializable
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Vehicle already tracked on dashboard.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 	}
 	
@@ -3407,6 +5449,7 @@ public class FleetMBean implements Serializable
 		{
 			if(getSelectedVehicle().getId() != null)
 			{
+				String naration = "Assign vehicle to driver: ";
 				GeneralDAO gDAO = new GeneralDAO();
 				
 				Object drvObj = gDAO.find(PartnerDriver.class, getDriver_id());
@@ -3440,10 +5483,13 @@ public class FleetMBean implements Serializable
 					vd.setDriver(drv);
 					vd.setStart_dt(new Date());
 					vd.setVehicle(getSelectedVehicle());
+					naration += vd.getVehicle().getRegistrationNo() + "-" + drv.getPersonel().getFirstname() + " " + drv.getPersonel().getLastname();
+					
 					boolean ret = gDAO.save(vd);
 					if(ret)
 					{
 						gDAO.commit();
+						naration += ", Status: Success";
 						setSelectedVehicle(null);
 						setDriver_id(null);
 						setPartnerDrivers(null);
@@ -3455,15 +5501,19 @@ public class FleetMBean implements Serializable
 					else
 					{
 						gDAO.rollback();
+						naration += ", Status: Failed: " + gDAO.getMessage();
 						msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create vehicle. " + gDAO.getMessage());
 						FacesContext.getCurrentInstance().addMessage(null, msg);
 					}
 				}
 				else
 				{
+					naration += ", Status: Failed: No selected driver!";
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "No selected driver!");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
+				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 			else
 			{
@@ -3483,6 +5533,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getVehiclesBatchExcel() != null)
 		{
+			String naration = "Batch load vehicles: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			try
 			{
@@ -3918,10 +5969,11 @@ public class FleetMBean implements Serializable
 							v.setModel(vmd);
 							v.setPartner(getPartner());
 							v.setRegistrationNo(regNo);
-							try
+							v.setZonControlId(trackerID);
+							/*try
 							{
 								v.setZonControlId(Integer.parseInt(trackerID));
-							} catch(Exception ex){}
+							} catch(Exception ex){}*/
 							try
 							{
 								v.setPurchaseAmt(new BigDecimal(Double.parseDouble(purchased_amount)));
@@ -3940,11 +5992,15 @@ public class FleetMBean implements Serializable
 								VehicleParameters vpm = new VehicleParameters();
 								vpm.setRegion(regionObj);
 								vpm.setDept(deptObj);
-								vpm.setCalibratedcapacity(calibrated_capacity);
+								try {
+									vpm.setCalibratedcapacity(Double.parseDouble(calibrated_capacity));
+								} catch(Exception ex){}
 								vpm.setCardno(card_no);
 								vpm.setColor(color);
 								vpm.setSimno(sim_no);
-								vpm.setTankcapacity(tank_capacity);
+								try {
+									vpm.setTankcapacity(Double.parseDouble(tank_capacity));
+								} catch(Exception ex){}
 								vpm.setTyresize(tyre_size);
 								vpm.setUnitofmeasure(unit_of_measurement);
 								
@@ -3978,6 +6034,7 @@ public class FleetMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += ", Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "All vehicles created successfully.");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 					
@@ -3988,7 +6045,8 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
-					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create all models. " + gDAO.getMessage());
+					naration += ", Status: Failed: " + gDAO.getMessage();
+					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create all vehicles: " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
 			}
@@ -4001,6 +6059,7 @@ public class FleetMBean implements Serializable
 			finally
 			{
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 		}
 	}
@@ -4009,6 +6068,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null)
 		{
+			String naration = "Create new vehicle parameter: " + getSelectedVehicle().getRegistrationNo();
 			GeneralDAO gDAO = new GeneralDAO();
 			
 			getVehicleParam().setCreatedBy(dashBean.getUser());
@@ -4042,6 +6102,7 @@ public class FleetMBean implements Serializable
 			if(gDAO.save(getVehicleParam()))
 			{
 				gDAO.commit();
+				naration += ", Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle created successfully.");
 				
 				setVehicleParam(null);
@@ -4051,10 +6112,12 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create new vehicle parameter. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -4068,6 +6131,7 @@ public class FleetMBean implements Serializable
 		if(getVehicle().getRegistrationNo() != null
 				&& getVehicleModel_id() != null && getFleet_id() != null)
 		{
+			String naration = "Add new vehicle: " + getVehicle().getRegistrationNo();
 			if(!isLicenseAvailable())
 			{
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "You have used up your license. Please purchase more license to add more vehicles!");
@@ -4176,6 +6240,7 @@ public class FleetMBean implements Serializable
 				gDAO.save(getVehicleParam());
 				
 				gDAO.commit();
+				naration += ", Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Vehicle created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
@@ -4191,9 +6256,12 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create vehicle. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -4207,6 +6275,7 @@ public class FleetMBean implements Serializable
 	{
 		if(getModelsBatchExcel() != null)
 		{
+			String naration = "Batch load vehicle models: ";
 			GeneralDAO gDAO = new GeneralDAO();
 			try
 			{
@@ -4289,8 +6358,10 @@ public class FleetMBean implements Serializable
 						{
 							vt = new VehicleType();
 							vt.setCreatedBy(dashBean.getUser());
+							vt.setPartner(dashBean.getUser().getPartner());
 							vt.setCrt_dt(new Date());
 							vt.setName(vehicleType.trim());
+							gDAO.save(vt);
 						}
 						q = gDAO.createQuery("Select e from VehicleMake e where e.name = :name");
 						q.setParameter("name", vehicleMaker.trim());
@@ -4305,13 +6376,16 @@ public class FleetMBean implements Serializable
 						{
 							vm = new VehicleMake();
 							vm.setCreatedBy(dashBean.getUser());
+							vm.setPartner(dashBean.getUser().getPartner());
 							vm.setCrt_dt(new Date());
 							vm.setName(vehicleMaker.trim());
+							gDAO.save(vm);
 						}
 						
 						vmd.setType(vt);
 						vmd.setMaker(vm);
 						vmd.setCreatedBy(dashBean.getUser());
+						vmd.setPartner(dashBean.getUser().getPartner());
 						vmd.setCrt_dt(new Date());
 						vmd.setName(model_nm);
 						vmd.setYear(model_yr);
@@ -4325,6 +6399,7 @@ public class FleetMBean implements Serializable
 				if(ret)
 				{
 					gDAO.commit();
+					naration += "Status: Success";
 					msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "All models created successfully.");
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 					
@@ -4335,6 +6410,7 @@ public class FleetMBean implements Serializable
 				else
 				{
 					gDAO.rollback();
+					naration += "Status: Failed: " + gDAO.getMessage();
 					msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create all models. " + gDAO.getMessage());
 					FacesContext.getCurrentInstance().addMessage(null, msg);
 				}
@@ -4348,12 +6424,14 @@ public class FleetMBean implements Serializable
 			finally
 			{
 				gDAO.destroy();
+				dashBean.saveAudit(naration, "", null);
 			}
 		}
 	}
 	
 	public void save(int i)
 	{
+		String naration = "";
 		GeneralDAO gDAO = new GeneralDAO();
 		boolean ret = false;
 		boolean validated = false;
@@ -4363,6 +6441,7 @@ public class FleetMBean implements Serializable
 			{
 				if(getVehicleType().getName() != null && getPartner() != null)
 				{
+					naration = "Create vehicle type: " + getVehicleType().getName();
 					getVehicleType().setPartner(getPartner());
 					getVehicleType().setCreatedBy(dashBean.getUser());
 					getVehicleType().setCrt_dt(new Date());
@@ -4381,6 +6460,7 @@ public class FleetMBean implements Serializable
 			{
 				if(getVehicleMake().getName() != null && getPartner() != null)
 				{
+					naration = "Create vehicle make: " + getVehicleMake().getName();
 					getVehicleMake().setPartner(getPartner());
 					getVehicleMake().setCreatedBy(dashBean.getUser());
 					getVehicleMake().setCrt_dt(new Date());
@@ -4419,6 +6499,7 @@ public class FleetMBean implements Serializable
 							getVmodel().setType((VehicleType)obj);
 						}
 					}
+					naration = "Create vehicle model: Type: " + getVmodel().getType().getName() + ", Make: " + getVmodel().getMaker().getName() + ", Model: " + getVmodel().getName() + "(" + getVmodel().getYear() + ")";
 					gDAO.startTransaction();
 					ret = gDAO.save(getVmodel());
 					if(ret)
@@ -4436,14 +6517,13 @@ public class FleetMBean implements Serializable
 				{
 					getVsrm().setCreatedBy(dashBean.getUser());
 					getVsrm().setCrt_dt(new Date());
-					if(getVehicleModel_id() > 0)
-					{
+					if(getVehicleModel_id() > 0) {
 						Object obj = gDAO.find(VehicleModel.class, getVehicleModel_id());
-						if(obj != null)
-						{
+						if(obj != null) {
 							getVsrm().setModel((VehicleModel)obj);
 						}
 					}
+					naration = "Create standard routine maintenance: " + getVsrm().getModel().getName() + "(" + getVsrm().getOdometer().toPlainString() + ")";
 					gDAO.startTransaction();
 					ret = gDAO.save(getVsrm());
 					if(ret)
@@ -4571,12 +6651,14 @@ public class FleetMBean implements Serializable
 			if(ret)
 			{
 				gDAO.commit();
+				naration += ", Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Entity created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
 			else
 			{
 				gDAO.rollback();
+				naration += ", Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create entity. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
@@ -4586,12 +6668,16 @@ public class FleetMBean implements Serializable
 			msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "All fields with the '*' sign are required!");
 			FacesContext.getCurrentInstance().addMessage(null, msg);
 		}
+		
+		gDAO.destroy();
+		dashBean.saveAudit(naration, "", null);
 	}
 	
 	public void saveFleet()
 	{
 		if(getFleet().getName() != null)
 		{
+			String naration = "Create fleet: " + getFleet().getName();
 			getFleet().setDefaultFleet(false);
 			getFleet().setCreatedBy(dashBean.getUser());
 			getFleet().setCrt_dt(new Date());
@@ -4605,6 +6691,7 @@ public class FleetMBean implements Serializable
 				if(obj != null)
 				{
 					getFleet().setVehicleMake((VehicleMake)obj);
+					naration += " Make Allowed: " + getFleet().getVehicleMake().getName();
 				}
 			}
 			if(getVehicleType_id() > 0)
@@ -4613,6 +6700,7 @@ public class FleetMBean implements Serializable
 				if(obj != null)
 				{
 					getFleet().setVehicleType((VehicleType)obj);
+					naration += " Type Allowed: " + getFleet().getVehicleType().getName();
 				}
 			}
 			
@@ -4621,6 +6709,7 @@ public class FleetMBean implements Serializable
 			if(ret)
 			{
 				gDAO.commit();
+				naration += " Status: Success";
 				msg = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success: ", "Fleet created successfully.");
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 				
@@ -4630,9 +6719,12 @@ public class FleetMBean implements Serializable
 			else
 			{
 				gDAO.rollback();
+				naration += " Status: Failed: " + gDAO.getMessage();
 				msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Failed: ", "Failed to create entity. " + gDAO.getMessage());
 				FacesContext.getCurrentInstance().addMessage(null, msg);
 			}
+			gDAO.destroy();
+			dashBean.saveAudit(naration, "", null);
 		}
 		else
 		{
@@ -4642,15 +6734,13 @@ public class FleetMBean implements Serializable
 	}
 
 	public Partner getPartner() {
-		if(!dashBean.getUser().getPartner().isSattrak())
-		{
+		if(!dashBean.getUser().getPartner().isSattrak()) {
 			partner = dashBean.getUser().getPartner();
-		}
-		else
-		{
-			if(getPartner_id() != null)
-			{
-				partner = (Partner)new GeneralDAO().find(Partner.class, getPartner_id());
+		} else {
+			if(getPartner_id() != null) {
+				GeneralDAO gDAO = new GeneralDAO();
+				partner = (Partner)gDAO.find(Partner.class, getPartner_id());
+				gDAO.destroy();
 			}
 		}
 		return partner;
@@ -4674,6 +6764,14 @@ public class FleetMBean implements Serializable
 
 	public void setVehicleType_id(Long vehicleType_id) {
 		this.vehicleType_id = vehicleType_id;
+	}
+
+	public Long getApprover_id() {
+		return approver_id;
+	}
+
+	public void setApprover_id(Long approver_id) {
+		this.approver_id = approver_id;
 	}
 
 	public Long getVehicleMake_id() {
@@ -4724,6 +6822,7 @@ public class FleetMBean implements Serializable
 						e.setVehicles((Vector<Vehicle>)objs);
 				}
 			}
+			gDAO.destroy();
 		}
 		return vehicleTypes;
 	}
@@ -4771,6 +6870,7 @@ public class FleetMBean implements Serializable
 						e.setVehicles((Vector<Vehicle>)objs);
 				}
 			}
+			gDAO.destroy();
 		}
 		return vehicleMakes;
 	}
@@ -4829,6 +6929,7 @@ public class FleetMBean implements Serializable
 						e.setVehicles((Vector<Vehicle>)objs);
 				}
 			}
+			gDAO.destroy();
 		}
 		return vmodels;
 	}
@@ -4867,6 +6968,7 @@ public class FleetMBean implements Serializable
 							e.setVehicles((Vector<Vehicle>)objs);
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return allvmodels;
@@ -4955,6 +7057,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return fleets;
@@ -4986,6 +7089,14 @@ public class FleetMBean implements Serializable
 
 	public void setVendor_id(Long vendor_id) {
 		this.vendor_id = vendor_id;
+	}
+
+	public Long getWorkOrderVendor_id() {
+		return workOrderVendor_id;
+	}
+
+	public void setWorkOrderVendor_id(Long workOrderVendor_id) {
+		this.workOrderVendor_id = workOrderVendor_id;
 	}
 
 	public Long getDepartment_id() {
@@ -5046,6 +7157,7 @@ public class FleetMBean implements Serializable
 				{
 					depts = (Vector<Department>)dpsObj;
 				}
+				gDAO.destroy();
 			}
 		}
 		return depts;
@@ -5081,6 +7193,7 @@ public class FleetMBean implements Serializable
 				{
 					regions = (Vector<Region>)dpsObj;
 				}
+				gDAO.destroy();
 			}
 		}
 		return regions;
@@ -5098,6 +7211,7 @@ public class FleetMBean implements Serializable
 			Object fts = gDAO.findAll("FuelType");
 			if(fts != null)
 				fuelTypes = (Vector<FuelType>)fts;
+			gDAO.destroy();
 		}
 		return fuelTypes;
 	}
@@ -5132,6 +7246,7 @@ public class FleetMBean implements Serializable
 				{
 					personels = (Vector<PartnerPersonel>)dpsObj;
 				}
+				gDAO.destroy();
 			}
 		}
 		return personels;
@@ -5211,6 +7326,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vsalesVendors;
@@ -5270,6 +7386,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vserviceVendors;
@@ -5329,6 +7446,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vrepairVendors;
@@ -5388,6 +7506,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vinsuranceVendors;
@@ -5480,6 +7599,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vlicensesVendors;
@@ -5622,6 +7742,7 @@ public class FleetMBean implements Serializable
 						}
 					}
 				}
+				gDAO.destroy();
 			}
 		}
 		return vehicles;
@@ -5668,6 +7789,7 @@ public class FleetMBean implements Serializable
 				{
 					partnerDrivers = (Vector<PartnerDriver>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return partnerDrivers;
@@ -5683,6 +7805,14 @@ public class FleetMBean implements Serializable
 
 	public void setVehicle_id(Long vehicle_id) {
 		this.vehicle_id = vehicle_id;
+	}
+
+	public Long getPrev_vehicle_id() {
+		return prev_vehicle_id;
+	}
+
+	public void setPrev_vehicle_id(Long prev_vehicle_id) {
+		this.prev_vehicle_id = prev_vehicle_id;
 	}
 
 	public String getRegNo() {
@@ -5758,6 +7888,7 @@ public class FleetMBean implements Serializable
 			Object vsrmObj = gDAO.search(q, 0);
 			if(vsrmObj != null)
 				vsrmList = (Vector<VehicleStandardRM>)vsrmObj;
+			gDAO.destroy();
 		}
 		return vsrmList;
 	}
@@ -5796,8 +7927,625 @@ public class FleetMBean implements Serializable
 		this.selectedWorkOrder = selectedWorkOrder;
 	}
 	
-	public void resetRountineWorkOrders()
-	{
+	public WorkOrder getSelectedPendingNegotiateRequestWorkOrder() {
+		return selectedPendingNegotiateRequestWorkOrder;
+	}
+
+	public void setSelectedPendingNegotiateRequestWorkOrder(
+			WorkOrder selectedPendingNegotiateRequestWorkOrder) {
+		this.selectedPendingNegotiateRequestWorkOrder = selectedPendingNegotiateRequestWorkOrder;
+	}
+
+	public void resetPendingFirstLegRequestWorkOrder() {
+		for(WorkOrder wo : getPendingFirstLegRequestWrkOrders()) {
+			if(wo.getId().longValue() == getWorkOrder_id()) {
+				selectedPendingFirstLegRequestWorkOrder = wo;
+				break;
+			}
+		}
+	}
+	
+	public WorkOrder getSelectedPendingFirstLegRequestWorkOrder() {
+		return selectedPendingFirstLegRequestWorkOrder;
+	}
+
+	public void setSelectedPendingFirstLegRequestWorkOrder(
+			WorkOrder selectedPendingFirstLegRequestWorkOrder) {
+		this.selectedPendingFirstLegRequestWorkOrder = selectedPendingFirstLegRequestWorkOrder;
+	}
+
+	public WorkOrder getSelectedPendingRequestWorkOrder() {
+		return selectedPendingRequestWorkOrder;
+	}
+
+	public void setSelectedPendingRequestWorkOrder(
+			WorkOrder selectedPendingRequestWorkOrder) {
+		this.selectedPendingRequestWorkOrder = selectedPendingRequestWorkOrder;
+	}
+	public void resetPendingRequestWorkOrder() {
+		for(WorkOrder wo : getPendingRequestWrkOrders()) {
+			if(wo.getId().longValue() == getWorkOrder_id()) {
+				selectedPendingRequestWorkOrder = wo;
+				break;
+			}
+		}
+	}
+
+	public void resetRoutineSetupWorkOrders() {
+		// SETUP
+		setRoutineSetupWorkOrders(null);
+	}
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getRoutineSetupWorkOrders() {
+		boolean research = true;
+		if(routineSetupWorkOrders == null || routineSetupWorkOrders.size() == 0)
+			research = true;
+		else if(routineSetupWorkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(routineSetupWorkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			routineSetupWorkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.workOrderType=:workOrderType and e.status=:status and e.partner=:partner";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "SETUP");
+				q.setParameter("workOrderType", "Routine");
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					routineSetupWorkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : routineSetupWorkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wvendors);
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return routineSetupWorkOrders;
+	}
+
+	public void setRoutineSetupWorkOrders(Vector<WorkOrder> routineSetupWorkOrders) {
+		this.routineSetupWorkOrders = routineSetupWorkOrders;
+	}
+	
+	public void resetAdhocSetupWorkOrders() {
+		// SETUP
+		setAdhocSetupWorkOrders(null);
+	}
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getAdhocSetupWorkOrders() {
+		boolean research = true;
+		if(adhocSetupWorkOrders == null || adhocSetupWorkOrders.size() == 0)
+			research = true;
+		else if(adhocSetupWorkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(adhocSetupWorkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			adhocSetupWorkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.workOrderType=:workOrderType and e.status=:status and e.partner=:partner";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "SETUP");
+				q.setParameter("workOrderType", "AdHoc");
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					adhocSetupWorkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : adhocSetupWorkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wvendors);
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return adhocSetupWorkOrders;
+	}
+
+	public void setAdhocSetupWorkOrders(Vector<WorkOrder> adhocSetupWorkOrders) {
+		this.adhocSetupWorkOrders = adhocSetupWorkOrders;
+	}
+
+	public void resetPendingNegotiateRequestWorkOrder() {
+		for(WorkOrder wo : getPendingNegotiateRequestWrkOrders()) {
+			if(wo.getId().longValue() == getWorkOrder_id()) {
+				selectedPendingNegotiateRequestWorkOrder = wo;
+				break;
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getPendingNegotiateRequestWrkOrders() {
+		boolean research = true;
+		if(pendingNegotiateRequestWrkOrders == null || pendingNegotiateRequestWrkOrders.size() == 0)
+			research = true;
+		else if(pendingNegotiateRequestWrkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(pendingNegotiateRequestWrkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			pendingNegotiateRequestWrkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.status=:status and e.partner=:partner and e.negotiatedBy=:negotiatedBy";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "REQUEST-NEGOTIATION");
+				q.setParameter("negotiatedBy", dashBean.getUser());
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					pendingNegotiateRequestWrkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : pendingNegotiateRequestWrkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wvendors);
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return pendingNegotiateRequestWrkOrders;
+	}
+
+	public void setPendingNegotiateRequestWrkOrders(
+			Vector<WorkOrder> pendingNegotiateRequestWrkOrders) {
+		this.pendingNegotiateRequestWrkOrders = pendingNegotiateRequestWrkOrders;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getNegotiatedWorkOrders() {
+		boolean research = true;
+		if(negotiatedWorkOrders == null || negotiatedWorkOrders.size() == 0)
+			research = true;
+		else if(negotiatedWorkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(negotiatedWorkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			negotiatedWorkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.status=:status and e.partner=:partner and e.createdBy=:createdBy";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "NEGOTIATED");
+				q.setParameter("createdBy", dashBean.getUser());
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					negotiatedWorkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : negotiatedWorkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wvendors);
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return negotiatedWorkOrders;
+	}
+
+	public void setNegotiatedWorkOrders(Vector<WorkOrder> negotiatedWorkOrders) {
+		this.negotiatedWorkOrders = negotiatedWorkOrders;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getPendingFirstLegRequestWrkOrders() {
+		boolean research = true;
+		if(pendingFirstLegRequestWrkOrders == null || pendingFirstLegRequestWrkOrders.size() == 0)
+			research = true;
+		else if(pendingFirstLegRequestWrkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(pendingFirstLegRequestWrkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			pendingFirstLegRequestWrkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.status=:status and e.partner=:partner and e.approveBy=:approveBy";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "REQUEST-FINAL1");
+				q.setParameter("approveBy", dashBean.getUser());
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					pendingFirstLegRequestWrkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : pendingFirstLegRequestWrkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null) {
+							Vector<WorkOrderVendor> mylist = new Vector<WorkOrderVendor>();
+							Vector<WorkOrderVendor> list = (Vector<WorkOrderVendor>)wvendors;
+							for(WorkOrderVendor e : list) {
+								if(e.isApproverApproved()) {
+									mylist.add(e);
+									break;
+								}
+							}
+							w.setWvendors(mylist);
+						}
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return pendingFirstLegRequestWrkOrders;
+	}
+
+	public void setPendingFirstLegRequestWrkOrders(
+			Vector<WorkOrder> pendingFirstLegRequestWrkOrders) {
+		this.pendingFirstLegRequestWrkOrders = pendingFirstLegRequestWrkOrders;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrder> getPendingRequestWrkOrders() {
+		boolean research = true;
+		if(pendingRequestWrkOrders == null || pendingRequestWrkOrders.size() == 0)
+			research = true;
+		else if(pendingRequestWrkOrders.size() > 0)
+		{
+			if(getPartner() != null)
+			{
+				if(pendingRequestWrkOrders.get(0).getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			pendingRequestWrkOrders = null;
+			if(getPartner() != null)
+			{
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				String str = "Select e from WorkOrder e where e.status=:status and e.partner=:partner and e.approveBy=:approveBy";
+				Query q = gDAO.createQuery(str);
+				q.setParameter("partner", getPartner());
+				q.setParameter("status", "REQUEST");
+				q.setParameter("approveBy", dashBean.getUser());
+				Object objs = gDAO.search(q, 0);
+				if(objs != null)
+				{
+					pendingRequestWrkOrders = (Vector<WorkOrder>)objs;
+					
+					for(WorkOrder w : pendingRequestWrkOrders) {
+						Hashtable<String, Object> params = new Hashtable<String, Object>();
+						params.put("workOrder", w);
+						
+						Object wkv = gDAO.search("WorkOrderVehicle", params);
+						if(wkv != null) {
+							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
+							for(WorkOrderVehicle v : vehicles) {
+								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
+								params2.put("workOrderVehicle", v);
+								
+								Object wkit = gDAO.search("WorkOrderItem", params2);
+								if(wkit != null) {
+									v.setItems((Vector<WorkOrderItem>)wkit);
+								}
+							}
+							w.setVehicles(vehicles);
+						}
+						
+						Object wvendors = gDAO.search("WorkOrderVendor", params);
+						if(wvendors != null) {
+							Vector<WorkOrderVendor> mylist = new Vector<WorkOrderVendor>();
+							Vector<WorkOrderVendor> list = (Vector<WorkOrderVendor>)wvendors;
+							for(WorkOrderVendor e : list) {
+								if(e.isApproverApproved()) {
+									mylist.add(e);
+									break;
+								}
+							}
+							w.setWvendors(mylist);
+						}
+					}
+				}
+				gDAO.destroy();
+			}
+		}
+		return pendingRequestWrkOrders;
+	}
+
+	public void setPendingRequestWrkOrders(Vector<WorkOrder> pendingRequestWrkOrders) {
+		this.pendingRequestWrkOrders = pendingRequestWrkOrders;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrderVendor> getNegotiatedWorkOrderVendors() {
+		boolean research = true;
+		if(negotiatedWorkOrderVendors == null || negotiatedWorkOrderVendors.size() == 0)
+			research = true;
+		else if(negotiatedWorkOrderVendors.size() > 0)
+		{
+			if(getWorkOrder_id() > 0)
+			{
+				if(negotiatedWorkOrderVendors.get(0).getWorkOrder().getId().longValue() == getWorkOrder_id())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			negotiatedWorkOrderVendors = null;
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from WorkOrderVendor e where e.workOrder.id=:workoder_id");
+			q.setParameter("workoder_id", getWorkOrder_id());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null)
+				negotiatedWorkOrderVendors = (Vector<WorkOrderVendor>)obj;
+			gDAO.destroy();
+		}
+		return negotiatedWorkOrderVendors;
+	}
+
+	public void setNegotiatedWorkOrderVendors(
+			Vector<WorkOrderVendor> negotiatedWorkOrderVendors) {
+		this.negotiatedWorkOrderVendors = negotiatedWorkOrderVendors;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrderVendor> getRoutineSetupWorkOrderVendors() {
+		boolean research = true;
+		if(routineSetupWorkOrderVendors == null || routineSetupWorkOrderVendors.size() == 0)
+			research = true;
+		else if(routineSetupWorkOrderVendors.size() > 0)
+		{
+			if(getWorkOrder_id() > 0)
+			{
+				if(routineSetupWorkOrderVendors.get(0).getWorkOrder().getId().longValue() == getWorkOrder_id())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			routineSetupWorkOrderVendors = null;
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from WorkOrderVendor e where e.workOrder.id=:workoder_id");
+			q.setParameter("workoder_id", getWorkOrder_id());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null)
+				routineSetupWorkOrderVendors = (Vector<WorkOrderVendor>)obj;
+			gDAO.destroy();
+		}
+		return routineSetupWorkOrderVendors;
+	}
+
+	public void setRoutineSetupWorkOrderVendors(
+			Vector<WorkOrderVendor> routineSetupWorkOrderVendors) {
+		this.routineSetupWorkOrderVendors = routineSetupWorkOrderVendors;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<WorkOrderVendor> getAdhocSetupWorkOrderVendors() {
+		boolean research = true;
+		if(adhocSetupWorkOrderVendors == null || adhocSetupWorkOrderVendors.size() == 0)
+			research = true;
+		else if(adhocSetupWorkOrderVendors.size() > 0)
+		{
+			if(getWorkOrder_id() > 0)
+			{
+				if(adhocSetupWorkOrderVendors.get(0).getWorkOrder().getId().longValue() == getWorkOrder_id())
+					research = false;
+			}
+		}
+		if(research)
+		{
+			adhocSetupWorkOrderVendors = null;
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from WorkOrderVendor e where e.workOrder.id=:workoder_id");
+			q.setParameter("workoder_id", getWorkOrder_id());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null)
+				adhocSetupWorkOrderVendors = (Vector<WorkOrderVendor>)obj;
+			gDAO.destroy();
+		}
+		return adhocSetupWorkOrderVendors;
+	}
+
+	public void setAdhocSetupWorkOrderVendors(
+			Vector<WorkOrderVendor> adhocSetupWorkOrderVendors) {
+		this.adhocSetupWorkOrderVendors = adhocSetupWorkOrderVendors;
+	}
+
+	@SuppressWarnings("unchecked")
+	public WorkOrderVendor getNegotiatedWv() {
+		boolean research = true;
+		if(getWorkOrder_id() > 0 && negotiatedWv != null && negotiatedWv.getId() != null && 
+				negotiatedWv.getWorkOrder().getId().longValue() == getWorkOrder_id())
+			research = false;
+		if(research && getWorkOrder_id() > 0) {
+			GeneralDAO gDAO = new GeneralDAO();
+			try {
+				Query q = gDAO.createQuery("Select e from WorkOrderVendor e where e.workOrder.id=:wrk_id and e.approverApproved=:approverApproved");
+				q.setParameter("wrk_id", getWorkOrder_id());
+				q.setParameter("approverApproved", true);
+				Object obj = gDAO.search(q, 0);
+				if(obj != null) {
+					Vector<WorkOrderVendor> list = (Vector<WorkOrderVendor>)obj;
+					for(WorkOrderVendor e : list)
+						negotiatedWv = e;
+				} else
+					negotiatedWv = null;
+			} catch(Exception ex) {
+				negotiatedWv = null;
+			}
+			gDAO.destroy();
+		}
+		
+		if(negotiatedWv == null)
+			negotiatedWv = new WorkOrderVendor();
+		return negotiatedWv;
+	}
+
+	public void setNegotiatedWv(WorkOrderVendor negotiatedWv) {
+		this.negotiatedWv = negotiatedWv;
+	}
+
+	public WorkOrderVendor getWv() {
+		boolean research = true;
+		if(getWorkOrderVendor_id() != null && getWorkOrderVendor_id().longValue() > 0 &&
+				wv != null && wv.getId() != null && wv.getId().longValue() == getWorkOrderVendor_id().longValue())
+			research = false;
+		if(research && getWorkOrderVendor_id() != null) {
+			GeneralDAO gDAO = new GeneralDAO();
+			try {
+				Object obj = gDAO.find(WorkOrderVendor.class, getWorkOrderVendor_id());
+				if(obj != null)
+					wv = (WorkOrderVendor)obj;
+			} catch(Exception ex) {}
+			gDAO.destroy();
+		}
+		if(wv == null)
+			wv = new WorkOrderVendor();
+		return wv;
+	}
+
+	public void setWv(WorkOrderVendor wv) {
+		this.wv = wv;
+	}
+
+	public void resetRountineWorkOrders() {
 		setRountineWorkOrders(null);
 	}
 	@SuppressWarnings("unchecked")
@@ -5947,6 +8695,7 @@ public class FleetMBean implements Serializable
 							Vector<WorkOrderVehicle> vehicles = (Vector<WorkOrderVehicle>)wkv;
 							for(WorkOrderVehicle v : vehicles)
 							{
+								v.setOdometer(v.getCurrentVehOdometer());
 								Hashtable<String, Object> params2 = new Hashtable<String, Object>();
 								params2.put("workOrderVehicle", v);
 								
@@ -5958,6 +8707,10 @@ public class FleetMBean implements Serializable
 							}
 							w.setVehicles(vehicles);
 						}
+						
+						Object wkvendors = gDAO.search("WorkOrderVendor", params);
+						if(wkvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wkvendors);
 					}
 				}
 				gDAO.destroy();
@@ -6221,6 +8974,10 @@ public class FleetMBean implements Serializable
 							}
 							w.setVehicles(vehicles);
 						}
+						
+						Object wkvendors = gDAO.search("WorkOrderVendor", params);
+						if(wkvendors != null)
+							w.setWvendors((Vector<WorkOrderVendor>)wkvendors);
 					}
 				}
 				gDAO.destroy();
@@ -6354,8 +9111,30 @@ public class FleetMBean implements Serializable
 		this.itmInitEstAmount = itmInitEstAmount;
 	}
 
+	@SuppressWarnings("unchecked")
 	public BigDecimal getInitVehOdometer() {
-		return initVehOdometer;
+		if(getVehicle_id() != null && getVehicle_id().doubleValue() > 0) {
+			if(getPrev_vehicle_id() != null && getPrev_vehicle_id().doubleValue() == getVehicle_id().doubleValue())
+				return initVehOdometer;
+			else {
+				GeneralDAO gDAO = new GeneralDAO();
+				Query q = gDAO.createQuery("Select e from VehicleTrackerData e where e.vehicle.id=:v_id");
+				q.setParameter("v_id", getVehicle_id());
+				Object vtdObj = gDAO.search(q, 0);
+				if(vtdObj != null) {
+					List<VehicleTrackerData> vtdList = (List<VehicleTrackerData>)vtdObj;
+					for(VehicleTrackerData e : vtdList) {
+						initVehOdometer = new BigDecimal(e.getOdometer());
+						initVehOdometer = initVehOdometer.setScale(2, RoundingMode.HALF_UP);
+						setPrev_vehicle_id(getVehicle_id());
+					}
+				}
+				gDAO.destroy();
+				return initVehOdometer;
+			}
+		} else {
+			return initVehOdometer;
+		}
 	}
 
 	public void setInitVehOdometer(BigDecimal initVehOdometer) {
@@ -6412,6 +9191,7 @@ public class FleetMBean implements Serializable
 			Object objs = gDAO.search("Item", params);
 			if(objs != null)
 				items = (Vector<Item>)objs;
+			gDAO.destroy();
 		}
 		return items;
 	}
@@ -6426,6 +9206,14 @@ public class FleetMBean implements Serializable
 
 	public void setWorkOrderVendorDoc(UploadedFile workOrderVendorDoc) {
 		this.workOrderVendorDoc = workOrderVendorDoc;
+	}
+
+	public UploadedFile getVendorWorkordFile() {
+		return vendorWorkordFile;
+	}
+
+	public void setVendorWorkordFile(UploadedFile vendorWorkordFile) {
+		this.vendorWorkordFile = vendorWorkordFile;
 	}
 
 	public boolean isNextRMSetup() {
@@ -6490,6 +9278,7 @@ public class FleetMBean implements Serializable
 				{
 					routines = (Vector<VehicleRoutineMaintenance>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return routines;
@@ -6545,12 +9334,14 @@ public class FleetMBean implements Serializable
 				Hashtable<String, Object> params = new Hashtable<String, Object>();
 				params.put("vehicle.partner", getPartner());
 				params.put("active", true);
+				params.put("status", "Pending");
 				
 				Object drvs = gDAO.search("VehicleAdHocMaintenanceRequest", params);
 				if(drvs != null)
 				{
 					adHocRequests = (Vector<VehicleAdHocMaintenanceRequest>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return adHocRequests;
@@ -6605,6 +9396,7 @@ public class FleetMBean implements Serializable
 				{
 					adhocMains = (Vector<VehicleAdHocMaintenance>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return adhocMains;
@@ -6612,6 +9404,38 @@ public class FleetMBean implements Serializable
 
 	public void setAdhocMains(Vector<VehicleAdHocMaintenance> adhocMains) {
 		this.adhocMains = adhocMains;
+	}
+
+	public Vehicle getAdHocRequestVehicle() {
+		if(getMyAdhocApprovedMaintRequests() != null) {
+			for(VehicleMaintenanceRequest e : getMyAdhocApprovedMaintRequests()) {
+				if(e.getId().longValue() == getApproved_adhoc_req_id()) {
+					adHocRequestVehicle = e.getVehicle();
+					break;
+				}
+			}
+		}
+		return adHocRequestVehicle;
+	}
+
+	public void setAdHocRequestVehicle(Vehicle adHocRequestVehicle) {
+		this.adHocRequestVehicle = adHocRequestVehicle;
+	}
+
+	public Vehicle getRoutineRequestVehicle() {
+		if(getMyRoutineApprovedMaintRequests() != null) {
+			for(VehicleMaintenanceRequest e : getMyRoutineApprovedMaintRequests()) {
+				if(e.getId().longValue() == getApproved_adhoc_req_id()) {
+					routineRequestVehicle = e.getVehicle();
+					break;
+				}
+			}
+		}
+		return routineRequestVehicle;
+	}
+
+	public void setRoutineRequestVehicle(Vehicle routineRequestVehicle) {
+		this.routineRequestVehicle = routineRequestVehicle;
 	}
 
 	public Long getInsuranceComp_id() {
@@ -6697,6 +9521,8 @@ public class FleetMBean implements Serializable
 	}
 
 	public VehicleAccident getSelectedAccident() {
+		if(selectedAccident == null)
+			selectedAccident = new VehicleAccident();
 		return selectedAccident;
 	}
 
@@ -6735,6 +9561,7 @@ public class FleetMBean implements Serializable
 				{
 					accidents = (Vector<VehicleAccident>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return accidents;
@@ -6742,6 +9569,45 @@ public class FleetMBean implements Serializable
 
 	public void setAccidents(Vector<VehicleAccident> accidents) {
 		this.accidents = accidents;
+	}
+
+	public void searchAccident() {
+		setAccidents2(null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleAccident> getAccidents2() {
+		boolean research = true;
+		if(accidents2 == null || accidents2.size() == 0)
+			research = true;
+		else if(accidents2.size() > 0) {
+			if(getPartner() != null) {
+				if(accidents2.get(0).getVehicle().getPartner().getId().longValue() == getPartner().getId().longValue())
+					research = false;
+			}
+		}
+		if(research) {
+			accidents2 = null;
+			if(getPartner() != null && getStart_dt() != null && getEnd_dt() != null) {
+				GeneralDAO gDAO = new GeneralDAO();
+				
+				Query q = gDAO.createQuery("Select e from VehicleAccident e where e.vehicle.partner=:partner and e.accident_dt between :stdt and :eddt order by e.accident_dt desc");
+				q.setParameter("partner", getPartner());
+				q.setParameter("stdt", getStart_dt());
+				q.setParameter("eddt", getEnd_dt());
+				
+				Object objs = gDAO.search(q, 0);
+				if(objs != null) {
+					accidents2 = (Vector<VehicleAccident>)objs;
+				}
+				gDAO.destroy();
+			}
+		}
+		return accidents2;
+	}
+
+	public void setAccidents2(Vector<VehicleAccident> accidents2) {
+		this.accidents2 = accidents2;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -6774,6 +9640,7 @@ public class FleetMBean implements Serializable
 				{
 					pendingAccidents = (Vector<VehicleAccident>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return pendingAccidents;
@@ -6814,6 +9681,7 @@ public class FleetMBean implements Serializable
 				{
 					reviewedAccidents = (Vector<VehicleAccident>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return reviewedAccidents;
@@ -6854,6 +9722,7 @@ public class FleetMBean implements Serializable
 				{
 					deniedAccidents = (Vector<VehicleAccident>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return deniedAccidents;
@@ -6894,6 +9763,7 @@ public class FleetMBean implements Serializable
 				{
 					approvedAccidents = (Vector<VehicleAccident>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return approvedAccidents;
@@ -6985,7 +9855,7 @@ public class FleetMBean implements Serializable
 		for(VehicleLocationData vld : getVehiclesLocs())
 		{
 			boolean center = false;
-			if(getSelectedVehicle() != null && vld.getVehicle() != null && vld.getVehicle().getId().longValue() == getSelectedVehicle().getId().longValue())
+			if(getSelectedVehicle() != null && getSelectedVehicle().getId() != null && vld.getVehicle() != null && vld.getVehicle().getId().longValue() == getSelectedVehicle().getId().longValue())
 			{
 				center = true;
 			}
@@ -7080,9 +9950,11 @@ public class FleetMBean implements Serializable
 	
 	public void resetVehicleLocs(int i)
 	{
-		setVehiclesLocs(null);
-		if(i == 1)
+		if(i == 1) {
 			resetVehicles();
+			setVtrackingModel(null);
+		}
+		setVehiclesLocs(null);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -7090,12 +9962,11 @@ public class FleetMBean implements Serializable
 		if(vehiclesLocs == null)
 		{
 			vehiclesLocs = new Vector<VehicleLocationData>();
-			if(getVehicles() != null)
+			Vector<Vehicle> dvsList = getVehicles();
+			if(dvsList != null && dvsList.size() > 0)
 			{
 				GeneralDAO gDAO = new GeneralDAO();
 				
-				Vector<Vehicle> dvsList = getVehicles();
-				if(dvsList != null)
 				for(Vehicle v : dvsList)
 				{
 					Hashtable<String, Object> params = new Hashtable<String, Object>();
@@ -7110,15 +9981,16 @@ public class FleetMBean implements Serializable
 							vehiclesLocs.add(vloc.get(0));
 						}
 					}
-					
 				}
+				gDAO.destroy();
 			}
+			
+			if(vehiclesLocs.size() > 0)
+				setCenterCoor(vehiclesLocs.get(0).getLat() + "," + vehiclesLocs.get(0).getLon());
+			else
+				setCenterCoor(defaultCenterCoor);
 		}
 		
-		if(vehiclesLocs.size() > 0)
-			setCenterCoor(vehiclesLocs.get(0).getLat() + "," + vehiclesLocs.get(0).getLon());
-		else
-			setCenterCoor(defaultCenterCoor);
 		return vehiclesLocs;
 	}
 
@@ -7207,6 +10079,7 @@ public class FleetMBean implements Serializable
 				{
 					fuelings = (Vector<VehicleFueling>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return fuelings;
@@ -7234,6 +10107,16 @@ public class FleetMBean implements Serializable
 		this.fuelingRequest = fuelingRequest;
 	}
 
+	public Vector<Approver> getApprovers() {
+		if(approvers == null)
+			approvers = new Vector<Approver>();
+		return approvers;
+	}
+
+	public void setApprovers(Vector<Approver> approvers) {
+		this.approvers = approvers;
+	}
+
 	public Vector<VehicleFuelingRequest> getMyFuelingRequests() {
 		if(myFuelingRequests == null)
 			myFuelingRequests = new Vector<VehicleFuelingRequest>();
@@ -7245,13 +10128,13 @@ public class FleetMBean implements Serializable
 	}
 
 	@SuppressWarnings("unchecked")
-	public Vector<VehicleFuelingRequest> getMySubFuelingRequest() {
+	public Vector<VehicleFuelingRequest> getMySubFuelingRequests() {
 		boolean research = false;
-		if(mySubFuelingRequest == null || mySubFuelingRequest.size() == 0)
+		if(mySubFuelingRequests == null || mySubFuelingRequests.size() == 0)
 			research = true;
 		if(research)
 		{
-			mySubFuelingRequest = null;
+			mySubFuelingRequests = null;
 			
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
 			params.put("createdBy", dashBean.getUser());
@@ -7260,15 +10143,25 @@ public class FleetMBean implements Serializable
 			Object retObj = gDAO.search("VehicleFuelingRequest", params);
 			if(retObj != null)
 			{
-				mySubFuelingRequest = (Vector<VehicleFuelingRequest>)retObj;
+				mySubFuelingRequests = (Vector<VehicleFuelingRequest>)retObj;
+				for(VehicleFuelingRequest e : mySubFuelingRequests) {
+					params = new Hashtable<String, Object>();
+					params.put("entityName", "Fueling");
+					params.put("entityId", e.getId());
+					retObj = gDAO.search("Approver", params);
+					if(retObj != null) {
+						e.setApprovers((Vector<Approver>)retObj);
+					}
+				}
 			}
+			gDAO.destroy();
 		}
-		return mySubFuelingRequest;
+		return mySubFuelingRequests;
 	}
 
-	public void setMySubFuelingRequest(
-			Vector<VehicleFuelingRequest> mySubFuelingRequest) {
-		this.mySubFuelingRequest = mySubFuelingRequest;
+	public void setMySubFuelingRequests(
+			Vector<VehicleFuelingRequest> mySubFuelingRequests) {
+		this.mySubFuelingRequests = mySubFuelingRequests;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -7280,14 +10173,27 @@ public class FleetMBean implements Serializable
 		{
 			pendingFuelingRequests = null;
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			params.put("entityName", "Fueling");
 			params.put("approvalUser", dashBean.getUser());
 			params.put("approvalStatus", "PENDING");
 			GeneralDAO gDAO = new GeneralDAO();
-			Object retObj = gDAO.search("VehicleFuelingRequest", params);
+			Object retObj = gDAO.search("Approver", params);
 			if(retObj != null)
 			{
-				pendingFuelingRequests = (Vector<VehicleFuelingRequest>)retObj;
+				Vector<Approver> list = (Vector<Approver>)retObj;
+				pendingFuelingRequests = new Vector<VehicleFuelingRequest>();
+				for(Approver ap : list) {
+					params = new Hashtable<String, Object>();
+					params.put("id", ap.getEntityId());
+					Object retObj2 = gDAO.search("VehicleFuelingRequest", params);
+					if(retObj2 != null) {
+						ArrayList<VehicleFuelingRequest> vfrList = (ArrayList<VehicleFuelingRequest>)retObj2;
+						for(VehicleFuelingRequest e : vfrList)
+							pendingFuelingRequests.add(e);
+					}
+				}
 			}
+			gDAO.destroy();
 		}
 		return pendingFuelingRequests;
 	}
@@ -7295,6 +10201,53 @@ public class FleetMBean implements Serializable
 	public void setPendingFuelingRequests(
 			Vector<VehicleFuelingRequest> pendingFuelingRequests) {
 		this.pendingFuelingRequests = pendingFuelingRequests;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleFuelingRequest> getMyAttendedFuelingRequests() {
+		boolean research = false;
+		if(myAttendedFuelingRequests == null || myAttendedFuelingRequests.size() == 0)
+			research = true;
+		if(research)
+		{
+			myAttendedFuelingRequests = null;
+			Hashtable<String, Object> params = new Hashtable<String, Object>();
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from Approver e where e.entityName=:entityName and e.approvalUser=:approvalUser and (e.approvalStatus=:approvalStatus1 or e.approvalStatus=:approvalStatus2) order by e.approval_dt desc");
+			q.setParameter("entityName", "Fueling");
+			q.setParameter("approvalUser", dashBean.getUser());
+			q.setParameter("approvalStatus1", "APPROVED");
+			q.setParameter("approvalStatus2", "DENIED");
+			Object retObj = gDAO.search(q, 0);
+			if(retObj != null)
+			{
+				Vector<Approver> list = (Vector<Approver>)retObj;
+				myAttendedFuelingRequests = new Vector<VehicleFuelingRequest>();
+				for(Approver ap : list) {
+					params = new Hashtable<String, Object>();
+					params.put("id", ap.getEntityId());
+					Object retObj2 = gDAO.search("VehicleFuelingRequest", params);
+					if(retObj2 != null) {
+						ArrayList<VehicleFuelingRequest> vfrList = (ArrayList<VehicleFuelingRequest>)retObj2;
+						myAttendedFuelingRequests.addAll(vfrList);
+						for(VehicleFuelingRequest vfr : myAttendedFuelingRequests) {
+							Query q2 = gDAO.createQuery("Select e from Approver e where e.entityId=:entityId order by e.approval_dt desc");
+							q2.setParameter("entityId", vfr.getId());
+							Object retObj3 = gDAO.search(q2, 0);
+							Vector<Approver> aplist = (Vector<Approver>)retObj3;
+							vfr.setApprovers(aplist);
+						}
+					}
+				}
+			}
+			gDAO.destroy();
+		}
+		return myAttendedFuelingRequests;
+	}
+
+	public void setMyAttendedFuelingRequests(
+			Vector<VehicleFuelingRequest> myAttendedFuelingRequests) {
+		this.myAttendedFuelingRequests = myAttendedFuelingRequests;
 	}
 
 	public String getApprovalStatus() {
@@ -7481,6 +10434,7 @@ public class FleetMBean implements Serializable
 				{
 					licenses = (Vector<VehicleLicense>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return licenses;
@@ -7533,7 +10487,7 @@ public class FleetMBean implements Serializable
 			{
 				GeneralDAO gDAO = new GeneralDAO();
 				
-				Query q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.tran_dt between :stdt and :eddt");
+				Query q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.crt_dt between :stdt and :eddt");
 				q.setParameter("partner", getPartner());
 				q.setParameter("stdt", getStdt());
 				q.setParameter("eddt", getEddt());
@@ -7543,6 +10497,7 @@ public class FleetMBean implements Serializable
 				{
 					driverLicenses = (Vector<DriverLicense>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return driverLicenses;
@@ -7637,6 +10592,7 @@ public class FleetMBean implements Serializable
 				{
 					vehicleBehaviours = (Vector<VehicleBehaviour>)drvs;
 				}
+				gDAO.destroy();
 			}
 		}
 		return vehicleBehaviours;
@@ -7677,19 +10633,48 @@ public class FleetMBean implements Serializable
 			
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
 			params.put("createdBy", dashBean.getUser());
-			params.put("approvalStatus", "PENDING");
+			//params.put("approvalStatus", "PENDING"); // commented so as to show all
 			GeneralDAO gDAO = new GeneralDAO();
 			Object retObj = gDAO.search("VehicleDisposal", params);
 			if(retObj != null)
 			{
 				mySubDisposalRequest = (Vector<VehicleDisposal>)retObj;
 			}
+			gDAO.destroy();
 		}
 		return mySubDisposalRequest;
 	}
 
 	public void setMySubDisposalRequest(Vector<VehicleDisposal> mySubDisposalRequest) {
 		this.mySubDisposalRequest = mySubDisposalRequest;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleDisposal> getMyAttendedDisposalRequest() {
+		boolean research = false;
+		if(myAttendedDisposalRequest == null || myAttendedDisposalRequest.size() == 0)
+			research = true;
+		if(research)
+		{
+			myAttendedDisposalRequest = null;
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from VehicleDisposal e where e.approvalUser=:approvalUser and (e.approvalStatus=:approvalStatus1 or e.approvalStatus=:approvalStatus2) order by e.approval_dt desc");
+			q.setParameter("approvalUser", dashBean.getUser());
+			q.setParameter("approvalStatus1", "APPROVED");
+			q.setParameter("approvalStatus2", "DENIED");
+			Object retObj = gDAO.search(q, 0);
+			if(retObj != null)
+			{
+				myAttendedDisposalRequest = (Vector<VehicleDisposal>)retObj;
+			}
+			gDAO.destroy();
+		}
+		return myAttendedDisposalRequest;
+	}
+
+	public void setMyAttendedDisposalRequest(
+			Vector<VehicleDisposal> myAttendedDisposalRequest) {
+		this.myAttendedDisposalRequest = myAttendedDisposalRequest;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -7709,6 +10694,7 @@ public class FleetMBean implements Serializable
 			{
 				pendingDisposalRequests = (Vector<VehicleDisposal>)retObj;
 			}
+			gDAO.destroy();
 		}
 		return pendingDisposalRequests;
 	}
@@ -7716,6 +10702,24 @@ public class FleetMBean implements Serializable
 	public void setPendingDisposalRequests(
 			Vector<VehicleDisposal> pendingDisposalRequests) {
 		this.pendingDisposalRequests = pendingDisposalRequests;
+	}
+
+	public VehicleSales getVsale() {
+		if(vsale == null)
+			vsale = new VehicleSales();
+		return vsale;
+	}
+
+	public void setVsale(VehicleSales vsale) {
+		this.vsale = vsale;
+	}
+
+	public Vector<VehicleSales> getVsales() {
+		return vsales;
+	}
+
+	public void setVsales(Vector<VehicleSales> vsales) {
+		this.vsales = vsales;
 	}
 
 	public boolean isFinished() {
@@ -7750,12 +10754,185 @@ public class FleetMBean implements Serializable
 		this.end_dt = end_dt;
 	}
 
+	public UploadedFile getMaintenanceExcel() {
+		return maintenanceExcel;
+	}
+
+	public void setMaintenanceExcel(UploadedFile maintenanceExcel) {
+		this.maintenanceExcel = maintenanceExcel;
+	}
+
 	public boolean isSelectAll() {
 		return selectAll;
 	}
 
 	public void setSelectAll(boolean selectAll) {
 		this.selectAll = selectAll;
+	}
+
+	public VehicleMaintenanceRequest getMaintRequest() {
+		if(maintRequest == null)
+			maintRequest = new VehicleMaintenanceRequest();
+		return maintRequest;
+	}
+
+	public void setMaintRequest(VehicleMaintenanceRequest maintRequest) {
+		this.maintRequest = maintRequest;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleMaintenanceRequest> getMyMaintRequests() {
+		GeneralDAO gDAO = new GeneralDAO();
+		Query q = gDAO.createQuery("Select e from VehicleMaintenanceRequest e where e.createdBy=:user and e.status='PENDING' order by e.crt_dt");
+		q.setParameter("user", dashBean.getUser());
+		Object obj = gDAO.search(q, 0);
+		if(obj != null) {
+			Vector<VehicleMaintenanceRequest> list = (Vector<VehicleMaintenanceRequest>)obj;
+			myMaintRequests = list;
+		}
+		gDAO.destroy();
+		return myMaintRequests;
+	}
+
+	public void setMyMaintRequests(Vector<VehicleMaintenanceRequest> myMaintRequests) {
+		this.myMaintRequests = myMaintRequests;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleMaintenanceRequest> getPendingMaintRequestsForMyApproval() {
+		if(pendingMaintRequestsForMyApproval == null) {
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from Approver e where e.entityName='VehicleMaintenanceRequest' and e.approvalUser=:user and e.approvalStatus='PENDING' order by e.crt_dt");
+			q.setParameter("user", dashBean.getUser());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null) {
+				Vector<Approver> apList = (Vector<Approver>)obj;
+				if(apList.size() > 0) {
+					pendingMaintRequestsForMyApproval = new Vector<VehicleMaintenanceRequest>();
+					for(Approver ap : apList) {
+						Object mobj = gDAO.find(VehicleMaintenanceRequest.class, ap.getEntityId());
+						if(mobj != null) {
+							VehicleMaintenanceRequest vmr = (VehicleMaintenanceRequest)mobj;
+							pendingMaintRequestsForMyApproval.add(vmr);
+						}
+					}
+				}
+			}
+			gDAO.destroy();
+		}
+		return pendingMaintRequestsForMyApproval;
+	}
+
+	public void setPendingMaintRequestsForMyApproval(
+			Vector<VehicleMaintenanceRequest> pendingMaintRequestsForMyApproval) {
+		this.pendingMaintRequestsForMyApproval = pendingMaintRequestsForMyApproval;
+	}
+
+	public boolean adHocRequestAlreadyAdded(long id) {
+		boolean ret = false;
+		int size = getMyAdhocApprovedMaintRequests().size();
+		for(int i=0; i<size; i++) {
+			VehicleMaintenanceRequest e = getMyAdhocApprovedMaintRequests().get(i);
+			if(e.getId().longValue() == id) {
+				ret = true;
+				break;
+			}
+		}
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleMaintenanceRequest> getMyAdhocApprovedMaintRequests() {
+		if(myAdhocApprovedMaintRequests == null || (myAdhocApprovedMaintRequests != null && myAdhocApprovedMaintRequests.size() == 0)) {
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from Approver e where e.entityName='VehicleMaintenanceRequest' and e.approvalUser=:user and e.approvalStatus='APPROVED' order by e.crt_dt");
+			q.setParameter("user", dashBean.getUser());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null) {
+				Vector<Approver> apList = (Vector<Approver>)obj;
+				if(apList.size() > 0) {
+					myAdhocApprovedMaintRequests = new Vector<VehicleMaintenanceRequest>();
+					for(Approver ap : apList) {
+						Object mobj = gDAO.find(VehicleMaintenanceRequest.class, ap.getEntityId());
+						if(mobj != null) {
+							VehicleMaintenanceRequest vmr = (VehicleMaintenanceRequest)mobj;
+							if(vmr.isActive() && vmr.getMaintenanceType().equalsIgnoreCase("adhoc") && vmr.getStatus().equalsIgnoreCase("APPROVED"))
+								myAdhocApprovedMaintRequests.add(vmr);
+						}
+					}
+				}
+			}
+			gDAO.destroy();
+		}
+		return myAdhocApprovedMaintRequests;
+	}
+
+	public void setMyAdhocApprovedMaintRequests(
+			Vector<VehicleMaintenanceRequest> myAdhocApprovedMaintRequests) {
+		this.myAdhocApprovedMaintRequests = myAdhocApprovedMaintRequests;
+	}
+	
+	public boolean routineRequestAlreadyAdded(long id) {
+		boolean ret = false;
+		if(getMyRoutineApprovedMaintRequests() != null) {
+			int size = getMyRoutineApprovedMaintRequests().size();
+			for(int i=0; i<size; i++) {
+				VehicleMaintenanceRequest e = getMyRoutineApprovedMaintRequests().get(i);
+				if(e.getId().longValue() == id) {
+					ret = true;
+					break;
+				}
+			}
+		}
+		return ret;
+	}
+
+	@SuppressWarnings("unchecked")
+	public Vector<VehicleMaintenanceRequest> getMyRoutineApprovedMaintRequests() {
+		if(myRoutineApprovedMaintRequests == null || (myRoutineApprovedMaintRequests != null && myRoutineApprovedMaintRequests.size() == 0)) {
+			GeneralDAO gDAO = new GeneralDAO();
+			Query q = gDAO.createQuery("Select e from Approver e where e.entityName='VehicleMaintenanceRequest' and e.approvalUser=:user and e.approvalStatus='APPROVED' order by e.crt_dt");
+			q.setParameter("user", dashBean.getUser());
+			Object obj = gDAO.search(q, 0);
+			if(obj != null) {
+				Vector<Approver> apList = (Vector<Approver>)obj;
+				if(apList.size() > 0) {
+					myRoutineApprovedMaintRequests = new Vector<VehicleMaintenanceRequest>();
+					for(Approver ap : apList) {
+						Object mobj = gDAO.find(VehicleMaintenanceRequest.class, ap.getEntityId());
+						if(mobj != null) {
+							VehicleMaintenanceRequest vmr = (VehicleMaintenanceRequest)mobj;
+							if(vmr.isActive() && vmr.getMaintenanceType().equalsIgnoreCase("routine") && vmr.getStatus().equalsIgnoreCase("APPROVED"))
+								myRoutineApprovedMaintRequests.add(vmr);
+						}
+					}
+				}
+			}
+			gDAO.destroy();
+		}
+		return myRoutineApprovedMaintRequests;
+	}
+
+	public void setMyRoutineApprovedMaintRequests(
+			Vector<VehicleMaintenanceRequest> myRoutineApprovedMaintRequests) {
+		this.myRoutineApprovedMaintRequests = myRoutineApprovedMaintRequests;
+	}
+
+	public Vector<WorkOrderVehicle> getVehicleMaintHistoryList() {
+		return vehicleMaintHistoryList;
+	}
+
+	public void setVehicleMaintHistoryList(
+			Vector<WorkOrderVehicle> vehicleMaintHistoryList) {
+		this.vehicleMaintHistoryList = vehicleMaintHistoryList;
+	}
+
+	public DropDownMBean getDdBean() {
+		return ddBean;
+	}
+
+	public void setDdBean(DropDownMBean ddBean) {
+		this.ddBean = ddBean;
 	}
 	
 }

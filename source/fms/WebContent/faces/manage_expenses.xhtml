@@ -36,28 +36,40 @@
 			<p:tabView id="tabs" dynamic="true" cache="false">
 				<p:tab id="stp" title="Capture Expense">
 					<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+						<h:outputLabel for="apvreq" value="Approved Request: *" />
+						<p:selectOneMenu id="apvreq" value="#{expenseBean.expRequest_id}">
+				  			<f:selectItems value="#{expenseBean.approvedRequests}" var="it" itemLabel="#{it.request_dt} - #{it.type.name} - #{it.amount}" itemValue="#{it.id}" />
+				  			<p:ajax update="expt,expst,expv,expmis,stdt,amt,desc" />
+				  		</p:selectOneMenu>
+						
 						<h:outputLabel for="expt" value="Expense Type: *" />
-						<p:selectOneMenu id="expt" value="#{expenseBean.expType_id}">
-				  			<f:selectItems value="#{expenseBean.expTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
-				  		</p:selectOneMenu>
+						<h:outputText id="expt" value="#{expenseBean.exp.type.name}" />
 				  		
-				  		<h:outputLabel for="expst" value="For Staff:" />
-						<p:selectOneMenu id="expst" value="#{expenseBean.staff_id}">
-				  			<f:selectItem itemLabel="No staff" itemValue="0" />
-				  			<f:selectItems value="#{expenseBean.staffs}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
-				  		</p:selectOneMenu>
+				  		<h:outputLabel for="expst" value="Staff:" />
+				  		<p:panelGrid id="expst" columns="1" cellpadding="5">
+				  		<h:outputText value="#{expenseBean.exp.personel.firstname} #{expenseBean.exp.personel.lastname}" rendered="#{expenseBean.exp.personel != null}" />
+				  		<h:outputText value="N/A" rendered="#{expenseBean.exp.personel == null}" />
+				  		</p:panelGrid>
 				  		
-				  		<h:outputLabel for="expv" value="For Vehicle:" />
-						<p:selectOneMenu id="expv" value="#{expenseBean.vehicle_id}">
-				  			<f:selectItem itemLabel="No vehicle" itemValue="0" />
-				  			<f:selectItems value="#{expenseBean.vehicles}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
-				  		</p:selectOneMenu>
+				  		<h:outputLabel for="expv" value="Vehicle:" />
+				  		<p:panelGrid id="expv" columns="1" cellpadding="5">
+				  		<h:outputText value="#{expenseBean.exp.vehicle.registrationNo}" rendered="#{expenseBean.exp.vehicle != null}" />
+				  		<h:outputText value="N/A" rendered="#{expenseBean.exp.vehicle == null}" />
+				  		</p:panelGrid>
 				  		
-				  		<h:outputLabel for="stdt" value="Date: *" />
+				  		<h:outputLabel for="expmis" value="MIS:" />
+				  		<p:panelGrid id="expmis" columns="1" cellpadding="5">
+				  		<h:outputText value="Department: #{expenseBean.exp.misDepartment.name}" rendered="#{expenseBean.exp.misDepartment != null}" />
+				  		<h:outputText value="Department: N/A" rendered="#{expenseBean.exp.misDepartment == null}" />
+				  		<h:outputText value="Unit: #{expenseBean.exp.misUnit.name}" rendered="#{expenseBean.exp.misUnit != null}" />
+				  		<h:outputText value="Unit: N/A" rendered="#{expenseBean.exp.misUnit == null}" />
+				  		</p:panelGrid>
+				  		
+				  		<h:outputLabel for="stdt" value="Date: " />
 						<p:calendar id="stdt" value="#{expenseBean.exp.expense_dt}" pattern="dd/MM/yyyy HH:mm:ss" showOn="button" />
 						
 						<h:outputLabel for="amt" value="Amount: *" />
-						<p:inputText id="amt" value="#{expenseBean.exp.amount}" />
+						<h:outputText id="amt" value="#{expenseBean.exp.amount}" />
 						
 						<h:outputLabel for="desc" value="Remarks: " />
 						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
@@ -86,20 +98,21 @@
 				  	<p:dataTable id="expsTable" var="obj" value="#{expenseBean.exps}"
 						paginator="true" rows="50"
 						paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-						rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+						rowsPerPageTemplate="10,20,50" resizableColumns="true" editable="true"
+						scrollable="true" scrollWidth="1220">
 						<f:facet name="header">
 							Found expense(s) [#{expenseBean.exps.size()}]
 						</f:facet>
 						<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
         				<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
 						
-						<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains">
+						<p:column sortBy="#{obj.type.name}" headerText="Expense" filterBy="#{obj.type.name}" filterMatchMode="contains" style="width:150px">
 							<h:outputText value="#{obj.type.name}" />
 						</p:column>
-						<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains">
+						<p:column headerText="Description" filterBy="#{obj.type.description}" filterMatchMode="contains" style="width:250px">
 							<h:outputText value="#{obj.type.description}" />
 						</p:column>
-						<p:column sortBy="#{obj.amount}" headerText="Amount">
+						<p:column sortBy="#{obj.amount}" headerText="Amount" style="width:150px">
 							<p:cellEditor>
 								<f:facet name="output">
 									<h:outputText value="#{obj.amount}" />
@@ -109,7 +122,7 @@
 								</f:facet>
 							</p:cellEditor>
 						</p:column>
-						<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date">
+						<p:column sortBy="#{obj.expense_dt}" headerText="Expense Date" style="width:150px">
 							<p:cellEditor>
 								<f:facet name="output">
 									<h:outputText value="#{obj.expense_dt}" />
@@ -119,12 +132,12 @@
 								</f:facet>
 							</p:cellEditor>
 						</p:column>
-						<p:column headerText="Beneficiary">
+						<p:column headerText="Beneficiary" style="width:200px">
 							Staff: <h:outputText value="#{obj.personel.firstname} #{obj.personel.lastname}" rendered="#{obj.personel != null}" /><h:outputText value="N/A" rendered="#{obj.personel == null}" />
 							<br/>
 							Vehicle: <h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" /><h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
 						</p:column>
-						<p:column headerText="Remarks">
+						<p:column headerText="Remarks" style="width:300px">
 							<p:cellEditor>
 								<f:facet name="output">
 									<h:outputText value="#{obj.remarks}" />
@@ -137,16 +150,17 @@
 							  	</f:facet>
 							  </p:cellEditor>
 						</p:column>
-						<p:column headerText="Created">
+						<p:column headerText="Created" style="width:300px">
 							By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 							On: <h:outputText value="#{obj.crt_dt}" />
 						</p:column>
-						<p:column headerText="" style="width: 6%">
+						<p:column headerText="" style="width:60px">
 							<p:rowEditor rendered="#{dashboardBean.user.id.longValue() == obj.createdBy.id.longValue()}" />
 							<h:outputText value="Can't update" rendered="#{not (dashboardBean.user.id.longValue() == obj.createdBy.id.longValue())}" />
 						</p:column>
 						
 					</p:dataTable>
+					
 				</p:tab>
 			</p:tabView>
 			</p:outputPanel>

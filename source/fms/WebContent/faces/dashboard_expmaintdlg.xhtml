@@ -1,0 +1,76 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Due and upcoming maintenances</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Due and upcoming maintenances" action="#{dashboardBean.gotoPage('dashboard_expmaintdlg', false)}" ajax="false" />
+    		</p:breadCrumb>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panel id="expMaintPanel" style="margin-bottom:10px;">
+				<p:commandButton ajax="true" update="expMaintTable" action="#{dashboardBean.resetExpMaints}" value="Refresh" />
+				<br/><br/>
+				<p:dataTable var="lic" id="expMaintTable" value="#{dashboardBean.upcomingMaintenances}"
+					rows="50" paginator="true"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" scrollable="true">
+					<f:facet name="header">
+						#{dashboardBean.upcomingMaintenances.size()} record(s) found
+					</f:facet>
+				
+					<p:column headerText="Type" style="width:150px">
+						<h:outputText value="#{lic[0]}" />
+					</p:column>
+					<p:column headerText="Vehicle" style="width:150px">
+						<h:outputText value="#{lic[1]}" />
+					</p:column>
+					<p:column headerText="Current Odometer" style="width:150px">
+						<h:outputText value="#{lic[2]}" />
+					</p:column>
+					<p:column headerText="Alert" style="width:150px">
+						<h:outputText value="#{lic[3]}" />
+					</p:column>
+					<p:column headerText="Actual" style="width:150px">
+						<h:outputText value="#{lic[4]}" />
+					</p:column>
+					<p:column headerText="Action" style="width:150px">
+						<p:commandButton action="#{fleetBean.initWorkOrder(lic[1], lic[0])}" value="Goto Request Page..." />
+					</p:column>
+				</p:dataTable>
+				<br/><br/>
+				<f:facet name="footer">
+				<p:commandLink ajax="false">
+					<p:graphicImage value="/resources/images/excel.png" />
+					<p:dataExporter type="xls" target=":form:expMaintTable" fileName="due_upcoming_maintenances" />
+				</p:commandLink>
+		  		
+		  		<h:outputText value=" | " />
+		  		<p:commandLink action="#{dashboardBean.gotoPage('manage_v_rmaintenance', false)}" ajax="false">Manage Routine Maintenance</p:commandLink>
+		  		<h:outputText value=" | " />
+		  		<p:commandLink action="#{dashboardBean.gotoPage('manage_v_ahmaintenance', false)}" ajax="false">Manage AdHoc Maintenance</p:commandLink>
+		  		</f:facet>
+		  		</p:panel>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

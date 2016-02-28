@@ -34,6 +34,11 @@ public class WorkOrderVehicle implements Serializable
 	
 	private double initEstAmount;
 	
+	@ManyToOne
+	private VehicleMaintenanceRequest maintRequest;
+	//@ManyToOne
+	//private VehicleAdHocMaintenanceRequest adhocMainRequest; // Only available if picked and only for 'Adhoc' type
+	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
 	@ManyToOne
@@ -51,6 +56,12 @@ public class WorkOrderVehicle implements Serializable
 	private Date close_dt;
 	@Transient
 	private boolean nextRMSetup;
+	@Transient
+	private VehicleRoutineMaintenance routineMaintenance;
+	@Transient
+	private VehicleAdHocMaintenance adhocMaintenance;
+	@Transient
+	private Date start_dt, end_dt;
 	
 	public WorkOrderVehicle()
 	{}
@@ -102,6 +113,22 @@ public class WorkOrderVehicle implements Serializable
 	public void setInitEstAmount(double initEstAmount) {
 		this.initEstAmount = initEstAmount;
 	}
+
+	public VehicleMaintenanceRequest getMaintRequest() {
+		return maintRequest;
+	}
+
+	public void setMaintRequest(VehicleMaintenanceRequest maintRequest) {
+		this.maintRequest = maintRequest;
+	}
+
+	/*public VehicleAdHocMaintenanceRequest getAdhocMainRequest() {
+		return adhocMainRequest;
+	}
+
+	public void setAdhocMainRequest(VehicleAdHocMaintenanceRequest adhocMainRequest) {
+		this.adhocMainRequest = adhocMainRequest;
+	}*/
 
 	public Date getCrt_dt() {
 		return crt_dt;
@@ -228,6 +255,50 @@ public class WorkOrderVehicle implements Serializable
 
 	public void setNextRMSetup(boolean nextRMSetup) {
 		this.nextRMSetup = nextRMSetup;
+	}
+
+	public VehicleRoutineMaintenance getRoutineMaintenance() {
+		return routineMaintenance;
+	}
+
+	public void setRoutineMaintenance(VehicleRoutineMaintenance routineMaintenance) {
+		this.routineMaintenance = routineMaintenance;
+		if(routineMaintenance != null && routineMaintenance.getId() != null) {
+			setInitial_amount(routineMaintenance.getInitial_amount());
+			setClosed_amount(routineMaintenance.getClosed_amount());
+			setStart_dt(routineMaintenance.getStart_dt());
+			setEnd_dt(routineMaintenance.getClose_dt());
+		}
+	}
+
+	public VehicleAdHocMaintenance getAdhocMaintenance() {
+		return adhocMaintenance;
+	}
+
+	public void setAdhocMaintenance(VehicleAdHocMaintenance adhocMaintenance) {
+		this.adhocMaintenance = adhocMaintenance;
+		if(adhocMaintenance != null && adhocMaintenance.getId() != null) {
+			setInitial_amount(adhocMaintenance.getInitial_cost());
+			setClosed_amount(adhocMaintenance.getClosed_cost());
+			setStart_dt(adhocMaintenance.getStart_dt());
+			setEnd_dt(adhocMaintenance.getClose_dt());
+		}
+	}
+
+	public Date getStart_dt() {
+		return start_dt;
+	}
+
+	public void setStart_dt(Date start_dt) {
+		this.start_dt = start_dt;
+	}
+
+	public Date getEnd_dt() {
+		return end_dt;
+	}
+
+	public void setEnd_dt(Date end_dt) {
+		this.end_dt = end_dt;
 	}
 	
 }

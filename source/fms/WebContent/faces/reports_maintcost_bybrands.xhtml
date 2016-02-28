@@ -1,0 +1,136 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:f="http://java.sun.com/jsf/core"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui">
+	<f:view>
+		<h:body>
+			<h:outputText value="Maintenance Cost by Brands Report" />
+			<br/>
+			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="flt1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: " />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+						<h:outputLabel for="mainType" value="Maintenance Type: " />
+						<p:selectOneMenu id="mainType" value="#{reportsBean.mainttype}">
+							<f:selectItem itemLabel="Routine and AdHoc" itemValue="Both" />
+				  			<f:selectItem itemLabel="Routine" itemValue="Routine" />
+				  			<f:selectItem itemLabel="AdHoc" itemValue="AdHoc" />
+				  		</p:selectOneMenu>
+				  	</p:panelGrid>
+				  	<p:panelGrid columns="2">
+						<h:outputLabel for="stdt" value="Start date: *" />
+						<p:calendar id="stdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="eddt" value="End date: *" />
+						<p:calendar id="eddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+						
+						<h:outputLabel for="rgroup" value="Grouping: " />
+						<p:selectOneMenu id="rgroup" value="#{reportsBean.rgroup}">
+							<f:selectItem itemLabel="Daily" itemValue="1" />
+							<f:selectItem itemLabel="Weekly" itemValue="2" />
+							<f:selectItem itemLabel="Monthly" itemValue="3" />
+				  		</p:selectOneMenu>
+					</p:panelGrid>
+					
+					<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.searchMaintCostsByBrands}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+				
+				<h:panelGrid columns="3" rendered="#{reportsBean.maintCostByBrandsReport != null and reportsBean.maintCostByBrandsReport.size() > 0}">
+					<p:panel header="Export All Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" />
+						</p:commandLink>
+						<p:commandLink ajax="false" action="#{reportsBean.downloadMaintCostsByBrandsPDF}">
+							<p:graphicImage value="/resources/images/pdf.png" />
+						</p:commandLink>
+					</p:panel>
+					<p:panel header="Export Page Data">
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/excel.png" />
+							<p:dataExporter type="xls" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/csv.png" />
+							<p:dataExporter type="csv" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" pageOnly="true" />
+						</p:commandLink>
+						<p:commandLink ajax="false">
+							<p:graphicImage value="/resources/images/xml.png" />
+							<p:dataExporter type="xml" target=":form:objsTable"
+								fileName="maintenance_cost_bybrands_report" pageOnly="true" />
+						</p:commandLink>
+					</p:panel>
+				</h:panelGrid>
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.maintCostByBrandsReport}"
+					paginator="true" rows="50"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:100%" resizableColumns="true"
+					rendered="#{reportsBean.maintCostByBrandsReport != null and reportsBean.maintCostByBrandsReport.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column sortBy="#{obj[0]}" filterBy="#{obj[0]}" filterMatchMode="contains">
+						<f:facet name="header">
+							 <h:outputText value="Vehicle Brand" />  
+						</f:facet>
+						<h:outputText value="#{obj[0]}" />
+					</p:column>
+					<p:column sortBy="#{obj[1]}">
+						<f:facet name="header">
+							 <h:outputText value="Start Date" />  
+						</f:facet>
+						<h:outputText value="#{obj[1]}" />
+					</p:column>
+					<p:column sortBy="#{obj[2]}">
+						<f:facet name="header">
+							 <h:outputText value="End Date" />  
+						</f:facet>
+						<h:outputText value="#{obj[2]}" />
+					</p:column>
+					<p:column sortBy="#{obj[3]}">
+						<f:facet name="header">
+							 <h:outputText value="Cost" />  
+						</f:facet>
+						<h:outputText value="#{obj[3]}" />
+					</p:column>
+					<p:column sortBy="#{obj[4]}">
+						<f:facet name="header">
+							 <h:outputText value="Type" />  
+						</f:facet>
+						<h:outputText value="#{obj[4]}" />
+					</p:column>
+				</p:dataTable>
+				
+				</p:outputPanel>
+		</h:body>
+	</f:view>
+</html>

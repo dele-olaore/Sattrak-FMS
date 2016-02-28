@@ -29,6 +29,9 @@
 							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
 							<f:selectItems value="#{ddBean.getVehicles(reportsBean.partner_id, reportsBean.fleet_id, reportsBean.regNo)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
 						</p:selectOneMenu>
+						
+						<h:outputLabel for="limit" value="Min Fueling Liters: " />
+						<p:inputText id="limit" value="#{reportsBean.flimit}" />
 				  		
 				  		<h:outputLabel for="acddt" value="Start date: *" />
 						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
@@ -42,24 +45,11 @@
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.fuelings != null and reportsBean.fuelings.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(11, 'fuelings_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="fuelings_report" />
-						</p:commandLink>
-		
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(11, 'fuelings_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(11, 'fuelings_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
 						</p:commandLink>
 		
 						<p:commandLink ajax="false">
@@ -105,31 +95,49 @@
 					
 					<p:column sortBy="#{obj.captured_dt}">
 						<f:facet name="header">
-							 <h:outputText value="Date" />  
+							 <h:outputText value="Date" />
 						</f:facet>
 						<h:outputText value="#{obj.captured_dt}" />
 					</p:column>
 					<p:column sortBy="#{obj.vehicle.registrationNo}" filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Reg No." />  
+							 <h:outputText value="Reg No." />
 						</f:facet>
 						<h:outputText value="#{obj.vehicle.registrationNo}" />
 					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Location" />
+						</f:facet>
+						<h:outputText value="#{obj.location}" />
+					</p:column>
+					<p:column sortBy="#{obj.initiatFuelLevel}">
+						<f:facet name="header">
+							 <h:outputText value="Initial Fuel Level" />
+						</f:facet>
+						<h:outputText value="#{obj.initiatFuelLevel}" />
+					</p:column>
 					<p:column sortBy="#{obj.litres}">
 						<f:facet name="header">
-							 <h:outputText value="Litres" />  
+							 <h:outputText value="Litres" />
 						</f:facet>
 						<h:outputText value="#{obj.litres}" />
 					</p:column>
+					<p:column sortBy="#{obj.fuelLevel}">
+						<f:facet name="header">
+							 <h:outputText value="Final Fuel Level" />
+						</f:facet>
+						<h:outputText value="#{obj.fuelLevel}" />
+					</p:column>
 					<p:column sortBy="#{obj.amt}">
 						<f:facet name="header">
-							 <h:outputText value="Amount" />  
+							 <h:outputText value="Amount" />
 						</f:facet>
 						<h:outputText value="#{obj.amt}" />
 					</p:column>
 					<p:column filterBy="#{obj.source}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Source" />  
+							 <h:outputText value="Source" />
 						</f:facet>
 						<h:outputText value="#{obj.source}" />
 					</p:column>

@@ -8,7 +8,7 @@
 			<h:outputText value="Driver License Due" />
 			<br/>
 			<p:outputPanel id="MyOPanel" style="width:100%;">
-				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+				<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 					<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
 					<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
 						<f:selectItem itemLabel="-- Select One --" itemValue="0" />
@@ -21,32 +21,17 @@
 				</p:panelGrid>
 				
 				<h:panelGrid columns="3" rendered="#{reportsBean.dueDriversLic != null and reportsBean.dueDriversLic.size() > 0}">
-					<p:panel header="Export All Data [Landscape]">
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(2, 'driver_license_due_report', 2)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-					</p:panel>
 					<p:panel header="Export All Data">
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/excel.png" />
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="all_users_report" />
 						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createPDF(2, 'driver_license_due_report', 1)}">
-							<p:graphicImage value="/resources/images/pdf.png" />
-						</p:commandLink>
-						
-						<p:commandLink ajax="false" actionListener="#{reportsBean.createWord(2, 'driver_license_due_report')}">
-							<p:graphicImage value="/resources/images/word.jpg" />
-						</p:commandLink>
-						
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
 							<p:dataExporter type="csv" target=":form:objsTable"
 								fileName="driver_license_due_report" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/xml.png" />
 							<p:dataExporter type="xml" target=":form:objsTable"
@@ -59,13 +44,11 @@
 							<p:dataExporter type="xls" target=":form:objsTable"
 								fileName="driver_license_due_report" pageOnly="true" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/csv.png" />
 							<p:dataExporter type="csv" target=":form:objsTable"
 								fileName="driver_license_due_report" pageOnly="true" />
 						</p:commandLink>
-		
 						<p:commandLink ajax="false">
 							<p:graphicImage value="/resources/images/xml.png" />
 							<p:dataExporter type="xml" target=":form:objsTable"
@@ -118,6 +101,12 @@
 							 <h:outputText value="License Due Date" />  
 						</f:facet>
 						<h:outputText value="#{obj.lic_end_dt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Expiry..." />  
+						</f:facet>
+						<h:outputText value="#{obj.daysExpiry}" />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

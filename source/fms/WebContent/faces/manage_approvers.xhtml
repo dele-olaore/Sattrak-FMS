@@ -1,0 +1,150 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Manage Approvers</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb>
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Manage Approvers" action="#{dashboardBean.gotoPage('manage_approvers', false)}" ajax="false" />
+    		</p:breadCrumb>
+		
+			<span style="float:right">
+			<p:commandLink value="New Approver" onclick="newapproverdlg.show();" />
+			</span>
+			<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+		<p:outputPanel id="OPanel" style="width:100%;">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{dashboardBean.user.partner.sattrak}">
+			<h:outputLabel for="roleptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+			<p:selectOneMenu id="roleptn1" value="#{partnerBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+	  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+	  		</p:selectOneMenu>
+	  		
+	  		<f:facet name="footer">
+	  			<p:commandButton ajax="true" update="approversTable" action="#{partnerBean.resetApprovers}" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  		</f:facet>
+		</p:panelGrid>
+		
+		<p:dataTable id="approversTable" var="obj" value="#{partnerBean.partnerApprovers}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+			<f:facet name="header">
+				Available approver(s)
+			</f:facet>
+			<p:ajax event="rowEdit" listener="#{partnerBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{partnerBean.onCancel}" update=":messages3" />
+			
+			<p:column sortBy="#{obj.personel.firstname}" headerText="Name" filterBy="#{obj.personel.firstname}" filterMatchMode="contains">
+				<h:outputText value="#{obj.personel.firstname} #{obj.personel.lastname}" />
+			</p:column>
+			<p:column sortBy="#{obj.expenseType.name}" headerText="Expense Type" filterBy="#{obj.expenseType.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.expenseType.name}" />
+			</p:column>
+			<p:column sortBy="#{obj.amountLimit}" headerText="Max Approver Limit">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.amountLimit}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText id="edt_apvLimit" value="#{obj.amountLimit}" />
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column sortBy="#{obj.active}" headerText="Status">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="ACTIVE" rendered="#{obj.active}" />
+						<h:outputText value="IN-ACTIVE" rendered="#{not obj.active}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:selectBooleanCheckbox id="edt_status" value="#{obj.active}" />
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.partner.name}" rendered="#{obj.partner != null}" />
+				<h:outputText value="System" rendered="#{obj.partner == null}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:rowEditor />
+			</p:column>
+		</p:dataTable>
+		
+		</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="newApproverDialog" header="New Approver" widgetVar="newapproverdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Partner: *" />
+		<h:outputText value="#{partnerBean.selPartner.name}" rendered="#{partnerBean.selPartner != null}" />
+		<h:outputText value="Please select a partner" rendered="#{partnerBean.selPartner == null}" />
+		
+  		<h:outputLabel for="division" value="Branch/Division " />
+  		<p:selectOneMenu id="division" value="#{partnerBean.division_id}">
+  			<f:selectItem itemLabel="-- Any --" itemValue="0" />
+ 			<f:selectItems value="#{ddBean.getPartnerDivisions(partnerBean.selPartner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" rendered="#{partnerBean.selPartner != null}" />
+ 			<p:ajax update="department, unit, approver" />
+ 		</p:selectOneMenu>
+  		
+  		<h:outputLabel for="department" value="Department: " />
+  		<p:selectOneMenu id="department" value="#{partnerBean.department_id}">
+  			<f:selectItem itemLabel="-- Any --" itemValue="0" />
+ 			<f:selectItems value="#{ddBean.getDivisionDepartments(partnerBean.selPartner.id, partnerBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" rendered="#{partnerBean.selPartner != null}" />
+ 			<p:ajax update="unit, approver" />
+ 		</p:selectOneMenu>
+ 		
+ 		<h:outputLabel for="unit" value="Unit: " />
+  		<p:selectOneMenu id="unit" value="#{partnerBean.unit_id}">
+  			<f:selectItem itemLabel="-- Any --" itemValue="0" />
+ 			<f:selectItems value="#{ddBean.getDepartmentUnits(partnerBean.selPartner.id, partnerBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" rendered="#{partnerBean.selPartner != null}" />
+ 			<p:ajax update="approver" />
+ 		</p:selectOneMenu>
+ 		
+ 		<h:outputLabel for="approver" value="Approver: *" />
+  		<p:selectOneMenu id="approver" value="#{partnerBean.pp_id}">
+  			<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+ 			<f:selectItems value="#{ddBean.getPartnerPersonels(partnerBean.selPartner.id, partnerBean.division_id, 0, partnerBean.department_id, partnerBean.unit_id)}" var="it" itemLabel="#{it.firstname} #{it.lastname}" itemValue="#{it.id}" />
+ 		</p:selectOneMenu>
+ 		
+ 		<h:outputLabel for="expType" value="Expense Type: *" />
+  		<p:selectOneMenu id="expType" value="#{partnerBean.expType_id}">
+ 			<f:selectItems value="#{ddBean.getExpenseTypes(partnerBean.selPartner.id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" rendered="#{partnerBean.selPartner != null}" />
+ 		</p:selectOneMenu>
+ 		
+ 		<h:outputLabel for="apvLimit" value="Max Approver Limit: *" />
+  		<p:inputText id="apvLimit" value="#{partnerBean.partnerApprover.amountLimit}" />
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.saveApprover}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
+	</h:form>
+</ui:define>
+</ui:composition>

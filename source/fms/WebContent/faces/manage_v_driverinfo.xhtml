@@ -59,11 +59,11 @@
 				<p:tab id="srt" title="Capture Warning">
 					<p:panelGrid columns="1">
 						<p:panelGrid columns="2">
-							<h:outputLabel for="vedriver" value="Event Driver: *" />
+							<h:outputLabel for="vedriver" value="Driver: *" />
 							<p:selectOneMenu id="vedriver" value="#{fleetBean.driver_id}">
-					  			<f:selectItems value="#{ddBean.getPartnerDrivers(fleetBean.partner_id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
+					  			<f:selectItems value="#{ddBean.getPartnerDrivers(fleetBean.partner.id)}" var="it" itemLabel="#{it.personel.firstname} #{it.personel.lastname}" itemValue="#{it.id}" />
 					  		</p:selectOneMenu>
-						
+							
 							<h:outputLabel for="fueldt" value="Event date: *" />
 							<p:calendar id="fueldt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fleetBean.vehicleBehaviour.eventDate}" navigator="true" />
 							
@@ -117,7 +117,7 @@
 							<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="#{obj.driver != null}" />
 						</p:column>
 						<p:column headerText="">
-							<p:commandLink value="Update" onclick="return false;" />
+							<p:commandLink value="Update" onclick="alert('Feature not available at the moment!');return false;" />
 						</p:column>
 					</p:dataTable>
 				</p:tab>

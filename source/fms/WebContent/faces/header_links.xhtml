@@ -23,9 +23,10 @@
 			<!-- Start of the main navigation -->
 			<ul id="nav_main">
 				<li class="#{(dashboardBean.currentModuleHeader('dashboard') or dashboardBean.currentModuleHeader('faq')) ? 'current' : ''}">
-					<a href="#">
-					<img src="#{request.contextPath}/resources/img/icons/25x25/dark/computer-imac.png" width="25" height="25" alt=""/>
-					Dashboard</a>
+					<a href="#" style="font-weight:bold">
+						<img src="#{request.contextPath}/resources/img/icons/25x25/dark/computer-imac.png" width="25" height="25" alt=""/>
+						Dashboard
+					</a>
 					<ul>
 						<li class="#{(dashboardBean.function_page.equals('dashboard')) ? 'current' : ''}">
 							<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('dashboard', false)}" value="Dashboard" rendered="#{dashboardBean.user != null}" />
@@ -35,6 +36,47 @@
 						</li>
 					</ul>
 				</li>
+				<c:if test="#{dashboardBean.user.partner.fuelingType == 'Both' or dashboardBean.user.partner.fuelingType == 'Automated'}">
+					<li class="#{(dashboardBean.currentModuleHeader('fuelcard_settings') or 
+						dashboardBean.currentModuleHeader('fuelcard_summaryreport') or 
+						dashboardBean.currentModuleHeader('fuelcard_fpurchasereport') or
+						dashboardBean.currentModuleHeader('fuelcard_exceptionreport') or
+						dashboardBean.currentModuleHeader('fuelcard_befficiencyreport') or
+						dashboardBean.currentModuleHeader('fuelcard_hfpurchasereport') or
+						dashboardBean.currentModuleHeader('fuelcard_dailylogreport') or
+						dashboardBean.currentModuleHeader('fuelcard_cards')) ? 'current' : ''}">
+						<a href="#" style="font-weight:bold">
+							<img src="#{request.contextPath}/resources/img/icons/25x25/dark/chemical.png" width="25" height="25" alt=""/>
+							Fuelcard
+						</a>
+						<ul>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_settings')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_settings', false)}" value="Settings" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_cards')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_cards', false)}" value="Cards" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_summaryreport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_summaryreport', false)}" value="Summary Report" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_fpurchasereport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_fpurchasereport', false)}" value="Fuel Purchase Report" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_exceptionreport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_exceptionreport', false)}" value="Exception Report" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_befficiencyreport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_befficiencyreport', false)}" value="Best Efficiency" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_hfpurchasereport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_hfpurchasereport', false)}" value="Highest Fuel Purchase" rendered="#{dashboardBean.user != null}" />
+							</li>
+							<li class="#{(dashboardBean.function_page.equals('fuelcard_dailylogreport')) ? 'current' : ''}">
+								<p:commandLink ajax="false" action="#{dashboardBean.gotoPage('fuelcard_dailylogreport', false)}" value="Daily Fuel Log" rendered="#{dashboardBean.user != null}" />
+							</li>
+						</ul>
+					</li>
+				</c:if>
 				<ui:repeat value="${dashboardBean.modulesKeys.toArray()}" var="mdule">
 					<li class="#{(dashboardBean.currentModuleHeader(mdule)) ? 'current' : ''}">
 						<a href="#" style="font-weight:bold">

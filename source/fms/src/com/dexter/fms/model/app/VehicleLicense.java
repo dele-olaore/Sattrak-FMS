@@ -43,7 +43,7 @@ public class VehicleLicense implements Serializable
 	@Temporal(TemporalType.DATE)
 	private Date lic_start_dt;
 	@Temporal(TemporalType.DATE)
-	private Date lic_end_dt;
+	private Date lic_end_dt, notified_date;
 	
 	private byte[] document;
 	
@@ -132,6 +132,14 @@ public class VehicleLicense implements Serializable
 
 	public void setLic_end_dt(Date lic_end_dt) {
 		this.lic_end_dt = lic_end_dt;
+	}
+
+	public Date getNotified_date() {
+		return notified_date;
+	}
+
+	public void setNotified_date(Date notified_date) {
+		this.notified_date = notified_date;
 	}
 
 	public byte[] getDocument() {

@@ -78,4 +78,8 @@
 		<var>message</var>
 	   </resource-bundle>
      </application>
+     
+	<lifecycle>
+	    <phase-listener id="nocache">com.dexter.common.util.CacheControlPhaseListener</phase-listener>
+	</lifecycle>
 </faces-config>

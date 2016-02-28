@@ -18,6 +18,7 @@
     		</p:breadCrumb>
 		
 			<span style="float:right">
+			<p:commandLink value="New Expense Header" onclick="newexpheaderdlg.show();" /> | 
 			<p:commandLink value="New Expense Type" onclick="newexptypedlg.show();" />
 			</span>
 			<br/>
@@ -35,9 +36,59 @@
 	  		</p:selectOneMenu>
 	  		
 	  		<f:facet name="footer">
-	  			<p:commandButton ajax="true" update="expTypesTable" action="#{expenseBean.resetExpTypes}" value="Search" icon="ui-icon-search" style="margin:0"/>
+	  			<p:commandButton ajax="true" update="expHeadersTable, expTypesTable, exptheader" action="#{expenseBean.resetExpTypes}" value="Search" icon="ui-icon-search" style="margin:0"/>
 	  		</f:facet>
 		</p:panelGrid>
+		
+		<p:dataTable id="expHeadersTable" var="obj" value="#{expenseBean.expHeaders}"
+			paginator="true" rows="50"
+			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+			rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true" editable="true">
+			<f:facet name="header">
+				Available expense header(s)
+			</f:facet>
+			<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
+        	<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
+			
+			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.name}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:inputText value="#{obj.name}" />
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column sortBy="#{obj.description}" headerText="Description" filterBy="#{obj.description}" filterMatchMode="contains">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.description}" />
+					</f:facet>
+					<f:facet name="input">
+						<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+				  		<p:inputTextarea value="#{obj.description}" rows="3" cols="30" counter="counter_exph" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+				  		<h:outputText id="counter_exph" />
+				  		</p:panelGrid>
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
+			<p:column sortBy="#{obj.partner.name}" headerText="Owner" filterBy="#{obj.partner.name}" filterMatchMode="contains">
+				<h:outputText value="#{obj.partner.name}" rendered="#{obj.partner != null}" />
+				<h:outputText value="System" rendered="#{obj.partner == null}" />
+			</p:column>
+			<p:column headerText="Created">
+				On: <h:outputText value="#{obj.crt_dt}" /><br/>
+				By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" rendered="#{obj.createdBy != null}" /><br/>
+			</p:column>
+			<p:column headerText="" style="width: 3%">
+				<p:rowEditor rendered="#{not obj.systemObj}" />
+				<h:outputText value="Can't Update" rendered="#{obj.systemObj}" />
+			</p:column>
+		</p:dataTable>
+		
+		<br/><br/>
+		
 		<p:dataTable id="expTypesTable" var="obj" value="#{expenseBean.expTypes}"
 			paginator="true" rows="50"
 			paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
@@ -48,6 +99,20 @@
 			<p:ajax event="rowEdit" listener="#{expenseBean.onEdit}" update=":messages3" />
         	<p:ajax event="rowEditCancel" listener="#{expenseBean.onCancel}" update=":messages3" />
 			
+			<p:column sortBy="#{obj.expenseHeader.name}" headerText="Header" filterBy="#{obj.expenseHeader.name}" filterMatchMode="contains">
+				<p:cellEditor>
+					<f:facet name="output">
+						<h:outputText value="#{obj.expenseHeader.name}" />
+					</f:facet>
+					<f:facet name="input">
+						Current: <h:outputText value="#{obj.expenseHeader.name}" /><br/>
+						New: <p:selectOneMenu value="#{expenseBean.editExpHeader_id}">
+							<f:selectItem itemLabel="-- Keep Current --" itemValue="0" />
+				 			<f:selectItems value="#{expenseBean.expHeaders}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				 		</p:selectOneMenu>
+					</f:facet>
+				</p:cellEditor>
+			</p:column>
 			<p:column sortBy="#{obj.name}" headerText="Name" filterBy="#{obj.name}" filterMatchMode="contains">
 				<p:cellEditor>
 					<f:facet name="output">
@@ -91,6 +156,29 @@
 		<br/><br/><br/>
 	</div>
 	
+	<p:dialog id="newExHeaderDialog" header="New Expense Header" widgetVar="newexpheaderdlg" modal="true" dynamic="true">
+		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header"></f:facet>
+		
+		<h:outputLabel value="Partner: *" />
+		<h:outputText value="#{expenseBean.partner.name}" rendered="#{expenseBean.partner != null}" />
+		<h:outputText value="Please select a partner" rendered="#{expenseBean.partner == null}" />
+		
+  		<h:outputLabel for="exphname" value="Name: *" />
+  		<p:inputText id="exphname" value="#{expenseBean.expHeader.name}" />
+  		
+  		<h:outputLabel for="exphdesc" value="Description: " />
+  		<p:panelGrid columns="1" cellpadding="1" style="margin-bottom:10px;">
+  		<p:inputTextarea id="exphdesc" value="#{expenseBean.expHeader.description}" rows="3" cols="30" counter="counter_hdesc" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
+  		<h:outputText id="counter_hdesc" />
+  		</p:panelGrid>
+  		
+  		<f:facet name="footer">
+  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.saveExpHeader}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+  		</f:facet>
+  		</p:panelGrid>
+  	</p:dialog>
+	
 	<p:dialog id="newExTypeDialog" header="New Expense Type" widgetVar="newexptypedlg" modal="true" dynamic="true">
 		<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header"></f:facet>
@@ -107,6 +195,11 @@
   		<p:inputTextarea id="exptdesc" value="#{expenseBean.expType.description}" rows="3" cols="30" counter="counter" maxlength="225" counterTemplate="{0} characters remaining." autoResize="false"/>
   		<h:outputText id="counter" />
   		</p:panelGrid>
+  		
+  		<h:outputLabel for="exptheader" value="Header: *" />
+  		<p:selectOneMenu id="exptheader" value="#{expenseBean.expHeader_id}">
+ 			<f:selectItems value="#{expenseBean.expHeaders}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+ 		</p:selectOneMenu>
   		
   		<f:facet name="footer">
   			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{expenseBean.saveExpType}" value="Save" icon="ui-icon-disk" style="margin:0"/>

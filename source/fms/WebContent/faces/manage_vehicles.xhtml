@@ -47,18 +47,19 @@
 		  			<p:commandButton ajax="false" update="objsTable" action="#{fleetBean.resetVehicles}" value="Search" icon="ui-icon-search" style="margin:0"/>
 		  		</f:facet>
 			</p:panelGrid>
-			<p:scrollPanel mode="native" style="width:100%;height:500px">
+			
 			<p:dataTable id="objsTable" var="obj" value="#{fleetBean.vehicles}"
 				paginator="true" rows="10"
 				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
-				rowsPerPageTemplate="10,20,50" style="width:150%" resizableColumns="true" editable="true">
+				rowsPerPageTemplate="10,20,50" resizableColumns="true" editable="true"
+				scrollable="true" scrollWidth="1220">
 				<f:facet name="header">
 					Available vehicle(s)
 				</f:facet>
 				<p:ajax event="rowEdit" listener="#{fleetBean.onEdit}" update=":messages3" />
         		<p:ajax event="rowEditCancel" listener="#{fleetBean.onCancel}" update=":messages3" />
 				
-				<p:column sortBy="#{obj.zonControlId}" headerText="Tracker ID">
+				<p:column sortBy="#{obj.zonControlId}" headerText="Tracker ID" style="width:150px">
 					<p:cellEditor>
 						<f:facet name="output">
 							<h:outputText value="#{obj.zonControlId}" />
@@ -68,7 +69,7 @@
 						</f:facet>
 					</p:cellEditor>
 				</p:column>
-				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+				<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains" style="width:150px">
 					<p:cellEditor>
 						<f:facet name="output">
 							<h:outputText value="#{obj.registrationNo}" />
@@ -78,16 +79,16 @@
 						</f:facet>
 					</p:cellEditor>
 				</p:column>
-				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+				<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains" style="width:150px">
 					<h:outputText value="#{obj.model.name} (#{obj.model.year})" />
 				</p:column>
-				<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.fleet.name}" filterMatchMode="contains">
+				<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.fleet.name}" filterMatchMode="contains" style="width:150px">
 					<h:outputText value="#{obj.fleet.name}" />
 				</p:column>
-				<p:column sortBy="#{obj.activeStatus}" headerText="Status" filterBy="#{obj.activeStatus}" filterMatchMode="contains">
+				<p:column sortBy="#{obj.activeStatus}" headerText="Status" filterBy="#{obj.activeStatus}" filterMatchMode="contains" style="width:100px">
 					<h:outputText value="#{obj.activeStatus}" />
 				</p:column>
-				<p:column headerText="Params" style="width: 3%">
+				<p:column headerText="Params" style="width:100px">
 					<p:commandButton update=":form:vparamsPanel" oncomplete="vparamsdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
@@ -96,17 +97,17 @@
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Details" style="width: 3%">
+				<p:column headerText="Details" style="width:100px">
 					<p:commandButton update=":form:vdetPanel" oncomplete="vdetdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Documents" style="width: 3%">
+				<p:column headerText="Documents" style="width:100px">
 					<p:commandButton update=":form:vdocsPanel" oncomplete="vdocsdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Assigned To">
+				<p:column headerText="Assigned To" style="width:150px">
 					<h:outputText value="#{obj.currentDriver.driver.personel.firstname} #{obj.currentDriver.driver.personel.lastname}" rendered="#{obj.currentDriver != null}" />
 					<h:outputText value="N/A" rendered="#{obj.currentDriver == null}" />
 					<br/><br/>
@@ -118,28 +119,28 @@
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Due Details" style="width: 5%">
+				<p:column headerText="Due Details" style="width:100px">
 					<p:commandButton update=":form:vduedetPanel" oncomplete="vduedetdlg.show();" icon="ui-icon-search" title="View">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Created">
+				<p:column headerText="Created" style="width:250px">
 					On: <h:outputText value="#{obj.crt_dt}" /><br/>
 					By: <h:outputText value="#{obj.createdBy.personel.firstname} #{obj.createdBy.personel.lastname}" /><br/>
 				</p:column>
-				<p:column headerText="" style="width: 3%">
+				<p:column headerText="" style="width:100px">
 					<p:rowEditor /><br/><br/>
 					<p:commandButton update=":messages3,:form:objsTable" onclick="return confirm('Are you sure?');" value="Dash Track" action="#{fleetBean.addVehicleTrack}">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
-				<p:column headerText="Dispose">
+				<p:column headerText="Dispose" style="width:100px">
 					<p:commandButton update=":form:vdisPanel" oncomplete="vdisdlg.show();" icon="ui-icon-remove" value="Dispose" title="Submit disposal request for this vehicle">
 						<f:setPropertyActionListener value="#{obj}" target="#{fleetBean.selectedVehicle}" />
 					</p:commandButton>
 				</p:column>
 			</p:dataTable>
-			</p:scrollPanel>
+			
 		</p:outputPanel>
 		</td>
 		</tr>
@@ -148,7 +149,7 @@
 	</div>
 	
 	<p:dialog id="vDisDialog" header="Vehicle Disposal Request" widgetVar="vdisdlg" modal="true" dynamic="true">
-		<p:panelGrid id="vdisPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
+		<p:panelGrid id="vdisPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
 			<f:facet name="header">Disposal Request for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
 			
 			<h:outputLabel for="netbookVal" value="Netbook Value: *" />
@@ -205,7 +206,7 @@
 			
 			<h:outputLabel for="docType" value="Document Type: *" />
 			<p:selectOneMenu id="docType" value="#{fleetBean.documentType_id}">
-				<f:selectItems value="#{fleetBean.documentTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				<f:selectItems value="#{ddBean.documentTypes}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
 	  		</p:selectOneMenu>
 	  		
 	  		<h:outputLabel for="docNumber" value="Document Number: *" />
@@ -221,13 +222,12 @@
 		</p:panelGrid>
 	</p:dialog>
 	
+	<!-- There was a file uploader here which was giving issues so we had to remove it. But we need to find a way to upload the vehicle photo -->
 	<p:dialog id="newVParamsDialog" header="New Vehicle Parameters" widgetVar="vparamsdlg2" modal="true" dynamic="true">
 		<p:panelGrid id="vparamsPanel2" columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">New Parameters for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
 			
-			<!-- There was a file uploader here which was giving issues so we had to remove it. But we need to find a way to upload the vehicle photo -->
-	  		
-	  		<h:outputLabel for="vparamdept" value="Department: " />
+			<h:outputLabel for="vparamdept" value="Department: " />
 			<p:selectOneMenu id="vparamdept" value="#{fleetBean.department_id}">
 				<f:selectItem itemLabel="-- Select One --" itemValue="0" />
 				<f:selectItems value="#{fleetBean.depts}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
@@ -278,7 +278,7 @@
 	</p:dialog>
 	
 	<p:dialog id="viewVParamsDialog" header="Vehicle Parameters History" widgetVar="vparamsdlg" modal="true" dynamic="true">
-		<p:panelGrid id="vparamsPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<p:panelGrid id="vparamsPanel" columns="1" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">Parameters history for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
 		
 			<p:dataTable id="vparamsTable" var="vpr" value="#{fleetBean.selectedVehicle.params}"
@@ -334,6 +334,9 @@
 				<p:column headerText="Created">
 					On: <h:outputText value="#{vpr.crt_dt}" /><br/>
 					By: <h:outputText value="#{vpr.createdBy.personel.firstname} #{vpr.createdBy.personel.lastname}" />
+				</p:column>
+				<p:column headerText="">
+					<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fleetBean.deleteVparam(vpr.id)}" value="Delete" icon="ui-icon-close" style="margin:0" />
 				</p:column>
 				
 			</p:dataTable>

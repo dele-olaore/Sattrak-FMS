@@ -40,14 +40,26 @@ public class GeneralDAO
 		tx.begin();
 	}
 	
-	public void commit()
+	public boolean commit()
 	{
-		tx.commit();
+		try {
+			tx.commit();
+			return true;
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			setMessage(ex.getMessage());
+			return false;
+		}
+		
 	}
 	
 	public void rollback()
 	{
+		try {
 		tx.rollback();
+		} catch(Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	public void destroy()

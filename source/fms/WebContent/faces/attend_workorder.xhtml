@@ -1,0 +1,185 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Attend to Work Order Requests</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form" enctype="multipart/form-data">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" colspan="2">
+			<p:breadCrumb width="50%">
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Attend to Work Order Requests" action="#{dashboardBean.gotoPage('attend_workorder', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:tabView id="tabs" dynamic="true" cache="false">
+					<p:tab id="pendingTab" title="Pending request(s) [#{fleetBean.pendingRequestWrkOrders.size()}]">
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;">
+							<h:outputLabel for="wkord" value="Select Work Order: " />
+							<p:selectOneMenu id="wkord" value="#{fleetBean.workOrder_id}">
+					  			<f:selectItems value="#{fleetBean.pendingRequestWrkOrders}" var="it" itemLabel="#{it.workOrderNumber}" itemValue="#{it.id}" />
+					  		</p:selectOneMenu>
+							
+					  		<f:facet name="footer">
+					  			<p:commandButton ajax="false" action="#{fleetBean.resetPendingRequestWorkOrder}" value="Search" icon="ui-icon-search" style="margin:0"/>
+					  		</f:facet>
+						</p:panelGrid>
+						
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{fleetBean.selectedPendingRequestWorkOrder != null}">
+							<h:outputLabel for="wrkordtype2" value="Type: " />
+							<h:outputText id="wrkordtype2" value="#{fleetBean.selectedPendingRequestWorkOrder.workOrderType}" />
+						
+							<h:outputLabel for="wrkordSummary2" value="Summary of Work: " />
+							<h:outputText id="wrkordSummary2" value="#{fleetBean.selectedPendingRequestWorkOrder.summaryDetailsOfWorkOrder}" />
+							
+							<h:outputLabel for="wrkordreqby" value="Requested By: " />
+							<h:outputText id="wrkordreqby" value="#{fleetBean.selectedPendingRequestWorkOrder.createdBy.personel.firstname} #{fleetBean.selectedPendingRequestWorkOrder.createdBy.personel.lastname}" />
+						</p:panelGrid>
+						<br/><br/>
+						<p:dataTable id="objsTable" var="obj" value="#{fleetBean.selectedPendingRequestWorkOrder.vehicles}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+							rendered="#{fleetBean.selectedPendingRequestWorkOrder != null and fleetBean.selectedPendingRequestWorkOrder.vehicles.size() > 0}">
+							<f:facet name="header">
+								Vehicle(s) in work order
+							</f:facet>
+							
+							<p:column sortBy="#{obj.vehicle.registrationNo}" headerText="Registration No." filterBy="#{obj.vehicle.registrationNo}" filterMatchMode="contains">
+								<p:commandLink update=":form:vmaintHistoryPanel" oncomplete="vmainthistorydlg.show();"
+									action="#{fleetBean.searchVehicleMaintenanceHistory}" title="Click to view maintenance history...">
+									<h:outputText value="#{obj.vehicle.registrationNo}" />
+									<f:setPropertyActionListener value="#{obj.vehicle}" target="#{fleetBean.selectedVehicle}" />
+								</p:commandLink>
+							</p:column>
+							<p:column sortBy="#{obj.vehicle.model.name}" headerText="Model" filterBy="#{obj.vehicle.model.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vehicle.model.name}" />
+							</p:column>
+							<p:column headerText="Summary of Work" filterBy="#{obj.detailsOfWork}" filterMatchMode="contains">
+								<h:outputText value="#{obj.detailsOfWork}" />
+							</p:column>
+							<p:column headerText="Items to REPAIR">
+								<h:outputText value="#{obj.itemsToRepair}" />
+							</p:column>
+							<p:column headerText="Items to REPLACE">
+								<h:outputText value="#{obj.itemsToReplace}" />
+							</p:column>
+							<p:column headerText="Odometer">
+								<h:outputText value="#{obj.odometer}" />
+							</p:column>
+						</p:dataTable>
+						<br/><br/>
+						<p:dataTable id="objsTable2" var="obj" value="#{fleetBean.selectedPendingRequestWorkOrder.wvendors}"
+							paginator="true" rows="50"
+							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+							rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true"
+							rendered="#{fleetBean.selectedPendingRequestWorkOrder != null and fleetBean.selectedPendingRequestWorkOrder.wvendors.size() > 0}">
+							<f:facet name="header">
+								Vendor(s)
+							</f:facet>
+							
+							<p:column sortBy="#{obj.vendor.name}" headerText="Name" filterBy="#{obj.vendor.name}" filterMatchMode="contains">
+								<h:outputText value="#{obj.vendor.name}" />
+							</p:column>
+							<p:column sortBy="#{obj.submittionStatus}" headerText="Estimate Status" filterBy="#{obj.submittionStatus}" filterMatchMode="contains">
+								<h:outputText value="#{obj.submittionStatus}" />
+							</p:column>
+							<p:column sortBy="#{obj.negotiated_days_of_completion}" headerText="Days of Completion">
+								<h:outputText value="#{obj.negotiated_days_of_completion}" />
+							</p:column>
+							<p:column sortBy="#{obj.negotiated_cost}" headerText="Cost">
+								<h:outputText value="#{obj.negotiated_cost}" />
+							</p:column>
+							<p:column sortBy="#{obj.comment}" headerText="Comment">
+								<h:outputText value="#{obj.comment}" />
+							</p:column>
+							<p:column sortBy="#{obj.comment}" headerText="Requester Status">
+								Recommended: <h:outputText value="YES" rendered="#{obj.requesterRecommended}" /><h:outputText value="NO" rendered="#{not obj.requesterRecommended}" /><br/>
+								Comment: <h:outputText value="#{obj.requesterComment}" />
+							</p:column>
+							<p:column headerText="Negotiation">
+								Comment: <h:outputText value="#{obj.approverComment}" />
+							</p:column>
+							<p:column headerText="Doc">
+								<p:commandLink value="Download" action="#{fleetBean.downloadWorkOrderVendorNegotiatedDoc(obj.id)}" ajax="false" rendered="#{obj.negotiatedDocument != null}" />
+								<h:outputText value="N/A" rendered="#{obj.negotiatedDocument == null}" />
+							</p:column>
+							
+						</p:dataTable>
+						<br/><br/>
+						<p:panelGrid columns="2" cellpadding="5" style="margin-bottom:10px;" rendered="#{fleetBean.selectedPendingRequestWorkOrder != null}">
+							<h:outputLabel for="wkordappvstatus" value="Approval Status: " />
+							<p:selectOneMenu id="wkordappvstatus" value="#{fleetBean.selectedPendingRequestWorkOrder.status}">
+					  			<f:selectItem itemLabel="APPROVE" itemValue="NEW" />
+					  			<f:selectItem itemLabel="CANCELED" itemValue="CANCELED" />
+					  		</p:selectOneMenu>
+					  		
+					  		<h:outputLabel for="apvcomment" value="Approval Comment: " />
+							<p:inputTextarea id="apvcomment" value="#{fleetBean.selectedPendingRequestWorkOrder.finalApproveComment}" rows="3" cols="50" autoResize="false"/>
+					  		
+					  		<f:facet name="footer">
+					  			<p:commandButton ajax="false" action="#{fleetBean.submitWorkOrderApproval}" value="Submit" onclick="return confirm('Are you sure?');" icon="ui-icon-disk" style="margin:0"/>
+					  		</f:facet>
+						</p:panelGrid>
+					</p:tab>
+				</p:tabView>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	
+	<p:dialog id="vmainthistoryDialog" header="Vehicle Maintenance History" widgetVar="vmainthistorydlg" modal="true" dynamic="true">
+		<p:panelGrid id="vmaintHistoryPanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+		<f:facet name="header">Maintenance history for vehicle: #{fleetBean.selectedVehicle.registrationNo}</f:facet>
+			<p:dataTable id="maintHistTable" var="obj" value="#{fleetBean.vehicleMaintHistoryList}"
+				paginator="true" rows="50"
+				paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="20,50,100" style="width:100%" resizableColumns="true"
+				rendered="#{fleetBean.vehicleMaintHistoryList != null and fleetBean.vehicleMaintHistoryList.size() > 0}">
+				<f:facet name="header">
+					Vehicle Maintenance History
+				</f:facet>
+				
+				<p:column sortBy="#{obj.workOrderType}" headerText="Type">
+					<h:outputText value="#{obj.workOrderType}" />
+				</p:column>
+				<p:column sortBy="#{obj.start_dt}" headerText="Start">
+					<h:outputText value="#{obj.start_dt}" />
+				</p:column>
+				<p:column sortBy="#{obj.end_dt}" headerText="Finised">
+					<h:outputText value="#{obj.end_dt}" />
+				</p:column>
+				<p:column sortBy="#{obj.workOrder.vendor.name}" headerText="Vendor" filterBy="#{obj.workOrder.vendor.name}" filterMatchMode="contains">
+					<h:outputText value="#{obj.workOrder.vendor.name}" />
+				</p:column>
+				<p:column sortBy="#{obj.currentVehOdometer}" headerText="Odometer">
+					<h:outputText value="#{obj.currentVehOdometer}" />
+				</p:column>
+				<p:column headerText="Work Details" filterBy="#{obj.detailsOfWork}" filterMatchMode="contains">
+					<h:outputText value="#{obj.detailsOfWork}" />
+				</p:column>
+				<p:column sortBy="#{obj.initial_amount}" headerText="Initial Cost">
+					<h:outputText value="#{obj.initial_amount}" />
+				</p:column>
+				<p:column sortBy="#{obj.closed_amount}" headerText="Final Cost">
+					<h:outputText value="#{obj.closed_amount}" />
+				</p:column>
+			</p:dataTable>
+		</p:panelGrid>
+	</p:dialog>
+	</h:form>
+</ui:define>
+</ui:composition>

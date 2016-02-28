@@ -7,30 +7,32 @@
                 template="/WEB-INF/layout/other_layout.xhtml">
 <ui:define name="head">
 	<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>
-	<script>
-		function handleComplete(xhr, status, args)
-		{
-			var gmap = mapWidget.getMap();
-			for(var i in gmap.markers)
-			{
-				var newMarker = eval("args.marker"+i);
-				var newPosition = eval("args.position"+i);
-				var oldMarker = gmap.markers[i];
-				oldMarker.setPosition(newPosition);
-				oldMarker.icon=newMarker.icon;
-				oldMarker.setMap(gmap);
-				
-				try
-				{
-					var centerPosition = eval("args.centerposition"+i);
-					if(centerPosition != null)
-					{
-						var position = oldMarker.getPosition();
-						gmap.setCenter(position.lat(), position.lng());
-					}
-				}catch(e){}
+	<script type="text/javascript">
+	//<![CDATA[
+		function handleComplete(xhr, status, args) {
+			try {
+				var gmap = mapWidget.getMap();
+				for(var i in gmap.markers) {
+					var newMarker = eval("args.marker"+i);
+					var newPosition = eval("args.position"+i);
+					var oldMarker = gmap.markers[i];
+					oldMarker.setPosition(newPosition);
+					oldMarker.icon=newMarker.icon;
+					oldMarker.setMap(gmap);
+					
+					try {
+						var centerPosition = eval("args.centerposition"+i);
+						if(centerPosition != null) {
+							var position = oldMarker.getPosition();
+							gmap.setCenter(position.lat(), position.lng());
+						}
+					} catch(e){}
+				}
+			} catch(e) {
+				//alert(e);
 			}
 		}
+	// ]]>
 	</script>
 </ui:define>
 <ui:define name="title">Dashboard</ui:define>
@@ -40,7 +42,7 @@
 	<p:poll id="vtrackpoll" interval="#{dashboardBean.vtrackpollinterval}" 
 		listener="#{dashboardBean.reloadVTrack}" oncomplete="handleComplete(xhr, status, args)" update="alerts" />
     
-	<div class="content">
+    <div class="content">
 		<table width="90%" align="center" cellspacing="4" cellpadding="4">
 		<tr>
 		<td align="left" colspan="2">
@@ -117,13 +119,22 @@
 										<a href="#" onclick="return false;">Drivers without assigned vehicles <span>#{dashboardBean.driversWithoutVehiclesCount}</span></a>
 									</li> -->
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_drivers', false)}" ajax="false">Drivers without valid licenses <span>#{dashboardBean.driversWithoutLicenseCount}</span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_drvlic', false)}" ajax="false">Drivers without valid licenses <span>#{dashboardBean.driversWithoutLicenseCount}</span></p:commandLink>
 									</li>
 									<li>
 										<p:commandLink action="#{dashboardBean.gotoPage('approve_expenses', false)}" ajax="false">Pending expenses for your approval <span>#{dashboardBean.pendingExpenseRequestCount}</span></p:commandLink>
 									</li>
 									<li>
 										<p:commandLink action="#{dashboardBean.gotoPage('approve_overtime', false)}" ajax="false">Pending overtime request for your approval <span>#{dashboardBean.pendingOvertimeRequestCount}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('attend_trips', false)}" ajax="false">Pending corporate trip request for your approval <span>#{dashboardBean.pendingTripRequestCount}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('attend_trips', false)}" ajax="false">Ongoing trips count <span>#{dashboardBean.ongoingTripCount}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('attend_trips', false)}" ajax="false">Completion overdue trips count <span>#{dashboardBean.overdueTripCount}</span></p:commandLink>
 									</li>
 									</ul>
 								</div>
@@ -140,14 +151,30 @@
 								<div class="content">
 									<ul class="stats-list">
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_licenseinfo', false)}" ajax="false">Expired licenses <span><font color="#{(dashboardBean.expiredLicenseCount > 0) ? 'red' : 'green'}">#{dashboardBean.expiredLicenseCount}</font></span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_explicdlg', false)}" ajax="false">Expired licenses <span><font color="#{(dashboardBean.expiredLicenseCount > 0) ? 'red' : 'green'}">#{dashboardBean.expiredLicenseCount}</font></span></p:commandLink>
 									</li>
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_licenseinfo', false)}" ajax="false">Expiring within 2-weeks <span><font color="#{(dashboardBean.soonToExpireLicenseCount > 0) ? 'yellow' : 'green'}">#{dashboardBean.soonToExpireLicenseCount}</font></span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_explicdlg', false)}" ajax="false">Expiring within 2-weeks <span><font color="#{(dashboardBean.soonToExpireLicenseCount > 0) ? 'yellow' : 'green'}">#{dashboardBean.soonToExpireLicenseCount}</font></span></p:commandLink>
 									</li>
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_licenseinfo', false)}" ajax="false">To expire within a month <span><font color="#{(dashboardBean.expiringLicenseCount > 0) ? 'green' : 'green'}">#{dashboardBean.expiringLicenseCount}</font></span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_explicdlg', false)}" ajax="false">To expire within a month <span><font color="#{(dashboardBean.expiringLicenseCount > 0) ? 'green' : 'green'}">#{dashboardBean.expiringLicenseCount}</font></span></p:commandLink>
 									</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						</td></tr>
+						<tr style="valign:top;align:left"><td>
+						<div style="width:420px;float:left">
+							<div class="box">
+								<div class="header">
+									<img src="#{request.contextPath}/resources/img/icons/16x16/list.png" alt="" width="16" height="16" />
+									<h3>ASSETS STATUS</h3>
+									<span></span>
+								</div>
+								<div class="content">
+									<ul class="stats-list">
+										<!-- ACTIVE, MAINTENANCE, ACCIDENTED -->
 									</ul>
 								</div>
 							</div>
@@ -164,10 +191,28 @@
 								<div class="content">
 									<ul class="stats-list">
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_rmaintenance', false)}" ajax="false">Total upcoming/due routine maintenance <span>#{dashboardBean.totalDueRoutineMaint}</span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_expmaintdlg', false)}" ajax="false">Total upcoming/due routine maintenance <span>#{dashboardBean.totalDueRoutineMaint}</span></p:commandLink>
 									</li>
 									<li>
-										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_ahmaintenance', false)}" ajax="false">Total upcoming/due adhoc maintenance requests <span>#{dashboardBean.totalUpcomingAndDueAdHocMaint}</span></p:commandLink>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_expmaintdlg', false)}" ajax="false">Total upcoming/due adhoc maintenance requests <span>#{dashboardBean.totalUpcomingAndDueAdHocMaint}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('approve_accident_repair', false)}" ajax="false">Pending accident repair requests <span>#{dashboardBean.totalPendingAccidentRepairs}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('approve_v_maintenance', false)}" ajax="false">Pending maintenance requests <span>#{dashboardBean.totalPendingMaintenanceRequests}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_rmaintenance', false)}" ajax="false">Approved routine maintenance without work-order <span>#{dashboardBean.totalApprovedRMaintenanceNoWorkorder}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('manage_v_ahmaintenance', false)}" ajax="false">Approved adhoc maintenance without work-order <span>#{dashboardBean.totalApprovedAHMaintenanceNoWorkorder}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('attend_workorder', false)}" ajax="false">Pending Work-Orders for your approval <span>#{dashboardBean.myPendAttendedWorkOrdersCount}</span></p:commandLink>
+									</li>
+									<li>
+										<p:commandLink action="#{dashboardBean.gotoPage('dashboard_overdueworkorders', false)}" ajax="false">Overdue Work-Orders <span>#{dashboardBean.dueWorkOrders.size()}</span></p:commandLink>
 									</li>
 									</ul>
 								</div>
@@ -187,10 +232,10 @@
 										<p:commandLink action="#{dashboardBean.gotoPage('approve_fueling', false)}" ajax="false">Pending fueling for your approval <span>#{dashboardBean.pendingFuelingRequestCount}</span></p:commandLink>
 									</li>
 									<li>
-										<a href="#" onclick="return false;">High fuel consumption count <span>0</span></a>
+										<!-- <a href="#" onclick="return false;">High fuel consumption count <span>0</span></a> -->
 									</li>
 									<li>
-										<a href="#" onclick="return false;">Inefficient fuel consumption count <span>0</span></a>
+										<!-- <a href="#" onclick="return false;">Inefficient fuel consumption count <span>0</span></a> -->
 									</li>
 									</ul>
 								</div>
@@ -302,7 +347,7 @@
 					
 					<p:panel id="duelics" header="Recent and upcoming expirations"
 						toggleable="true" closable="true" toggleSpeed="500" closeSpeed="500" widgetVar="duelicsPanel">
-						<p:commandButton ajax="true" update="licsTable" action="#{dashboardBean.resetExpLicenses}" value="Reset" />
+						<p:commandButton ajax="true" update="licsTable" action="#{dashboardBean.resetExpLicenses}" value="Refresh" />
 						<br/><br/>
 						<p:dataTable var="lic" id="licsTable" value="#{dashboardBean.upcomingAndRecentExpirations}"
 							rows="10" paginator="true"
@@ -454,8 +499,8 @@
 					  		</p:selectOneMenu>
 							<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{dashboardBean.SetHowBack}" value="Set" />
 						</p:panelGrid>
-						<p:lineChart id="recentexpenseslinear" value="#{dashboardBean.expsLinearModel}" legendPosition="e"
-							title="Most recent expenses" minY="#{dashboardBean.minY}" maxY="#{dashboardBean.maxY}" style="height:300px" zoom="true" animate="true"/>
+							<p:lineChart id="recentexpenseslinear" value="#{dashboardBean.expsLinearModel}" legendPosition="e"
+								title="Most recent expenses" minY="#{dashboardBean.minY}" maxY="#{dashboardBean.maxY}" style="height:300px" zoom="true" animate="true"/>
 						</p:panelGrid>
 					</p:panel>
 					
@@ -543,6 +588,7 @@
 		</table>
 		<br/><br/><br/>
 	</div>
+	
 	</h:form>
 </ui:define>
 </ui:composition>

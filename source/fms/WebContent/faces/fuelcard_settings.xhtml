@@ -1,0 +1,177 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Settings</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Fuelcard Settings" action="#{dashboardBean.gotoPage('fuelcard_settings', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:scrollPanel mode="native" style="width:100%;height:500px" rendered="#{fuelcardBean.settings != null and fuelcardBean.settings.size() > 0}">
+				<p:dataTable id="settingsTable" var="obj" value="#{fuelcardBean.settings}"
+				paginator="true" rows="10"
+				paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+				rowsPerPageTemplate="10,20,50" style="width:150%" resizableColumns="true" editable="true"
+				rendered="#{fuelcardBean.settings != null and fuelcardBean.settings.size() > 0}">
+				<f:facet name="header">
+					Available configurations
+				</f:facet>
+				<p:ajax event="rowEdit" listener="#{fuelcardBean.onEdit}" update=":messages3" />
+	        	<p:ajax event="rowEditCancel" listener="#{fuelcardBean.onCancel}" update=":messages3" />
+				
+				<p:column sortBy="#{obj.region.name}" headerText="Region" filterBy="#{obj.region.name}" filterMatchMode="contains">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.region.name}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:selectOneMenu id="edtregion" value="#{fuelcardBean.new_region_id}">
+								<f:selectItem itemLabel="#{obj.region.name}" itemValue="#{obj.region.id}" />
+					  		</p:selectOneMenu>
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.minbalance}" headerText="Balance Threshold">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.minbalance}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edtbalanceThreshold" value="#{obj.minbalance}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.thresholdAlertEmail}" headerText="Threshold Notification Email(s)" filterBy="#{obj.thresholdAlertEmail}" filterMatchMode="contains">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.thresholdAlertEmail}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edtbalanceThresholdEmails" value="#{obj.thresholdAlertEmail}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.alertMobileNumbers}" headerText="Transaction Notification Mobile Number(s)" filterBy="#{obj.alertMobileNumbers}" filterMatchMode="contains">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.alertMobileNumbers}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edttransactionMobiles" value="#{obj.alertMobileNumbers}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.transactionAlertEmail}" headerText="Transaction Notification Email(s)" filterBy="#{obj.transactionAlertEmail}" filterMatchMode="contains">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.transactionAlertEmail}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edttransactionEmails" value="#{obj.transactionAlertEmail}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.expectionAlertEmail}" headerText="Exception Notification Email(s)" filterBy="#{obj.expectionAlertEmail}" filterMatchMode="contains">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.expectionAlertEmail}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edtexceptionEmails" value="#{obj.expectionAlertEmail}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.petrolUnitPrice}" headerText="Petrol Unit Price">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.petrolUnitPrice}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edtpetrolUnitP" value="#{obj.petrolUnitPrice}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column sortBy="#{obj.disealUnitPrice}" headerText="Diesel Unit Price">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{obj.disealUnitPrice}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText id="edtdieselUnitP" value="#{obj.disealUnitPrice}" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column headerText="" style="width: 10%">
+					<p:rowEditor />
+				</p:column>
+				</p:dataTable>
+				</p:scrollPanel>
+				<br/>
+				
+				<p:panelGrid id="rlpanel" columns="2" cellpadding="5" style="margin-bottom:10px;">
+				<f:facet name="header">Create new setting</f:facet>
+				
+				<h:outputLabel for="rlptn" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+				<p:selectOneMenu id="rlptn" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+		  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  			<p:ajax update="region" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="region" value="Region: " />
+				<p:selectOneMenu id="region" value="#{fuelcardBean.region_id}">
+					<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+					<f:selectItems value="#{fleetBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+		  		</p:selectOneMenu>
+		  		
+		  		<h:outputLabel for="balanceThreshold" value="Balance Threshold: " />
+				<p:inputText id="balanceThreshold" value="#{fuelcardBean.cardBal.minbalance}" />
+				
+				<h:outputLabel for="balanceThresholdEmails" value="Threshold Notification Email(s): " />
+				<p:inputText id="balanceThresholdEmails" value="#{fuelcardBean.cardBal.thresholdAlertEmail}" />
+				
+				<h:outputLabel for="transactionMobiles" value="Transaction Notification Mobile Number(s): " />
+				<p:inputText id="transactionMobiles" value="#{fuelcardBean.cardBal.alertMobileNumbers}" />
+				
+				<h:outputLabel for="transactionEmails" value="Transaction Notification Email(s): " />
+				<p:inputText id="transactionEmails" value="#{fuelcardBean.cardBal.transactionAlertEmail}" />
+				
+				<h:outputLabel for="exceptionEmails" value="Exception Notification Email(s): " />
+				<p:inputText id="exceptionEmails" value="#{fuelcardBean.cardBal.expectionAlertEmail}" />
+				
+				<h:outputLabel for="petrolUnitP" value="Petrol Unit Price: " />
+				<p:inputText id="petrolUnitP" value="#{fuelcardBean.cardBal.petrolUnitPrice}" />
+				
+				<h:outputLabel for="dieselUnitP" value="Diesel Unit Price: " />
+				<p:inputText id="dieselUnitP" value="#{fuelcardBean.cardBal.disealUnitPrice}" />
+				
+				<f:facet name="footer">
+		  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{fuelcardBean.save}" value="Save" icon="ui-icon-disk" style="margin:0"/>
+		  		</f:facet>
+				
+				</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

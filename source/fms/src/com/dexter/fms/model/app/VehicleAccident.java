@@ -10,6 +10,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 
 import com.dexter.fms.model.PartnerDriver;
@@ -32,7 +33,7 @@ public class VehicleAccident implements Serializable
 	private Date accident_dt;
 	
 	@ManyToOne
-	private PartnerDriver assignedDriver;
+	private PartnerDriver assignedDriver, accidentDriver;
 	private String driver_name;
 	private String accidentDescription;
 	private String driverComment;
@@ -71,6 +72,14 @@ public class VehicleAccident implements Serializable
 	@ManyToOne
 	private PartnerUser createdBy;
 	
+	private boolean adhocRequested; // true if an adhoc request has been submitted for this accident repair
+	
+	private double odometer;
+	private int ageOfVehicle;
+	
+	@Transient
+	private boolean selected;
+	
 	public VehicleAccident()
 	{}
 
@@ -104,6 +113,14 @@ public class VehicleAccident implements Serializable
 
 	public void setAssignedDriver(PartnerDriver assignedDriver) {
 		this.assignedDriver = assignedDriver;
+	}
+
+	public PartnerDriver getAccidentDriver() {
+		return accidentDriver;
+	}
+
+	public void setAccidentDriver(PartnerDriver accidentDriver) {
+		this.accidentDriver = accidentDriver;
 	}
 
 	public String getDriver_name() {
@@ -218,6 +235,14 @@ public class VehicleAccident implements Serializable
 		this.repairApproved = repairApproved;
 	}
 
+	public boolean isAdhocRequested() {
+		return adhocRequested;
+	}
+
+	public void setAdhocRequested(boolean adhocRequested) {
+		this.adhocRequested = adhocRequested;
+	}
+
 	public String getRepairApprovedDesc() {
 		return repairApprovedDesc;
 	}
@@ -304,6 +329,30 @@ public class VehicleAccident implements Serializable
 
 	public void setCreatedBy(PartnerUser createdBy) {
 		this.createdBy = createdBy;
+	}
+
+	public double getOdometer() {
+		return odometer;
+	}
+
+	public void setOdometer(double odometer) {
+		this.odometer = odometer;
+	}
+
+	public int getAgeOfVehicle() {
+		return ageOfVehicle;
+	}
+
+	public void setAgeOfVehicle(int ageOfVehicle) {
+		this.ageOfVehicle = ageOfVehicle;
+	}
+
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
 	}
 	
 }

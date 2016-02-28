@@ -1,0 +1,230 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/layout/other_layout.xhtml">
+<ui:define name="title">Daily Fuel Log</ui:define>
+<ui:define name="content">
+	<br/><br/>
+	<h:form id="form">
+	<div class="content">
+		<table width="90%" align="center" cellspacing="4" cellpadding="4">
+		<tr>
+		<td align="left" width="50%" colspan="2">
+			<p:breadCrumb width="50%">  
+    			<p:menuitem value="Dashboard" action="#{dashboardBean.gotoPage('dashboard', false)}" ajax="false" />
+    			<p:menuitem value="Daily Fuel Log" action="#{dashboardBean.gotoPage('fuelcard_dailylogreport', false)}" ajax="false" />
+    		</p:breadCrumb>
+    		<br/>
+    		<MARQUEE behavior="scroll">#{dashboardBean.scrollMessage}</MARQUEE>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="2">
+			<p:outputPanel id="OPanel">
+				<p:panel header="Export All Data" rendered="#{fuelcardBean.records != null and fuelcardBean.records.size() > 0}">
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/excel.png" />
+						<p:dataExporter type="xls" target=":form:objsTable"
+							fileName="daily_log_report" />
+					</p:commandLink>
+					
+					<p:commandLink ajax="false">
+						<p:graphicImage value="/resources/images/csv.png" />
+						<p:dataExporter type="csv" target=":form:objsTable"
+							fileName="daily_log_report" />
+					</p:commandLink>
+				</p:panel>
+				<p:scrollPanel mode="native" style="width:100%;height:250px" rendered="#{fuelcardBean.records != null and fuelcardBean.records.size() > 0}">
+				<p:dataTable id="objsTable" var="obj" value="#{fuelcardBean.records}"
+					paginator="true" rows="100"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="50,100,500" style="width:150%" resizableColumns="true"
+					rendered="#{fuelcardBean.records != null and fuelcardBean.records.size() > 0}">
+					<f:facet name="header">
+						Found record(s)
+					</f:facet>
+					
+					<p:column style="vertical-align: top">
+						<f:facet name="header">
+							<h:outputText value="Region" />
+						</f:facet>
+						<h:outputText value="#{obj[14]}" />
+					</p:column>
+					<p:column style="vertical-align: top">
+						<f:facet name="header">
+							<h:outputText value="Reg. Number" />
+						</f:facet>
+						<h:outputText value="#{obj[12]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[0]}">
+						<f:facet name="header">
+							<h:outputText value="Transaction Date" />
+						</f:facet>
+						<h:outputText value="#{obj[0]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[1]}">
+						<f:facet name="header">
+							<h:outputText value="Card Location" />
+						</f:facet>
+						<h:outputText value="#{obj[11]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[1]}">
+						<f:facet name="header">
+							<h:outputText value="Vehicle Location" />
+						</f:facet>
+						<h:outputText value="#{obj[1]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[2]}">
+						<f:facet name="header">
+							<h:outputText value="Amount on Card" />
+						</f:facet>
+						<h:outputText value="#{obj[2]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[3]}">
+						<f:facet name="header">
+							<h:outputText value="Previous Km Reading" />
+						</f:facet>
+						<h:outputText value="#{obj[3]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[4]}">
+						<f:facet name="header">
+							<h:outputText value="Current Km Reading" />
+						</f:facet>
+						<h:outputText value="#{obj[4]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[5]}">
+						<f:facet name="header">
+							<h:outputText value="Kilometres Covered" />
+						</f:facet>
+						<h:outputText value="#{obj[5]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[6]}">
+						<f:facet name="header">
+							<h:outputText value="Fuel Value" />
+						</f:facet>
+						<h:outputText value="#{obj[6]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[9]}">
+						<f:facet name="header">
+							<h:outputText value="Initial Level" />
+						</f:facet>
+						<h:outputText value="#{obj[9]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[7]}">
+						<f:facet name="header">
+							<h:outputText value="Litres Bought" />
+						</f:facet>
+						<h:outputText value="#{obj[7]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[10]}">
+						<f:facet name="header">
+							<h:outputText value="Final Level" />
+						</f:facet>
+						<h:outputText value="#{obj[10]}" />
+					</p:column>
+					<p:column style="vertical-align: top" rendered="#{fuelcardBean.recordsFields[8]}">
+						<f:facet name="header">
+							<h:outputText value="Balance on Card" />
+						</f:facet>
+						<h:outputText value="#{obj[8]}" />
+					</p:column>
+					<p:column style="vertical-align: top">
+						<f:facet name="header">
+							<h:outputText value="Purchase by" />
+						</f:facet>
+						<h:outputText value="#{obj[13]}" />
+					</p:column>
+				</p:dataTable>
+				</p:scrollPanel>
+				<br/>
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: " rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{fleetBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="region" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="region" value="Region: " />
+						<p:selectOneMenu id="region" value="#{fuelcardBean.region_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fleetBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+							<p:ajax update="vehicle" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vehicle" value="Vehicle: " />
+						<p:selectOneMenu id="vehicle" value="#{fuelcardBean.vehicle_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+							<f:selectItems value="#{fuelcardBean.vehicles}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="stdt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fuelcardBean.tranDate}" navigator="true" />
+						
+						<h:outputLabel for="eddt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{fuelcardBean.tranDate2}" navigator="true" />
+						
+						<h:outputLabel for="fields">Columns </h:outputLabel>
+						<h:panelGrid columns="5" id="fields">
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[0]}" />
+								<h:outputText value="Transaction Date" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[1]}" />
+								<h:outputText value="Locations" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[2]}" />
+								<h:outputText value="Amount on Card" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[3]}" />
+								<h:outputText value="Previous Km Reading" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[4]}" />
+								<h:outputText value="Current Km Reading" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[5]}" />
+								<h:outputText value="Kilometres Covered" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[6]}" />
+								<h:outputText value="Fuel Amount" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[9]}" />
+								<h:outputText value="Initial Level" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[7]}" />
+								<h:outputText value="Litres Bought" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[10]}" />
+								<h:outputText value="Final Level" />
+							</h:panelGrid>
+							<h:panelGrid columns="2">
+								<h:selectBooleanCheckbox value="#{fuelcardBean.recordsFields[8]}" />
+								<h:outputText value="Balance on Card" />
+							</h:panelGrid>
+						</h:panelGrid>
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+				  		<p:commandButton ajax="false" action="#{fuelcardBean.searchDailyTransactions}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
+			</p:outputPanel>
+		</td>
+		</tr>
+		</table>
+		<br/><br/><br/>
+	</div>
+	</h:form>
+</ui:define>
+</ui:composition>

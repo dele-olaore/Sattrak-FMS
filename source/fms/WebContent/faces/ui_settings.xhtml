@@ -18,6 +18,30 @@
 						<p:fileUpload id="plogo" value="#{partnerBean.partnerLogo}" mode="simple" />
 						<h:outputText value="NOTE: Dimension of logo is 212x51 pixels." />
 						
+						<h:outputLabel for="curpoverTAmtHour" value="Current Driver Overtime/Hour Pay: " />
+						<h:outputText id="curpoverTAmtHour" value="#{partnerBean.curoverTimeAmountPerHour}" />
+						<h:outputText value="" />
+						
+						<h:outputLabel for="poverTAmtHour" value="Driver Overtime/Hour Pay: " />
+						<p:inputText id="poverTAmtHour" value="#{partnerBean.overTimeAmountPerHour}" />
+						<h:outputText value="" />
+						
+						<h:outputLabel for="curbookB4Departure" value="Current Max Minutes to Book Trip before Departure: " />
+						<h:outputText id="curbookB4Departure" value="#{partnerBean.curmaxMinutesToBookTrip}" />
+						<h:outputText value="" />
+						
+						<h:outputLabel for="bookB4Departure" value="Max Minutes to Book Trip before Departure: " />
+						<p:inputText id="bookB4Departure" value="#{partnerBean.maxMinutesToBookTrip}" />
+						<h:outputText value="" />
+						
+						<h:outputLabel for="curmaxTripWaitB4Cancel" value="Current Minutes for Trip Approval before Auto-Cancel: " />
+						<h:outputText id="curmaxTripWaitB4Cancel" value="#{partnerBean.curmaxMinutesPendingTripApproval}" />
+						<h:outputText value="" />
+						
+						<h:outputLabel for="maxTripWaitB4Cancel" value="Max Minutes for Trip Approval before Auto-Cancel: " />
+						<p:inputText id="maxTripWaitB4Cancel" value="#{partnerBean.maxMinutesPendingTripApproval}" />
+						<h:outputText value="" />
+						
 						<f:facet name="footer">
 				  			<p:commandButton ajax="false" onclick="return confirm('Are you sure?');" action="#{partnerBean.saveSetting}" value="Save" icon="ui-icon-disk" style="margin:0"/>
 				  		</f:facet>

@@ -5,10 +5,142 @@
     xmlns:p="http://primefaces.org/ui">
 	<f:view>
 		<h:body>
-			<h:outputText value="Driving Behaviour Report" />
+			<h:outputText value="Driving Behavior Report" />
 			<br/>
 			<p:outputPanel id="MyOPanel" style="width:100%;">
+				<p:panelGrid columns="1">
+					<p:panelGrid columns="2">
+						<h:outputLabel for="ptn1" value="Partner: *" rendered="#{dashboardBean.user.partner.sattrak}" />
+						<p:selectOneMenu id="ptn1" value="#{reportsBean.partner_id}" rendered="#{dashboardBean.user.partner.sattrak}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.partners}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="staffrg,brch,dept,unt,flt1, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="staffrg" value="Region: " />
+						<p:selectOneMenu id="staffrg" value="#{reportsBean.region_id}">
+				  			<f:selectItems value="#{reportsBean.regions}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="brch" value="Division/Branch: " />
+						<p:selectOneMenu id="brch" value="#{reportsBean.division_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getPartnerDivisions(reportsBean.partner.id, 0, 0)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="dept, unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="dept" value="Department: " />
+						<p:selectOneMenu id="dept" value="#{reportsBean.department_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getDivisionDepartments(reportsBean.partner.id, reportsBean.division_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="unt, vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="unt" value="Unit: " />
+						<p:selectOneMenu id="unt" value="#{reportsBean.unit_id}">
+							<f:selectItem itemLabel="-- All --" itemValue="0" />
+				  			<f:selectItems value="#{ddBean.getDepartmentUnits(reportsBean.partner.id, reportsBean.department_id)}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="flt1" value="Fleet: *" />
+						<p:selectOneMenu id="flt1" value="#{reportsBean.fleet_id}">
+							<f:selectItem itemLabel="-- Select One --" itemValue="0" />
+				  			<f:selectItems value="#{reportsBean.fleets}" var="it" itemLabel="#{it.name}" itemValue="#{it.id}" />
+				  			<p:ajax update="vch1" />
+				  		</p:selectOneMenu>
+				  		
+				  		<h:outputLabel for="vch1" value="Vehicle: *" />
+						<p:selectOneMenu id="vch1" value="#{reportsBean.vehicle_id}">
+							<f:selectItem itemLabel="-- All Vehicles --" itemValue="0" />
+							<f:selectItems value="#{ddBean.getPartnerVehicles(reportsBean.partner.id, reportsBean.region_id, reportsBean.division_id, 0, reportsBean.department_id, reportsBean.unit_id, reportsBean.fleet_id)}" var="it" itemLabel="#{it.registrationNo}" itemValue="#{it.id}" />
+						</p:selectOneMenu>
+						
+						<h:outputLabel for="acddt" value="Start date: *" />
+						<p:calendar id="acddt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.start_dt}" navigator="true" />
+						
+						<h:outputLabel for="acdrdt" value="End date: *" />
+						<p:calendar id="acdrdt" pattern="dd/MM/yyyy HH:mm:ss" showOn="both" mode="popup" value="#{reportsBean.end_dt}" navigator="true" />
+						
+						<h:outputLabel for="rptype" value="Report Type: *" />
+						<p:selectOneMenu id="rptype" value="#{reportsBean.reportType}">
+							<f:selectItem itemLabel="Summary" itemValue="Summary" />
+							<f:selectItem itemLabel="Detail" itemValue="Detail" />
+						</p:selectOneMenu>
+				  	</p:panelGrid>
+				  	<f:facet name="footer">
+			  			<p:commandButton ajax="false" action="#{reportsBean.drivingEvents}" value="Search" icon="ui-icon-search" style="margin:0"/>
+			  		</f:facet>
+				</p:panelGrid>
 				
+				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.vehiclesDrivingInfoReport}"
+					paginator="true" rows="10"
+					paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+					rowsPerPageTemplate="10,20,50" style="width:100%" resizableColumns="true">
+					<f:facet name="header">
+						Vehicle(s)
+					</f:facet>
+					
+					<p:column style="width:2%">
+						<p:rowToggler />
+					</p:column>
+					
+					<p:column sortBy="#{obj.registrationNo}" headerText="Registration No." filterBy="#{obj.registrationNo}" filterMatchMode="contains">
+						<h:outputText value="#{obj.registrationNo}" />
+					</p:column>
+					<p:column sortBy="#{obj.model.name}" headerText="Model" filterBy="#{obj.model.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.model.name}" />
+					</p:column>
+					<p:column sortBy="#{obj.fleet.name}" headerText="Fleet" filterBy="#{obj.Fleet.name}" filterMatchMode="contains">
+						<h:outputText value="#{obj.fleet.name}" />
+					</p:column>
+					
+					<p:rowExpansion>
+						<p:dataTable id="trackdatasubsTable1" var="obj3" value="#{obj.vehicleBehaviorSummary}"
+							rendered="#{obj.vehicleBehaviorSummary != null and obj.vehicleBehaviorSummary.size() > 0}">
+							
+							<p:column style="width:2%">
+								<p:rowToggler />
+							</p:column>
+							
+							<p:column sortBy="#{obj3.warningName}" headerText="Warning" filterBy="#{obj3.warningName}" filterMatchMode="contains">
+								<h:outputText value="#{obj3.warningName}" />
+							</p:column>
+							<p:column sortBy="#{obj3.count}" headerText="Count">
+								<h:outputText value="#{obj3.count}" />
+							</p:column>
+							<p:column sortBy="#{obj3.score}" headerText="Score">
+								<h:outputText value="#{obj3.score}" />
+							</p:column>
+							
+							<p:rowExpansion>
+								<p:dataTable id="trackdatasubsTable" var="obj2" value="#{obj3.vehicleWarnings}"
+									rendered="#{obj3.vehicleWarnings != null and obj3.vehicleWarnings.size() > 0}">
+									<p:column sortBy="#{obj2.driver.personel.firstname}" headerText="Driver">
+										<h:outputText value="#{obj2.driver.personel.firstname} #{obj2.driver.personel.lastname}" rendered="#{obj2.driver != null and obj2.driver.personel != null}" />
+									</p:column>
+									<p:column sortBy="#{obj2.crt_dt}" headerText="Captured date">
+										<h:outputText value="#{obj2.crt_dt}" />
+									</p:column>
+									<p:column headerText="Warning Time" sortBy="#{obj2.eventDate}">
+										<h:outputText value="#{obj2.eventDate}" />
+									</p:column>
+									<p:column headerText="Warning" sortBy="#{obj2.warning.name}">
+										<h:outputText value="#{obj2.warning.name}" rendered="#{obj2.warning != null}" />
+									</p:column>
+									<p:column headerText="Score" sortBy="#{obj2.warningValue}">
+										<h:outputText value="#{obj2.warningValue}" />
+									</p:column>
+								</p:dataTable>
+							</p:rowExpansion>
+							
+						</p:dataTable>
+						<center>
+						<h:outputText value="No driving information data found" rendered="#{obj.vehicleBehaviorSummary == null or obj.vehicleBehaviorSummary.size() == 0}" />
+						</center>
+					</p:rowExpansion>
+				</p:dataTable>
 			</p:outputPanel>
 		</h:body>
 	</f:view>
