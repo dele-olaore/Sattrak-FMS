@@ -417,6 +417,8 @@ public class ReportsMBean implements Serializable
 				Vector<SalesEfficiencyReportDS.Entry> groupList = new Vector<SalesEfficiencyReportDS.Entry>();
 				double daysCount = 0;
 				Calendar start_can = Calendar.getInstance(), end_can = Calendar.getInstance();
+				start_can.setTime(getStart_dt());
+				end_can.setTime(getEnd_dt());
 				while(start_can.before(end_can)) {
 					int dow = start_can.get(Calendar.DAY_OF_WEEK);
 					if(dow!=Calendar.SATURDAY &&
@@ -1068,6 +1070,8 @@ public class ReportsMBean implements Serializable
 				Vector<UtilizationReportDS.Entry> groupList = new Vector<UtilizationReportDS.Entry>();
 				double daysCount = 0;
 				Calendar start_can = Calendar.getInstance(), end_can = Calendar.getInstance();
+				start_can.setTime(getStart_dt());
+				end_can.setTime(getEnd_dt());
 				while(start_can.before(end_can)) {
 					int dow = start_can.get(Calendar.DAY_OF_WEEK);
 					if(dow!=Calendar.SATURDAY &&
@@ -1181,7 +1185,7 @@ public class ReportsMBean implements Serializable
 								e.setNoOfVehicles(e.getNoOfVehicles()+1);
 								if(e.getActualWorkingTime() > 0) {
 									try {
-									double percentUtil = new BigDecimal(e.getStandardWorktime()).divide(new BigDecimal(e.getActualWorkingTime())).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+									double percentUtil = new BigDecimal(e.getStandardWorktime()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getActualWorkingTime()).setScale(2, RoundingMode.HALF_UP)).multiply(new BigDecimal(100).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
 									e.setPercentUtil(percentUtil);
 									} catch(Exception ex){}
 								}
@@ -1202,8 +1206,8 @@ public class ReportsMBean implements Serializable
 							entry.setTripsCount(tripsCount);
 							if(entry.getActualWorkingTime() > 0) {
 								try {
-								double percentUtil = new BigDecimal(entry.getStandardWorktime()).divide(new BigDecimal(entry.getActualWorkingTime())).multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP).doubleValue();
-								entry.setPercentUtil(percentUtil);
+									double percentUtil = new BigDecimal(entry.getStandardWorktime()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(entry.getActualWorkingTime()).setScale(2, RoundingMode.HALF_UP)).multiply(new BigDecimal(100).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+									entry.setPercentUtil(percentUtil);
 								} catch(Exception ex){}
 							}
 							entry.setNoOfVehicles(1);
@@ -2052,26 +2056,27 @@ public class ReportsMBean implements Serializable
 						}
 					}
 					
-					q = gDAO.createQuery("Select e from VehicleFueling e where e.vehicle.id = :vehicle_id and (e.captured_dt between :st_dt and :ed_dt) order by e.captured_dt");
-					q.setParameter("vehicle_id", v.getId());
+					double myfuel_consumption = 0;
+					q = gDAO.createQuery("Select e from VehicleFuelData e where e.vehicle.id = :v_id and (e.captured_dt between :st_dt and :ed_dt) order by e.captured_dt");
+					q.setParameter("v_id", v.getId());
 					q.setParameter("st_dt", getStart_dt());
 					q.setParameter("ed_dt", getEnd_dt());
 					obj = gDAO.search(q, 0);
 					if(obj != null) {
-						Vector<VehicleFueling> list = (Vector<VehicleFueling>)obj;
-						double startFuelLevel = 0, totalConsumed = 0;
-						for(int i=0; i<list.size(); i++) {
-							VehicleFueling vf = list.get(i);
-							if(i > 0)
-								totalConsumed += Math.abs(startFuelLevel - (vf.getFuelLevel() - vf.getLitres()));
-							startFuelLevel = vf.getFuelLevel();
+						double last_fuel_level = 0;
+						Vector<VehicleFuelData> list = (Vector<VehicleFuelData>)obj;
+						for(VehicleFuelData e : list) {
+							if(last_fuel_level > e.getFuelLevel()) {
+								myfuel_consumption += last_fuel_level - e.getFuelLevel();
+							}
+							last_fuel_level = e.getFuelLevel();
 						}
-						v.setFuel_consumed(totalConsumed);
+						v.setFuel_consumed(myfuel_consumption);
 						corporateTripsSummary.setFuel_consumed(corporateTripsSummary.getFuel_consumed() + v.getFuel_consumed());
 						
 						if(v.getDistance() > 0 && v.getFuel_consumed() > 0) {
 							try {
-								BigDecimal oneLiter = new BigDecimal(v.getDistance()).divide(new BigDecimal(v.getFuel_consumed()), 2, RoundingMode.HALF_UP);
+								BigDecimal oneLiter = new BigDecimal(v.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(v.getFuel_consumed()), 2, RoundingMode.HALF_UP);
 								oneLiter = oneLiter.setScale(2);
 								v.setKm_per_liter(oneLiter.doubleValue());
 								corporateTripsSummary.setKm_per_liter(corporateTripsSummary.getKm_per_liter() + v.getKm_per_liter());
@@ -2623,13 +2628,13 @@ public class ReportsMBean implements Serializable
 			
 			Hashtable<String, Object> params = new Hashtable<String, Object>();
 			params.put("partner", getPartner());
-			if(getRegion_id() != null)
+			if(getRegion_id() != null && getRegion_id() > 0)
 				params.put("personel.region.id", getRegion_id());
-			if(getDivision_id() != null)
+			if(getDivision_id() != null && getDivision_id() > 0)
 				params.put("personel.department.division.id", getDivision_id());
-			if(getDepartment_id() != null)
+			if(getDepartment_id() != null && getDepartment_id() > 0)
 				params.put("personel.department.id", getDepartment_id());
-			if(getUnit_id() != null)
+			if(getUnit_id() != null && getUnit_id() > 0)
 				params.put("personel.unit.id", getUnit_id());
 			
 			Object dpsObj = gDAO.search("PartnerUser", params);
@@ -2911,14 +2916,14 @@ public class ReportsMBean implements Serializable
 			} catch(Exception ex){}
 			
 			if(getDriver_id() != null && getDriver_id() > 0)
-				str += " and e.assignedDriver = :assignedDriver";
+				str += " and e.accidentDriver = :accidentDriver";
 			
 			q = gDAO.createQuery(str);
 			q.setParameter("start_dt", getStart_dt());
 			q.setParameter("end_dt", getEnd_dt());
 			q.setParameter("partner", getPartner());
 			if(getDriver_id() != null && getDriver_id() > 0)
-				q.setParameter("assignedDriver", d);
+				q.setParameter("accidentDriver", d);
 			
 			Object drvs = gDAO.search(q, 0);
 			if(drvs != null)
@@ -4564,7 +4569,7 @@ public class ReportsMBean implements Serializable
 									e.setRoutineCost(e.getRoutineCost() + routineCost);
 									e.setTotalCost(e.getTotalCost() + totalCost);
 									try {
-									e.setCostPerKM(e.getDistance()/e.getTotalCost());
+										e.setCostPerKM(new BigDecimal(e.getDistance()).divide(new BigDecimal(e.getTotalCost()), RoundingMode.HALF_UP).doubleValue());
 									} catch(Exception ex){}
 									exists = true;
 									break;
@@ -4579,7 +4584,8 @@ public class ReportsMBean implements Serializable
 								mc.setRoutineCost(mc.getRoutineCost() + routineCost);
 								mc.setTotalCost(mc.getTotalCost() + totalCost);
 								try {
-									mc.setCostPerKM(mc.getDistance()/mc.getTotalCost());
+									mc.setCostPerKM(new BigDecimal(mc.getDistance()).divide(new BigDecimal(mc.getTotalCost()), RoundingMode.HALF_UP).doubleValue());
+									//mc.setCostPerKM(mc.getDistance()/mc.getTotalCost());
 								} catch(Exception ex){}
 								groupList.add(mc);
 							}
@@ -5022,7 +5028,6 @@ public class ReportsMBean implements Serializable
 			Query q = gDAO.createQuery("Select e from PartnerDriver e where e.partner.id=:p_id and e.active=:active");
 			q.setParameter("p_id", getPartner().getId());
 			q.setParameter("active", true);
-			// TODO: Load all drivers
 			
 			setDriverQueries(new Vector<PartnerDriverQuery>());
 			
@@ -5461,6 +5466,19 @@ public class ReportsMBean implements Serializable
 												e.setDistance(e.getDistance() + distance);
 												e.setLevel(e.getLevel() + myfuel_consumption);
 												e.setNoOfVehicles(e.getNoOfVehicles()+1);
+												
+												double kmPerLitre = 0;
+												try {
+													kmPerLitre = new BigDecimal(e.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setKmPerLitre(kmPerLitre);
+												if(vp.getFuelCompKML() > 0) {
+													e.setTotalStdKmPerLitre(e.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+													try {
+														double stdKmPerLitre = new BigDecimal(e.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+														e.setStdKmPerLitre(stdKmPerLitre);
+													} catch(Exception ex){ ex.printStackTrace(); }
+												}
 												exists = true;
 												break;
 											}
@@ -5471,44 +5489,65 @@ public class ReportsMBean implements Serializable
 											fc2.setDistance(distance);
 											fc2.setLevel(myfuel_consumption);
 											fc2.setNoOfVehicles(1);
+											
+											double kmPerLitre = 0;
+											try {
+												kmPerLitre = new BigDecimal(fc2.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+											} catch(Exception ex){ ex.printStackTrace(); }
+											fc2.setKmPerLitre(kmPerLitre);
+											if(vp.getFuelCompKML() > 0) {
+												fc2.setTotalStdKmPerLitre(fc2.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+												try {
+													double stdKmPerLitre = new BigDecimal(fc2.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+													fc2.setStdKmPerLitre(stdKmPerLitre);
+												} catch(Exception ex){ ex.printStackTrace(); }
+											}
+											
 											groupList.add(fc2);
 										}
 									}
 								}
 							}
-							q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt)");
+							//TODO: Change, capture trips from corporate trips, working time, km/litre and manufacturer km/litre from vehicle parameter
+							q = gDAO.createQuery("Select e from CorporateTrip e where e.vehicle.id = :vehicle_id and (e.departureDateTime between :st_dt and :ed_dt) and (e.tripStatus = 'ON_TRIP' or e.tripStatus = 'SHOULD_BE_COMPLETED' or e.tripStatus = 'COMPLETION_REQUEST' or e.tripStatus = 'COMPLETED')");
 							q.setParameter("vehicle_id", vp.getVehicle().getId());
-							q.setParameter("st_dt", getStart_dt());
-							q.setParameter("ed_dt", getEnd_dt());
+							q.setParameter("st_dt", st_dt);
+							q.setParameter("ed_dt", ed_dt);
 							Object obj = gDAO.search(q, 0);
 							if(obj != null) {
-								int trips = 0;
-								Vector<VehicleTrackerEventData> objList = (Vector<VehicleTrackerEventData>)obj;
-								if(objList != null && objList.size() > 0) {
-									for(VehicleTrackerEventData vted : objList) {
-										if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition On"))
-											trips += 1;
-									}
-									if(trips > 0) {
-										String key = null;
-										if(filterType.equals("byregion"))
-											try {
-												key = vp.getRegion().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("byfleet"))
-											key = vp.getVehicle().getRegistrationNo();
-										else if(filterType.equals("byenginecap"))
-											try {
-												key = vp.getVehicle().getEngineCapacity().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("bybrand"))
-											key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
-										if(key != null) {
-											for(FuelConsumption e : groupList) {
-												if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
-													e.setTripsCount(e.getTripsCount() + trips);
-													break;
-												}
+								Vector<CorporateTrip> list = (Vector<CorporateTrip>)obj;
+								int trips = list.size();
+								long trips_duration = 0;
+								for(CorporateTrip ct : list) {
+									Date end_trip = new Date();
+									if(ct.getCompletedDateTime() != null)
+										end_trip = ct.getCompletedDateTime();
+									trips_duration += Math.abs(end_trip.getTime() - ct.getDepartureDateTime().getTime());
+								}
+								if(trips > 0) {
+									String key = null;
+									if(filterType.equals("byregion"))
+										try {
+											key = vp.getRegion().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("byfleet"))
+										key = vp.getVehicle().getRegistrationNo();
+									else if(filterType.equals("byenginecap"))
+										try {
+											key = vp.getVehicle().getEngineCapacity().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("bybrand"))
+										key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
+									if(key != null) {
+										for(FuelConsumption e : groupList) {
+											if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
+												e.setTripsCount(e.getTripsCount() + trips);
+												long working_time = 0;
+												try {
+													working_time = trips_duration/(1000*60*1);
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setWorking_time(e.getWorking_time() + working_time);
+												break;
 											}
 										}
 									}
@@ -5586,6 +5625,19 @@ public class ReportsMBean implements Serializable
 												e.setLevel(e.getLevel() + myfuel_consumption);
 												e.setNoOfVehicles(e.getNoOfVehicles()+1);
 												exists = true;
+												
+												double kmPerLitre = 0;
+												try {
+													kmPerLitre = new BigDecimal(e.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setKmPerLitre(kmPerLitre);
+												if(vp.getFuelCompKML() > 0) {
+													e.setTotalStdKmPerLitre(e.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+													try {
+														double stdKmPerLitre = new BigDecimal(e.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+														e.setStdKmPerLitre(stdKmPerLitre);
+													} catch(Exception ex){ ex.printStackTrace(); }
+												}
 												break;
 											}
 										}
@@ -5595,44 +5647,64 @@ public class ReportsMBean implements Serializable
 											fc2.setDistance(distance);
 											fc2.setLevel(myfuel_consumption);
 											fc2.setNoOfVehicles(1);
+											
+											double kmPerLitre = 0;
+											try {
+												kmPerLitre = new BigDecimal(fc2.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+											} catch(Exception ex){ ex.printStackTrace(); }
+											fc2.setKmPerLitre(kmPerLitre);
+											if(vp.getFuelCompKML() > 0) {
+												fc2.setTotalStdKmPerLitre(fc2.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+												try {
+													double stdKmPerLitre = new BigDecimal(fc2.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+													fc2.setStdKmPerLitre(stdKmPerLitre);
+												} catch(Exception ex){ ex.printStackTrace(); }
+											}
+											
 											groupList.add(fc2);
 										}
 									}
 								}
 							}
-							q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt)");
+							q = gDAO.createQuery("Select e from CorporateTrip e where e.vehicle.id = :vehicle_id and (e.departureDateTime between :st_dt and :ed_dt) and (e.tripStatus = 'ON_TRIP' or e.tripStatus = 'SHOULD_BE_COMPLETED' or e.tripStatus = 'COMPLETION_REQUEST' or e.tripStatus = 'COMPLETED')");
 							q.setParameter("vehicle_id", vp.getVehicle().getId());
-							q.setParameter("st_dt", getStart_dt());
-							q.setParameter("ed_dt", getEnd_dt());
+							q.setParameter("st_dt", st_dt);
+							q.setParameter("ed_dt", ed_dt);
 							Object obj = gDAO.search(q, 0);
 							if(obj != null) {
-								int trips = 0;
-								Vector<VehicleTrackerEventData> objList = (Vector<VehicleTrackerEventData>)obj;
-								if(objList != null && objList.size() > 0) {
-									for(VehicleTrackerEventData vted : objList) {
-										if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition On"))
-											trips += 1;
-									}
-									if(trips > 0) {
-										String key = null;
-										if(filterType.equals("byregion"))
-											try {
-												key = vp.getRegion().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("byfleet"))
-											key = vp.getVehicle().getRegistrationNo();
-										else if(filterType.equals("byenginecap"))
-											try {
-												key = vp.getVehicle().getEngineCapacity().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("bybrand"))
-											key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
-										if(key != null) {
-											for(FuelConsumption e : groupList) {
-												if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
-													e.setTripsCount(e.getTripsCount() + trips);
-													break;
-												}
+								Vector<CorporateTrip> list = (Vector<CorporateTrip>)obj;
+								int trips = list.size();
+								long trips_duration = 0;
+								for(CorporateTrip ct : list) {
+									Date end_trip = new Date();
+									if(ct.getCompletedDateTime() != null)
+										end_trip = ct.getCompletedDateTime();
+									trips_duration += Math.abs(end_trip.getTime() - ct.getDepartureDateTime().getTime());
+								}
+								if(trips > 0) {
+									String key = null;
+									if(filterType.equals("byregion"))
+										try {
+											key = vp.getRegion().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("byfleet"))
+										key = vp.getVehicle().getRegistrationNo();
+									else if(filterType.equals("byenginecap"))
+										try {
+											key = vp.getVehicle().getEngineCapacity().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("bybrand"))
+										key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
+									if(key != null) {
+										for(FuelConsumption e : groupList) {
+											if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
+												e.setTripsCount(e.getTripsCount() + trips);
+												long working_time = 0;
+												try {
+													working_time = trips_duration/(1000*60*1);
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setWorking_time(e.getWorking_time() + working_time);
+												break;
 											}
 										}
 									}
@@ -5710,6 +5782,19 @@ public class ReportsMBean implements Serializable
 												e.setLevel(e.getLevel() + myfuel_consumption);
 												e.setNoOfVehicles(e.getNoOfVehicles()+1);
 												exists = true;
+												
+												double kmPerLitre = 0;
+												try {
+													kmPerLitre = new BigDecimal(e.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setKmPerLitre(kmPerLitre);
+												if(vp.getFuelCompKML() > 0) {
+													e.setTotalStdKmPerLitre(e.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+													try {
+														double stdKmPerLitre = new BigDecimal(e.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+														e.setStdKmPerLitre(stdKmPerLitre);
+													} catch(Exception ex){ ex.printStackTrace(); }
+												}
 												break;
 											}
 										}
@@ -5719,44 +5804,64 @@ public class ReportsMBean implements Serializable
 											fc2.setDistance(distance);
 											fc2.setLevel(myfuel_consumption);
 											fc2.setNoOfVehicles(1);
+											
+											double kmPerLitre = 0;
+											try {
+												kmPerLitre = new BigDecimal(fc2.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+											} catch(Exception ex){ ex.printStackTrace(); }
+											fc2.setKmPerLitre(kmPerLitre);
+											if(vp.getFuelCompKML() > 0) {
+												fc2.setTotalStdKmPerLitre(fc2.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+												try {
+													double stdKmPerLitre = new BigDecimal(fc2.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+													fc2.setStdKmPerLitre(stdKmPerLitre);
+												} catch(Exception ex){ ex.printStackTrace(); }
+											}
+											
 											groupList.add(fc2);
 										}
 									}
 								}
 							}
-							q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt)");
+							q = gDAO.createQuery("Select e from CorporateTrip e where e.vehicle.id = :vehicle_id and (e.departureDateTime between :st_dt and :ed_dt) and (e.tripStatus = 'ON_TRIP' or e.tripStatus = 'SHOULD_BE_COMPLETED' or e.tripStatus = 'COMPLETION_REQUEST' or e.tripStatus = 'COMPLETED')");
 							q.setParameter("vehicle_id", vp.getVehicle().getId());
-							q.setParameter("st_dt", getStart_dt());
-							q.setParameter("ed_dt", getEnd_dt());
+							q.setParameter("st_dt", st_dt);
+							q.setParameter("ed_dt", ed_dt);
 							Object obj = gDAO.search(q, 0);
 							if(obj != null) {
-								int trips = 0;
-								Vector<VehicleTrackerEventData> objList = (Vector<VehicleTrackerEventData>)obj;
-								if(objList != null && objList.size() > 0) {
-									for(VehicleTrackerEventData vted : objList) {
-										if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition On"))
-											trips += 1;
-									}
-									if(trips > 0) {
-										String key = null;
-										if(filterType.equals("byregion"))
-											try {
-												key = vp.getRegion().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("byfleet"))
-											key = vp.getVehicle().getRegistrationNo();
-										else if(filterType.equals("byenginecap"))
-											try {
-												key = vp.getVehicle().getEngineCapacity().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("bybrand"))
-											key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
-										if(key != null) {
-											for(FuelConsumption e : groupList) {
-												if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
-													e.setTripsCount(e.getTripsCount() + trips);
-													break;
-												}
+								Vector<CorporateTrip> list = (Vector<CorporateTrip>)obj;
+								int trips = list.size();
+								long trips_duration = 0;
+								for(CorporateTrip ct : list) {
+									Date end_trip = new Date();
+									if(ct.getCompletedDateTime() != null)
+										end_trip = ct.getCompletedDateTime();
+									trips_duration += Math.abs(end_trip.getTime() - ct.getDepartureDateTime().getTime());
+								}
+								if(trips > 0) {
+									String key = null;
+									if(filterType.equals("byregion"))
+										try {
+											key = vp.getRegion().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("byfleet"))
+										key = vp.getVehicle().getRegistrationNo();
+									else if(filterType.equals("byenginecap"))
+										try {
+											key = vp.getVehicle().getEngineCapacity().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("bybrand"))
+										key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
+									if(key != null) {
+										for(FuelConsumption e : groupList) {
+											if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
+												e.setTripsCount(e.getTripsCount() + trips);
+												long working_time = 0;
+												try {
+													working_time = trips_duration/(1000*60*1);
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setWorking_time(e.getWorking_time() + working_time);
+												break;
 											}
 										}
 									}
@@ -5834,6 +5939,19 @@ public class ReportsMBean implements Serializable
 												e.setLevel(e.getLevel() + myfuel_consumption);
 												e.setNoOfVehicles(e.getNoOfVehicles()+1);
 												exists = true;
+												
+												double kmPerLitre = 0;
+												try {
+													kmPerLitre = new BigDecimal(e.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setKmPerLitre(kmPerLitre);
+												if(vp.getFuelCompKML() > 0) {
+													e.setTotalStdKmPerLitre(e.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+													try {
+														double stdKmPerLitre = new BigDecimal(e.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(e.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+														e.setStdKmPerLitre(stdKmPerLitre);
+													} catch(Exception ex){ ex.printStackTrace(); }
+												}
 												break;
 											}
 										}
@@ -5843,44 +5961,64 @@ public class ReportsMBean implements Serializable
 											fc2.setDistance(distance);
 											fc2.setLevel(myfuel_consumption);
 											fc2.setNoOfVehicles(1);
+											
+											double kmPerLitre = 0;
+											try {
+												kmPerLitre = new BigDecimal(fc2.getDistance()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getLevel()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+											} catch(Exception ex){ ex.printStackTrace(); }
+											fc2.setKmPerLitre(kmPerLitre);
+											if(vp.getFuelCompKML() > 0) {
+												fc2.setTotalStdKmPerLitre(fc2.getTotalStdKmPerLitre() + vp.getFuelCompKML());
+												try {
+													double stdKmPerLitre = new BigDecimal(fc2.getTotalStdKmPerLitre()).setScale(2, RoundingMode.HALF_UP).divide(new BigDecimal(fc2.getNoOfVehicles()).setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+													fc2.setStdKmPerLitre(stdKmPerLitre);
+												} catch(Exception ex){ ex.printStackTrace(); }
+											}
+											
 											groupList.add(fc2);
 										}
 									}
 								}
 							}
-							q = gDAO.createQuery("Select e from VehicleTrackerEventData e where e.vehicle.id = :vehicle_id and (e.event_name = 'Ignition On' or e.event_name = 'Ignition Off') and (e.captured_dt between :st_dt and :ed_dt)");
+							q = gDAO.createQuery("Select e from CorporateTrip e where e.vehicle.id = :vehicle_id and (e.departureDateTime between :st_dt and :ed_dt) and (e.tripStatus = 'ON_TRIP' or e.tripStatus = 'SHOULD_BE_COMPLETED' or e.tripStatus = 'COMPLETION_REQUEST' or e.tripStatus = 'COMPLETED')");
 							q.setParameter("vehicle_id", vp.getVehicle().getId());
-							q.setParameter("st_dt", getStart_dt());
-							q.setParameter("ed_dt", getEnd_dt());
+							q.setParameter("st_dt", st_dt);
+							q.setParameter("ed_dt", ed_dt);
 							Object obj = gDAO.search(q, 0);
 							if(obj != null) {
-								int trips = 0;
-								Vector<VehicleTrackerEventData> objList = (Vector<VehicleTrackerEventData>)obj;
-								if(objList != null && objList.size() > 0) {
-									for(VehicleTrackerEventData vted : objList) {
-										if(vted.getEvent_name() != null && vted.getEvent_name().trim().equalsIgnoreCase("Ignition On"))
-											trips += 1;
-									}
-									if(trips > 0) {
-										String key = null;
-										if(filterType.equals("byregion"))
-											try {
-												key = vp.getRegion().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("byfleet"))
-											key = vp.getVehicle().getRegistrationNo();
-										else if(filterType.equals("byenginecap"))
-											try {
-												key = vp.getVehicle().getEngineCapacity().getName();
-											} catch(Exception ex){}
-										else if(filterType.equals("bybrand"))
-											key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
-										if(key != null) {
-											for(FuelConsumption e : groupList) {
-												if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
-													e.setTripsCount(e.getTripsCount() + trips);
-													break;
-												}
+								Vector<CorporateTrip> list = (Vector<CorporateTrip>)obj;
+								int trips = list.size();
+								long trips_duration = 0;
+								for(CorporateTrip ct : list) {
+									Date end_trip = new Date();
+									if(ct.getCompletedDateTime() != null)
+										end_trip = ct.getCompletedDateTime();
+									trips_duration += Math.abs(end_trip.getTime() - ct.getDepartureDateTime().getTime());
+								}
+								if(trips > 0) {
+									String key = null;
+									if(filterType.equals("byregion"))
+										try {
+											key = vp.getRegion().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("byfleet"))
+										key = vp.getVehicle().getRegistrationNo();
+									else if(filterType.equals("byenginecap"))
+										try {
+											key = vp.getVehicle().getEngineCapacity().getName();
+										} catch(Exception ex){}
+									else if(filterType.equals("bybrand"))
+										key = vp.getVehicle().getModel().getName()+"("+vp.getVehicle().getModel().getYear()+")";
+									if(key != null) {
+										for(FuelConsumption e : groupList) {
+											if(e.getRegNo().equals(key) && e.getDate().equals(date)) {
+												e.setTripsCount(e.getTripsCount() + trips);
+												long working_time = 0;
+												try {
+													working_time = trips_duration/(1000*60*1);
+												} catch(Exception ex){ ex.printStackTrace(); }
+												e.setWorking_time(e.getWorking_time() + working_time);
+												break;
 											}
 										}
 									}

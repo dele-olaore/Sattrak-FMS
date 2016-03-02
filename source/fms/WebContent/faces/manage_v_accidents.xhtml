@@ -140,6 +140,9 @@
 							<f:selectItem itemLabel="Vendor" itemValue="Vendor" />
 							<f:selectItem itemLabel="Workshop" itemValue="Workshop" />
 						</p:selectOneMenu>
+						
+						<h:outputLabel for="estrcost" value="Estimated Repair Cost: " />
+						<p:inputText id="estrcost" value="#{fleetBean.accident.estRepairCost}" />
 				  	</p:panelGrid>
 				  	
 				  		<f:facet name="footer">
@@ -396,6 +399,18 @@
 				<f:selectItem itemLabel="Vendor" itemValue="Vendor" />
 				<f:selectItem itemLabel="Workshop" itemValue="Workshop" />
 			</p:selectOneMenu>
+			
+			<h:outputLabel for="tpprcost2" value="Third party/Partner contribution: " />
+			<p:inputText id="tpprcost2" value="#{fleetBean.selectedAccident.thirdPartyAmt}" />
+			
+			<h:outputLabel for="insrcost2" value="Insurance contribution: " />
+			<p:inputText id="insrcost2" value="#{fleetBean.selectedAccident.insAmt}" />
+			
+			<h:outputLabel for="userrcost2" value="User contribution: " />
+			<p:inputText id="userrcost2" value="#{fleetBean.selectedAccident.userAmt}" />
+			
+			<h:outputLabel for="estrcost2" value="Estimated Repair Cost: " />
+			<p:inputText id="estrcost2" value="#{fleetBean.selectedAccident.estRepairCost}" />
 	  	</p:panelGrid>
 		
 		</p:panelGrid>

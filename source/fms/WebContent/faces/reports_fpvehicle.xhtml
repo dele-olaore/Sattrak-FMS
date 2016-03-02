@@ -191,6 +191,32 @@
 						</f:facet>
 						<h:outputText value="#{obj.noOfVehicles}" />
 					</p:column>
+					
+					<p:column sortBy="#{obj.tripsCount}">
+						<f:facet name="header">
+							 <h:outputText value="Trips" />  
+						</f:facet>
+						<h:outputText value="#{obj.tripsCount}" />
+					</p:column>
+					<p:column sortBy="#{obj.working_time}">
+						<f:facet name="header">
+							 <h:outputText value="Working Time (Minutes)" />  
+						</f:facet>
+						<h:outputText value="#{obj.working_time}" />
+					</p:column>
+					<p:column sortBy="#{obj.kmPerLitre}">
+						<f:facet name="header">
+							 <h:outputText value="KM/Litre" />  
+						</f:facet>
+						<h:outputText value="#{obj.kmPerLitre}" />
+					</p:column>
+					<p:column sortBy="#{obj.stdKmPerLitre}">
+						<f:facet name="header">
+							 <h:outputText value="Manufacturer KM/Litre (AVG.)" />  
+						</f:facet>
+						<h:outputText value="#{obj.stdKmPerLitre}" />
+					</p:column>
+					
 				</p:dataTable>
 			</p:outputPanel>
 			<br/><br/><br/>

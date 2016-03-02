@@ -77,6 +77,10 @@ public class VehicleAccident implements Serializable
 	private double odometer;
 	private int ageOfVehicle;
 	
+	private BigDecimal thirdPartyAmt, insAmt, userAmt, estRepairCost;
+	
+	private boolean approvedRepairRequired; // true if the accident is approved for repair, false if the accident is approved but no repair require
+	
 	@Transient
 	private boolean selected;
 	
@@ -345,6 +349,46 @@ public class VehicleAccident implements Serializable
 
 	public void setAgeOfVehicle(int ageOfVehicle) {
 		this.ageOfVehicle = ageOfVehicle;
+	}
+
+	public BigDecimal getThirdPartyAmt() {
+		return thirdPartyAmt;
+	}
+
+	public void setThirdPartyAmt(BigDecimal thirdPartyAmt) {
+		this.thirdPartyAmt = thirdPartyAmt;
+	}
+
+	public BigDecimal getInsAmt() {
+		return insAmt;
+	}
+
+	public void setInsAmt(BigDecimal insAmt) {
+		this.insAmt = insAmt;
+	}
+
+	public BigDecimal getUserAmt() {
+		return userAmt;
+	}
+
+	public void setUserAmt(BigDecimal userAmt) {
+		this.userAmt = userAmt;
+	}
+
+	public BigDecimal getEstRepairCost() {
+		return estRepairCost;
+	}
+
+	public void setEstRepairCost(BigDecimal estRepairCost) {
+		this.estRepairCost = estRepairCost;
+	}
+
+	public boolean isApprovedRepairRequired() {
+		return approvedRepairRequired;
+	}
+
+	public void setApprovedRepairRequired(boolean approvedRepairRequired) {
+		this.approvedRepairRequired = approvedRepairRequired;
 	}
 
 	public boolean isSelected() {

@@ -102,7 +102,8 @@
 	                    value="#{reportsBean.pieModel}"
 	                    legendPosition="w"
 	                    title="Utilization Status Chart"
-	                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}" />
+	                    style="width:400px;height:300px;font-size:2em" rendered="#{reportsBean.pieModel != null}"
+                    	showDataLabels="true" dataFormat="value" />
                     
                     <p:barChart id="bar" value="#{reportsBean.barModel}" legendPosition="ne" xaxisLabel="Vehicle" yaxisLabel="Distance covered"
                     	title="Utilization Distance Covered Chart" min="0" max="#{reportsBean.maxY}" style="height:300px" />

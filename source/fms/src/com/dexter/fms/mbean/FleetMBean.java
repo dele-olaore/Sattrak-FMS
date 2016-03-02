@@ -3878,6 +3878,9 @@ public class FleetMBean implements Serializable
 				String naration = "Attend to accident: " + getAccident().getVehicle().getRegistrationNo() + ":" + getAccident().getAccident_dt();
 				getAccident().setApprovalUser(dashBean.getUser());
 				
+				if(getAccident().isApprovedRepairRequired())
+					getAccident().setRepairApprovedDesc("DONE");
+				
 				GeneralDAO gDAO = new GeneralDAO();
 				gDAO.startTransaction();
 				boolean ret = gDAO.update(getAccident());
@@ -10487,14 +10490,13 @@ public class FleetMBean implements Serializable
 			{
 				GeneralDAO gDAO = new GeneralDAO();
 				
-				Query q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and e.crt_dt between :stdt and :eddt");
+				Query q = gDAO.createQuery("Select e from DriverLicense e where e.driver.partner=:partner and (e.crt_dt between :stdt and :eddt)");
 				q.setParameter("partner", getPartner());
 				q.setParameter("stdt", getStdt());
 				q.setParameter("eddt", getEddt());
 				
 				Object drvs = gDAO.search(q, 0);
-				if(drvs != null)
-				{
+				if(drvs != null) {
 					driverLicenses = (Vector<DriverLicense>)drvs;
 				}
 				gDAO.destroy();

@@ -103,7 +103,7 @@
 						</f:facet>
 						
 						<p:column sortBy="#{obj.driver.personel.firstname}" headerText="Driver" filterBy="#{obj.driver.personel.firstname}" filterMatchMode="contains" style="width:250px">
-							<h:outputText value="#{obj.driver.personel.firstname} {obj.driver.personel.lastname}" />
+							<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" />
 						</p:column>
 						
 						<p:column sortBy="#{obj.tran_dt}" headerText="Transaction date" style="width:150px">

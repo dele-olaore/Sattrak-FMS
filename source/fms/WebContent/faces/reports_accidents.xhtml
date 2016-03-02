@@ -157,38 +157,40 @@
 						<f:facet name="header">
 							 <h:outputText value="Driver" />
 						</f:facet>
-						<h:outputText value="#{obj.driver_name}" />
-					</p:column>
-					<p:column filterBy="#{obj.driverComment}" filterMatchMode="contains">
-						<f:facet name="header">
-							 <h:outputText value="Driver Comment" />
-						</f:facet>
-						<h:outputText value="#{obj.driverComment}" />
+						Name: <h:outputText value="#{obj.driver_name}" /><br/>
+						Comment: <h:outputText value="#{obj.driverComment}" />
 					</p:column>
 					<p:column filterBy="#{obj.policeOfficer}" filterMatchMode="contains">
 						<f:facet name="header">
-							 <h:outputText value="Police Officer" />
+							 <h:outputText value="Police" />
 						</f:facet>
-						<h:outputText value="#{obj.policeOfficer}" />
-					</p:column>
-					<p:column filterBy="#{obj.policeStation}" filterMatchMode="contains">
-						<f:facet name="header">
-							 <h:outputText value="Police Station" />
-						</f:facet>
-						<h:outputText value="#{obj.policeStation}" />
-					</p:column>
-					<p:column filterBy="#{obj.policeComment}" filterMatchMode="contains">
-						<f:facet name="header">
-							 <h:outputText value="Police Comment" />
-						</f:facet>
-						<h:outputText value="#{obj.policeComment}" />
+						Officer: <h:outputText value="#{obj.policeOfficer}" /><br/>
+						Station: <h:outputText value="#{obj.policeStation}" /><br/>
+						Comment: <h:outputText value="#{obj.policeComment}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">
 							 <h:outputText value="Action Taken" />
 						</f:facet>
-						<h:outputText value="#{obj.requiresRepairOrReplace}" rendered="#{not obj.requiresRepairOrReplace.isEmpty()}" />
-						<h:outputText value="No Action" rendered="#{obj.requiresRepairOrReplace.isEmpty()}" />
+						<h:outputText value="Requested: #{obj.requiresRepairOrReplace}" rendered="#{not obj.requiresRepairOrReplace.isEmpty()}" />
+						<h:outputText value="Requested: No Action" rendered="#{obj.requiresRepairOrReplace.isEmpty()}" />
+						<br/>
+						<h:outputText value="Approved: #{obj.requiresRepairOrReplace} required" rendered="#{obj.approvedRepairRequired}" />
+						<h:outputText value="Approved: No #{obj.requiresRepairOrReplace} required" rendered="#{not obj.approvedRepairRequired}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Contributions" />
+						</f:facet>
+						Third party/Partner: <h:outputText value="#{obj.thirdPartyAmt}" /><br/>
+						Insurance: <h:outputText value="#{obj.insAmt}" /><br/>
+						User: <h:outputText value="#{obj.userAmt}" />
+					</p:column>
+					<p:column>
+						<f:facet name="header">
+							 <h:outputText value="Total Repair Cost" />
+						</f:facet>
+						<h:outputText value="#{obj.estRepairCost}" />
 					</p:column>
 				</p:dataTable>
 			</p:outputPanel>

@@ -84,8 +84,9 @@
 				<p:pieChart id="pie"
                     value="#{reportsBean.pieModel}"
                     legendPosition="w"
-                    title="Pie Chart"
-                    style="width:400px;height:300px" rendered="#{reportsBean.pieModel != null}"/>
+                    title="Speed Distribution Chart"
+                    style="width:400px;height:300px;font-size:2em" rendered="#{reportsBean.pieModel != null}"
+                    showDataLabels="true" dataFormat="value" />
 				<p:dataTable id="objsTable" var="obj" value="#{reportsBean.speedSummary.allKmList}"
 					paginator="true" rows="50"
 					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"

@@ -104,6 +104,9 @@
 		<p:panelGrid id="display" columns="2" cellpadding="5" style="margin-bottom:10px;">
 		<f:facet name="header">Vehicle: #{fleetBean.accident.vehicle.registrationNo}</f:facet>
 		
+		<h:outputLabel for="apprr" value="Does Accident Require Repair?: *" />
+		<p:selectBooleanCheckbox id="apprr" value="#{fleetBean.accident.approvedRepairRequired}" />
+		
   		<h:outputLabel for="appr" value="Approval type: *" />
   		<p:selectOneMenu id="appr" value="#{fleetBean.accident.repairApprovedDesc}">
   			<f:selectItem itemLabel="APPROVE" itemValue="APPROVED" />

@@ -85,8 +85,8 @@
 						<f:facet name="header">
 							 <h:outputText value="Vehicle Reg No." />  
 						</f:facet>
-						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="obj.vehicle != null" />
-						<h:outputText value="N/A" rendered="obj.vehicle == null" />
+						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
 					</p:column>
 					<p:column filterBy="#{obj.departureLocation}" filterMatchMode="contains">
 						<f:facet name="header">

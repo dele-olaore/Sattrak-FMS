@@ -91,15 +91,15 @@
 						<f:facet name="header">
 							 <h:outputText value="Reg No." />  
 						</f:facet>
-						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="obj.vehicle != null" />
-						<h:outputText value="N/A" rendered="obj.vehicle == null" />
+						<h:outputText value="#{obj.vehicle.registrationNo}" rendered="#{obj.vehicle != null}" />
+						<h:outputText value="N/A" rendered="#{obj.vehicle == null}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">
 							 <h:outputText value="Driver" />  
 						</f:facet>
-						<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="obj.driver != null" />
-						<h:outputText value="N/A" rendered="obj.driver == null" />
+						<h:outputText value="#{obj.driver.personel.firstname} #{obj.driver.personel.lastname}" rendered="#{obj.driver != null}" />
+						<h:outputText value="N/A" rendered="#{obj.driver == null}" />
 					</p:column>
 					<p:column>
 						<f:facet name="header">

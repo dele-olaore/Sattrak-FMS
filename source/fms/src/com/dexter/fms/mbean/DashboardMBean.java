@@ -244,10 +244,10 @@ public class DashboardMBean implements Serializable
 		long count = 0;
 		GeneralDAO gDAO = new GeneralDAO();
 		Object tripsObj = null;
-		if(getUser().getPersonel().isUnitHead()) {
-			Query q = gDAO.createQuery("Select e from CorporateTrip e where e.partner=:partner and e.staff.unit=:myunit and e.approvalStatus=:approvalStatus and e.departureDateTime > :nowDateTime");
+		if(!getUser().getPersonel().isFleetManager()) {
+			Query q = gDAO.createQuery("Select e from CorporateTrip e where e.partner=:partner and e.approveUser=:approveUser and e.approvalStatus=:approvalStatus and e.departureDateTime > :nowDateTime");
 			q.setParameter("partner", getUser().getPartner());
-			q.setParameter("myunit", getUser().getPersonel().getUnit());
+			q.setParameter("approveUser", getUser());
 			q.setParameter("approvalStatus", "PENDING");
 			q.setParameter("nowDateTime", new Date());
 			tripsObj = gDAO.search(q, 0);

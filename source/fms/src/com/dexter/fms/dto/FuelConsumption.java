@@ -8,6 +8,9 @@ public class FuelConsumption {
 	
 	private double maintCost, driverCost, licenseCost, otherCost;
 	
+	private double kmPerLitre, stdKmPerLitre, totalStdKmPerLitre;
+	private long working_time;
+	
 	public FuelConsumption() {}
 
 	public String getDate() {
@@ -112,6 +115,38 @@ public class FuelConsumption {
 
 	public void setOtherCost(double otherCost) {
 		this.otherCost = otherCost;
+	}
+
+	public double getKmPerLitre() {
+		return kmPerLitre;
+	}
+
+	public void setKmPerLitre(double kmPerLitre) {
+		this.kmPerLitre = kmPerLitre;
+	}
+
+	public double getStdKmPerLitre() {
+		return stdKmPerLitre;
+	}
+
+	public void setStdKmPerLitre(double stdKmPerLitre) {
+		this.stdKmPerLitre = stdKmPerLitre;
+	}
+
+	public double getTotalStdKmPerLitre() {
+		return totalStdKmPerLitre;
+	}
+
+	public void setTotalStdKmPerLitre(double totalStdKmPerLitre) {
+		this.totalStdKmPerLitre = totalStdKmPerLitre;
+	}
+
+	public long getWorking_time() {
+		return working_time;
+	}
+
+	public void setWorking_time(long working_time) {
+		this.working_time = working_time;
 	}
 	
 }
