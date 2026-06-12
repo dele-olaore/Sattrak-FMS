@@ -30,6 +30,7 @@ public class Partner implements Serializable
 	private String addr2;
 	private String phone;
 	private String email;
+	private String email2;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date crt_dt;
@@ -117,6 +118,14 @@ public class Partner implements Serializable
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public String getEmail2() {
+		return email2;
+	}
+
+	public void setEmail2(String email2) {
+		this.email2 = email2;
 	}
 
 	public Date getCrt_dt() {
